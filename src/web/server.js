@@ -3,12 +3,18 @@ import http from 'node:http';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { ChannelFlags, ChannelType } from 'discord.js';
+import { ChannelType } from 'discord.js';
 import { WOW_CLASSES, RESOLUTIONS, findClass, findResolution } from '../constants.js';
 import { createBuilderTemplate, POST_TEMPLATES } from '../builder/templates.js';
 import { makeShortId } from '../builder/ids.js';
 import { getBuilderStats } from '../builder/render.js';
 import { validateBuilder } from '../builder/validate.js';
+import {
+  destinationTypeForChannel,
+  getDestinationChannelId,
+  getDestinationType,
+  validateDestination
+} from '../destinations.js';
 import { createManagedPost, deleteManagedPost, updateManagedPost } from '../postService.js';
 import { normalizeGeneratedString } from '../utils.js';
 
@@ -19,15 +25,15 @@ const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const MANAGE_GUILD = 0x20n;
 const ADMINISTRATOR = 0x8n;
+const VERSION = '1.2.2';
 
 function json(response, status, data, headers = {}) {
-  const body = JSON.stringify(data);
   response.writeHead(status, {
     'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store',
     ...headers
   });
-  response.end(body);
+  response.end(JSON.stringify(data));
 }
 
 function text(response, status, body, contentType = 'text/plain; charset=utf-8', headers = {}) {
@@ -84,12 +90,16 @@ function isPostModified(post) {
 }
 
 function entitySummary(entity, kind) {
+  const destinationChannelId = getDestinationChannelId(entity);
   return {
     kind,
     id: kind === 'd' ? entity.id : entity.threadId,
     title: entity.title,
     modified: kind === 'p' ? isPostModified(entity) : true,
-    forumId: kind === 'd' ? entity.forumId : entity.forumChannelId,
+    destinationType: entity.destinationType || (kind === 'p' ? getDestinationType(entity) : 'forum'),
+    destinationChannelId,
+    // Legacy field retained for older browser clients.
+    forumId: destinationChannelId,
     updatedAt: entity.updatedAt ?? null,
     publishedAt: entity.publishedAt ?? null
   };
@@ -110,20 +120,22 @@ async function saveEntity(store, kind, entity) {
   return copy;
 }
 
-function ensureForumDestination(forum, tagId) {
-  if (!forum || forum.type !== ChannelType.GuildForum) throw new Error('Den valgte kanal er ikke en forum-kanal.');
-  if (tagId && !forum.availableTags.some((tag) => tag.id === tagId)) throw new Error('Det valgte forum-tag findes ikke.');
-  if (forum.flags.has(ChannelFlags.RequireTag) && !tagId) throw new Error('Forum-kanalen kræver et tag.');
+function ensureDestination(channel, tagId) {
+  const error = validateDestination(channel, tagId);
+  if (error) throw Object.assign(new Error(error), { statusCode: 400 });
+  return destinationTypeForChannel(channel);
 }
 
 async function cloneEntityToDraft(store, source, kind, userId, titleOverride = null) {
-  const forumId = kind === 'd' ? source.forumId : source.forumChannelId;
-  if (!forumId) throw new Error('Opslaget har ingen gemt forum-destination.');
+  const destinationChannelId = getDestinationChannelId(source);
+  if (!destinationChannelId) throw new Error('Opslaget har ingen gemt destination.');
   const now = new Date().toISOString();
   const draft = {
     id: makeShortId(4),
     title: String(titleOverride || `${source.title} (kopi)`).slice(0, 100),
-    forumId,
+    forumId: destinationChannelId,
+    destinationType: source.destinationType || (kind === 'p' ? getDestinationType(source) : 'forum'),
+    destinationChannelId,
     appliedTagIds: [...(source.appliedTagIds ?? [])],
     createdBy: userId,
     createdAt: now,
@@ -138,10 +150,7 @@ async function cloneEntityToDraft(store, source, kind, userId, titleOverride = n
 async function serveFile(response, fileName, contentType) {
   try {
     const data = await fs.readFile(path.join(WEB_ROOT, fileName));
-    response.writeHead(200, {
-      'content-type': contentType,
-      'cache-control': 'no-cache'
-    });
+    response.writeHead(200, { 'content-type': contentType, 'cache-control': 'no-cache' });
     response.end(data);
   } catch {
     text(response, 404, 'Not found');
@@ -149,8 +158,7 @@ async function serveFile(response, fileName, contentType) {
 }
 
 function authSetupPage(config) {
-  const enabled = config.webEnabled;
-  return `<!doctype html><html lang="da"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shrouded Info Bot</title><style>body{font-family:system-ui;background:#111318;color:#eee;max-width:760px;margin:80px auto;padding:24px}a{color:#8ab4ff}.card{background:#1b1e25;border:1px solid #30343d;border-radius:14px;padding:24px}code{background:#0d0f13;padding:3px 6px;border-radius:5px}</style><div class="card"><h1>Shrouded Info Bot v1.2.1</h1>${enabled ? '<p>Web Builder er aktiv.</p><p><a href="/auth/discord">Log ind med Discord</a></p>' : '<p>Discord-botten kører, men Web Builder er ikke konfigureret endnu.</p><p>Tilføj <code>DISCORD_CLIENT_SECRET</code> og <code>PUBLIC_BASE_URL</code> i Railway og redeploy.</p>'}</div></html>`;
+  return `<!doctype html><html lang="da"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Timewizzard</title><style>body{font-family:system-ui;background:#111318;color:#eee;max-width:760px;margin:80px auto;padding:24px}a{color:#8ab4ff}.card{background:#1b1e25;border:1px solid #30343d;border-radius:14px;padding:24px}code{background:#0d0f13;padding:3px 6px;border-radius:5px}</style><div class="card"><h1>Timewizzard Web Builder v${VERSION}</h1>${config.webEnabled ? '<p>Web Builder er aktiv.</p><p><a href="/auth/discord">Log ind med Discord</a></p>' : '<p>Discord-botten kører, men Web Builder er ikke konfigureret endnu.</p><p>Tilføj <code>DISCORD_CLIENT_SECRET</code> og <code>PUBLIC_BASE_URL</code> i Railway og redeploy.</p>'}</div></html>`;
 }
 
 export function createWebServer({ client, store, config }) {
@@ -158,12 +166,11 @@ export function createWebServer({ client, store, config }) {
   const oauthStates = new Map();
   const secureCookies = config.publicBaseUrl.startsWith('https://');
 
-  function cleanup() {
+  const cleanupTimer = setInterval(() => {
     const now = Date.now();
     for (const [key, value] of sessions) if (value.expiresAt <= now) sessions.delete(key);
     for (const [key, value] of oauthStates) if (value.expiresAt <= now) oauthStates.delete(key);
-  }
-  const cleanupTimer = setInterval(cleanup, 10 * 60 * 1000);
+  }, 10 * 60 * 1000);
   cleanupTimer.unref?.();
 
   function currentSession(request) {
@@ -224,6 +231,7 @@ export function createWebServer({ client, store, config }) {
       text(response, 502, 'Discord OAuth token exchange failed. Check CLIENT_ID, client secret and redirect URL.');
       return;
     }
+
     const token = await tokenResponse.json();
     const headers = { authorization: `Bearer ${token.access_token}` };
     const [userResponse, guildsResponse] = await Promise.all([
@@ -234,6 +242,7 @@ export function createWebServer({ client, store, config }) {
       text(response, 502, 'Discord OAuth profile lookup failed.');
       return;
     }
+
     const user = await userResponse.json();
     const guilds = await guildsResponse.json();
     const guild = guilds.find((item) => item.id === config.guildId);
@@ -246,14 +255,29 @@ export function createWebServer({ client, store, config }) {
 
     const sessionToken = randomBytes(32).toString('hex');
     sessions.set(sessionToken, {
-      user: {
-        id: user.id,
-        username: user.global_name || user.username,
-        avatar: user.avatar
-      },
+      user: { id: user.id, username: user.global_name || user.username, avatar: user.avatar },
       expiresAt: Date.now() + SESSION_TTL_MS
     });
     redirect(response, '/builder', { 'set-cookie': sessionCookie(sessionToken, secureCookies) });
+  }
+
+  async function listDestinations() {
+    const guild = await client.guilds.fetch(config.guildId);
+    const channels = await guild.channels.fetch();
+    return [...channels.values()]
+      .filter((channel) => destinationTypeForChannel(channel))
+      .sort((a, b) => a.rawPosition - b.rawPosition)
+      .map((channel) => {
+        const type = destinationTypeForChannel(channel);
+        return {
+          id: channel.id,
+          name: `${type === 'forum' ? 'Forum' : 'Kanal'} · ${channel.name}`,
+          channelName: channel.name,
+          type,
+          requireTag: type === 'forum' ? channel.flags.has(1 << 4) : false,
+          tags: type === 'forum' ? channel.availableTags.map((tag) => ({ id: tag.id, name: tag.name })) : []
+        };
+      });
   }
 
   async function handleApi(request, response, url, session) {
@@ -269,7 +293,7 @@ export function createWebServer({ client, store, config }) {
     if (url.pathname === '/api/bootstrap' && method === 'GET') {
       const guild = client.guilds.cache.get(config.guildId);
       json(response, 200, {
-        version: '1.2.1',
+        version: VERSION,
         user: session.user,
         bot: client.user?.tag ?? null,
         guild: guild ? { id: guild.id, name: guild.name } : { id: config.guildId, name: null },
@@ -286,37 +310,28 @@ export function createWebServer({ client, store, config }) {
       return;
     }
 
-    if (url.pathname === '/api/forums' && method === 'GET') {
-      const guild = await client.guilds.fetch(config.guildId);
-      const channels = await guild.channels.fetch();
-      const forums = [...channels.values()]
-        .filter((channel) => channel?.type === ChannelType.GuildForum)
-        .sort((a, b) => a.rawPosition - b.rawPosition)
-        .map((channel) => ({
-          id: channel.id,
-          name: channel.name,
-          requireTag: channel.flags.has(ChannelFlags.RequireTag),
-          tags: channel.availableTags.map((tag) => ({ id: tag.id, name: tag.name }))
-        }));
-      json(response, 200, forums);
+    if ((url.pathname === '/api/forums' || url.pathname === '/api/destinations') && method === 'GET') {
+      json(response, 200, await listDestinations());
       return;
     }
 
     if (url.pathname === '/api/drafts' && method === 'POST') {
       const body = await readJsonBody(request);
       const title = String(body.title ?? '').trim();
-      const forumId = String(body.forumId ?? '').trim();
+      const destinationChannelId = String(body.destinationChannelId ?? body.forumId ?? '').trim();
       const tagId = String(body.tagId ?? '').trim() || null;
       const template = String(body.template ?? 'blank');
       if (!title || title.length > 100) throw Object.assign(new Error('Titel skal være 1-100 tegn.'), { statusCode: 400 });
-      const forum = await client.channels.fetch(forumId);
-      ensureForumDestination(forum, tagId);
+      const destination = await client.channels.fetch(destinationChannelId);
+      const destinationType = ensureDestination(destination, tagId);
       const now = new Date().toISOString();
       const draft = {
         id: makeShortId(4),
         title,
-        forumId,
-        appliedTagIds: tagId ? [tagId] : [],
+        forumId: destination.id,
+        destinationType,
+        destinationChannelId: destination.id,
+        appliedTagIds: destinationType === 'forum' && tagId ? [tagId] : [],
         createdBy: session.user.id,
         createdAt: now,
         updatedAt: now,
@@ -348,12 +363,11 @@ export function createWebServer({ client, store, config }) {
         const body = await readJsonBody(request);
         const title = String(body.title ?? resolved.entity.title).trim();
         if (!title || title.length > 100) throw Object.assign(new Error('Titel skal være 1-100 tegn.'), { statusCode: 400 });
-        const updated = {
+        const saved = await saveEntity(store, kind, {
           ...structuredClone(resolved.entity),
           title,
           builder: validateBuilder(body.builder ?? resolved.entity.builder)
-        };
-        const saved = await saveEntity(store, kind, updated);
+        });
         json(response, 200, {
           scope: { kind, id },
           entity: saved,
@@ -364,9 +378,10 @@ export function createWebServer({ client, store, config }) {
       }
 
       if (method === 'DELETE') {
-        if (kind === 'd') await store.removeDraft(id);
-        else await deleteManagedPost({ client, post: resolved.entity, store });
-        json(response, 200, { ok: true });
+        const deletion = kind === 'd'
+          ? (await store.removeDraft(id), { ok: true, draft: true })
+          : await deleteManagedPost({ client, post: resolved.entity, store });
+        json(response, 200, { ok: true, ...deletion });
         return;
       }
     }
@@ -389,10 +404,11 @@ export function createWebServer({ client, store, config }) {
       const id = decodeURIComponent(rawId);
       const resolved = resolveEntity(store, kind, id);
       if (!resolved) { json(response, 404, { error: 'Opslaget blev ikke fundet.' }); return; }
+
       if (kind === 'd') {
-        const forum = await client.channels.fetch(resolved.entity.forumId);
-        ensureForumDestination(forum, resolved.entity.appliedTagIds?.[0] ?? null);
-        const post = await createManagedPost({ forum, draft: resolved.entity, store });
+        const destination = await client.channels.fetch(getDestinationChannelId(resolved.entity));
+        ensureDestination(destination, resolved.entity.appliedTagIds?.[0] ?? null);
+        const post = await createManagedPost({ destination, draft: resolved.entity, store });
         json(response, 200, { scope: { kind: 'p', id: post.threadId }, entity: post, modified: false, stats: getBuilderStats(post, { kind: 'p', id: post.threadId }) });
       } else {
         const post = await updateManagedPost({ client, post: resolved.entity, store });
@@ -444,7 +460,7 @@ export function createWebServer({ client, store, config }) {
     json(response, 404, { error: 'API route not found.' });
   }
 
-  const server = http.createServer(async (request, response) => {
+  return http.createServer(async (request, response) => {
     try {
       const host = request.headers.host || 'localhost';
       const url = new URL(request.url || '/', `http://${host}`);
@@ -452,11 +468,12 @@ export function createWebServer({ client, store, config }) {
       if (url.pathname === '/health') {
         json(response, client.isReady() ? 200 : 503, {
           ok: client.isReady(),
-          version: '1.2.1',
+          version: VERSION,
           bot: client.user?.tag ?? null,
           webBuilder: config.webEnabled,
           oauthLoginPath: '/auth/discord',
           builderPath: '/builder',
+          supportedDestinations: ['forum', 'text', 'announcement'],
           uptimeSeconds: Math.floor(process.uptime())
         });
         return;
@@ -464,7 +481,6 @@ export function createWebServer({ client, store, config }) {
 
       if (url.pathname === '/app.css') { await serveFile(response, 'app.css', 'text/css; charset=utf-8'); return; }
       if (url.pathname === '/app.js') { await serveFile(response, 'app.js', 'text/javascript; charset=utf-8'); return; }
-
       if (url.pathname === '/auth/discord') { await beginOAuth(response); return; }
       if (url.pathname === '/auth/discord/callback') { await finishOAuth(request, response, url); return; }
 
@@ -506,6 +522,4 @@ export function createWebServer({ client, store, config }) {
       else response.end();
     }
   });
-
-  return server;
 }
