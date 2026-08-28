@@ -3,21 +3,29 @@ import http from 'node:http';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { ChannelType } from 'discord.js';
+import { ChannelFlags, ChannelType } from 'discord.js';
 import { WOW_CLASSES, RESOLUTIONS, findClass, findResolution } from '../constants.js';
 import { createBuilderTemplate, POST_TEMPLATES } from '../builder/templates.js';
 import { makeShortId } from '../builder/ids.js';
 import { getBuilderStats } from '../builder/render.js';
 import { validateBuilder } from '../builder/validate.js';
 import {
+  createManagedPost,
+  deleteManagedPost,
+  recreateManagedPost,
+  refreshManagedPostState,
+  updateManagedPost
+} from '../postService.js';
+import {
   destinationTypeForChannel,
   getDestinationChannelId,
   getDestinationType,
   validateDestination
 } from '../destinations.js';
-import { createManagedPost, deleteManagedPost, updateManagedPost } from '../postService.js';
+import { convertDiscohook } from '../discohook.js';
 import { normalizeGeneratedString } from '../utils.js';
 
+const VERSION = '1.3.0';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(__dirname, '../../web');
 const SESSION_COOKIE = 'sib_session';
@@ -25,23 +33,14 @@ const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const MANAGE_GUILD = 0x20n;
 const ADMINISTRATOR = 0x8n;
-const VERSION = '1.2.2';
 
 function json(response, status, data, headers = {}) {
-  response.writeHead(status, {
-    'content-type': 'application/json; charset=utf-8',
-    'cache-control': 'no-store',
-    ...headers
-  });
+  response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers });
   response.end(JSON.stringify(data));
 }
 
 function text(response, status, body, contentType = 'text/plain; charset=utf-8', headers = {}) {
-  response.writeHead(status, {
-    'content-type': contentType,
-    'cache-control': 'no-store',
-    ...headers
-  });
+  response.writeHead(status, { 'content-type': contentType, 'cache-control': 'no-store', ...headers });
   response.end(body);
 }
 
@@ -89,17 +88,21 @@ function isPostModified(post) {
   return post.title !== post.publishedTitle || JSON.stringify(post.builder) !== JSON.stringify(post.publishedBuilder);
 }
 
-function entitySummary(entity, kind) {
-  const destinationChannelId = getDestinationChannelId(entity);
+function entityId(entity, kind) {
+  return kind === 'd' ? entity.id : entity.builderId || entity.threadId;
+}
+
+function entitySummary(entity, kind, store) {
+  const id = entityId(entity, kind);
   return {
     kind,
-    id: kind === 'd' ? entity.id : entity.threadId,
+    id,
     title: entity.title,
     modified: kind === 'p' ? isPostModified(entity) : true,
-    destinationType: entity.destinationType || (kind === 'p' ? getDestinationType(entity) : 'forum'),
-    destinationChannelId,
-    // Legacy field retained for older browser clients.
-    forumId: destinationChannelId,
+    destinationType: entity.destinationType || 'forum',
+    destinationChannelId: getDestinationChannelId(entity),
+    discordState: kind === 'p' ? entity.discordState ?? { status: 'unknown' } : null,
+    revisionCount: store.listRevisions(kind, id).length,
     updatedAt: entity.updatedAt ?? null,
     publishedAt: entity.publishedAt ?? null
   };
@@ -107,23 +110,49 @@ function entitySummary(entity, kind) {
 
 function resolveEntity(store, kind, id) {
   const entity = kind === 'd' ? store.getDraft(id) : kind === 'p' ? store.getPost(id) : null;
-  return entity ? { kind, id, entity } : null;
+  if (!entity) return null;
+  return { kind, id: entityId(entity, kind), entity };
 }
 
-async function saveEntity(store, kind, entity) {
+async function saveEntity(store, kind, entity, reason = 'save') {
   const copy = structuredClone(entity);
   copy.updatedAt = new Date().toISOString();
   copy.builder = validateBuilder(copy.builder);
-  if (kind === 'd') await store.saveDraft(copy);
-  else if (kind === 'p') await store.savePost(copy);
-  else throw new Error('Unknown entity kind.');
-  return copy;
+  if (kind === 'd') return store.saveDraft(copy, { revision: true, reason });
+  if (kind === 'p') return store.savePost(copy, { revision: true, reason });
+  throw new Error('Unknown entity kind.');
 }
 
-function ensureDestination(channel, tagId) {
-  const error = validateDestination(channel, tagId);
-  if (error) throw Object.assign(new Error(error), { statusCode: 400 });
-  return destinationTypeForChannel(channel);
+async function listDestinations(client, guildId) {
+  const guild = await client.guilds.fetch(guildId);
+  const channels = await guild.channels.fetch();
+  return [...channels.values()]
+    .filter((channel) => channel && destinationTypeForChannel(channel))
+    .sort((a, b) => a.rawPosition - b.rawPosition)
+    .map((channel) => ({
+      id: channel.id,
+      name: channel.name,
+      type: destinationTypeForChannel(channel),
+      channelType: channel.type === ChannelType.GuildForum ? 'forum' : channel.type === ChannelType.GuildAnnouncement ? 'announcement' : 'text',
+      requireTag: channel.type === ChannelType.GuildForum && channel.flags.has(ChannelFlags.RequireTag),
+      tags: channel.type === ChannelType.GuildForum
+        ? channel.availableTags.map((tag) => ({ id: tag.id, name: tag.name }))
+        : []
+    }));
+}
+
+async function previewEntities(client, guildId, session) {
+  const guild = await client.guilds.fetch(guildId);
+  const [channels, roles] = await Promise.all([guild.channels.fetch(), guild.roles.fetch()]);
+  const users = {};
+  users[session.user.id] = session.user.username;
+  if (client.user) users[client.user.id] = client.user.username;
+  for (const member of guild.members.cache.values()) users[member.id] = member.displayName || member.user?.username || member.id;
+  return {
+    channels: Object.fromEntries([...channels.values()].filter(Boolean).map((channel) => [channel.id, channel.name])),
+    roles: Object.fromEntries([...roles.values()].filter(Boolean).map((role) => [role.id, role.name])),
+    users
+  };
 }
 
 async function cloneEntityToDraft(store, source, kind, userId, titleOverride = null) {
@@ -134,16 +163,16 @@ async function cloneEntityToDraft(store, source, kind, userId, titleOverride = n
     id: makeShortId(4),
     title: String(titleOverride || `${source.title} (kopi)`).slice(0, 100),
     forumId: destinationChannelId,
-    destinationType: source.destinationType || (kind === 'p' ? getDestinationType(source) : 'forum'),
+    destinationType: source.destinationType || getDestinationType(source),
     destinationChannelId,
     appliedTagIds: [...(source.appliedTagIds ?? [])],
     createdBy: userId,
     createdAt: now,
     updatedAt: now,
-    clonedFrom: { kind, id: kind === 'd' ? source.id : source.threadId },
+    clonedFrom: { kind, id: entityId(source, kind) },
     builder: validateBuilder(structuredClone(source.builder))
   };
-  await store.saveDraft(draft);
+  await store.saveDraft(draft, { revision: false });
   return draft;
 }
 
@@ -158,7 +187,7 @@ async function serveFile(response, fileName, contentType) {
 }
 
 function authSetupPage(config) {
-  return `<!doctype html><html lang="da"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Timewizzard</title><style>body{font-family:system-ui;background:#111318;color:#eee;max-width:760px;margin:80px auto;padding:24px}a{color:#8ab4ff}.card{background:#1b1e25;border:1px solid #30343d;border-radius:14px;padding:24px}code{background:#0d0f13;padding:3px 6px;border-radius:5px}</style><div class="card"><h1>Timewizzard Web Builder v${VERSION}</h1>${config.webEnabled ? '<p>Web Builder er aktiv.</p><p><a href="/auth/discord">Log ind med Discord</a></p>' : '<p>Discord-botten kører, men Web Builder er ikke konfigureret endnu.</p><p>Tilføj <code>DISCORD_CLIENT_SECRET</code> og <code>PUBLIC_BASE_URL</code> i Railway og redeploy.</p>'}</div></html>`;
+  return `<!doctype html><html lang="da"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Timewizzard</title><style>body{font-family:system-ui;background:#111318;color:#eee;max-width:760px;margin:80px auto;padding:24px}a{color:#8ab4ff}.card{background:#1b1e25;border:1px solid #30343d;border-radius:14px;padding:24px}code{background:#0d0f13;padding:3px 6px;border-radius:5px}</style><div class="card"><h1>Timewizzard v${VERSION}</h1>${config.webEnabled ? '<p>Web Builder er aktiv.</p><p><a href="/auth/discord">Log ind med Discord</a></p>' : '<p>Discord-botten kører, men Web Builder er ikke konfigureret endnu.</p>'}</div></html>`;
 }
 
 export function createWebServer({ client, store, config }) {
@@ -213,25 +242,15 @@ export function createWebServer({ client, store, config }) {
     oauthStates.delete(state);
 
     const redirectUri = `${config.publicBaseUrl}/auth/discord/callback`;
-    const body = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: redirectUri,
-      client_id: config.clientId,
-      client_secret: config.clientSecret
-    });
+    const body = new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: redirectUri, client_id: config.clientId, client_secret: config.clientSecret });
     const tokenResponse = await fetch('https://discord.com/api/v10/oauth2/token', {
-      method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body
+      method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body
     });
     if (!tokenResponse.ok) {
-      const detail = await tokenResponse.text();
-      console.error('OAuth token exchange failed:', detail);
-      text(response, 502, 'Discord OAuth token exchange failed. Check CLIENT_ID, client secret and redirect URL.');
+      console.error('OAuth token exchange failed:', await tokenResponse.text());
+      text(response, 502, 'Discord OAuth token exchange failed.');
       return;
     }
-
     const token = await tokenResponse.json();
     const headers = { authorization: `Bearer ${token.access_token}` };
     const [userResponse, guildsResponse] = await Promise.all([
@@ -242,14 +261,13 @@ export function createWebServer({ client, store, config }) {
       text(response, 502, 'Discord OAuth profile lookup failed.');
       return;
     }
-
     const user = await userResponse.json();
     const guilds = await guildsResponse.json();
     const guild = guilds.find((item) => item.id === config.guildId);
     const permissions = guild ? BigInt(guild.permissions ?? '0') : 0n;
     const allowed = Boolean(guild && (guild.owner || (permissions & MANAGE_GUILD) || (permissions & ADMINISTRATOR)));
     if (!allowed) {
-      text(response, 403, 'Du skal være medlem af den konfigurerede Discord-server og have Administrer server for at bruge Web Builder.');
+      text(response, 403, 'Du skal have Administrer server for at bruge Web Builder.');
       return;
     }
 
@@ -261,23 +279,15 @@ export function createWebServer({ client, store, config }) {
     redirect(response, '/builder', { 'set-cookie': sessionCookie(sessionToken, secureCookies) });
   }
 
-  async function listDestinations() {
-    const guild = await client.guilds.fetch(config.guildId);
-    const channels = await guild.channels.fetch();
-    return [...channels.values()]
-      .filter((channel) => destinationTypeForChannel(channel))
-      .sort((a, b) => a.rawPosition - b.rawPosition)
-      .map((channel) => {
-        const type = destinationTypeForChannel(channel);
-        return {
-          id: channel.id,
-          name: `${type === 'forum' ? 'Forum' : 'Kanal'} · ${channel.name}`,
-          channelName: channel.name,
-          type,
-          requireTag: type === 'forum' ? channel.flags.has(1 << 4) : false,
-          tags: type === 'forum' ? channel.availableTags.map((tag) => ({ id: tag.id, name: tag.name })) : []
-        };
-      });
+  async function refreshAllPosts() {
+    return Promise.all(store.listPosts().map(async (post) => {
+      try {
+        return await refreshManagedPostState({ client, post, store });
+      } catch (error) {
+        console.warn(`Could not refresh Discord state for ${post.builderId || post.threadId}:`, error.message);
+        return post;
+      }
+    }));
   }
 
   async function handleApi(request, response, url, session) {
@@ -291,6 +301,7 @@ export function createWebServer({ client, store, config }) {
     }
 
     if (url.pathname === '/api/bootstrap' && method === 'GET') {
+      const [posts, entities] = await Promise.all([refreshAllPosts(), previewEntities(client, config.guildId, session)]);
       const guild = client.guilds.cache.get(config.guildId);
       json(response, 200, {
         version: VERSION,
@@ -300,88 +311,125 @@ export function createWebServer({ client, store, config }) {
         templates: POST_TEMPLATES,
         classes: WOW_CLASSES.map((item) => ({ key: item.key, name: item.name, emojiName: item.emojiName, emojiId: item.emojiId })),
         resolutions: RESOLUTIONS.map((item) => ({ key: item.key, name: item.name })),
+        entities,
         profileStatus: Object.fromEntries(WOW_CLASSES.map((wowClass) => [wowClass.key, Object.fromEntries(RESOLUTIONS.map((resolution) => {
           const value = store.getProfile(wowClass.key, resolution.key);
           return [resolution.key, { exists: Boolean(value), length: value.length }];
         }))])),
-        drafts: store.listDrafts().map((item) => entitySummary(item, 'd')),
-        posts: store.listPosts().map((item) => entitySummary(item, 'p'))
+        drafts: store.listDrafts().map((item) => entitySummary(item, 'd', store)),
+        posts: posts.map((item) => entitySummary(item, 'p', store))
       });
       return;
     }
 
-    if ((url.pathname === '/api/forums' || url.pathname === '/api/destinations') && method === 'GET') {
-      json(response, 200, await listDestinations());
+    if ((url.pathname === '/api/destinations' || url.pathname === '/api/forums') && method === 'GET') {
+      json(response, 200, await listDestinations(client, config.guildId));
       return;
     }
 
     if (url.pathname === '/api/drafts' && method === 'POST') {
       const body = await readJsonBody(request);
       const title = String(body.title ?? '').trim();
-      const destinationChannelId = String(body.destinationChannelId ?? body.forumId ?? '').trim();
+      const destinationId = String(body.destinationId ?? body.forumId ?? '').trim();
       const tagId = String(body.tagId ?? '').trim() || null;
       const template = String(body.template ?? 'blank');
       if (!title || title.length > 100) throw Object.assign(new Error('Titel skal være 1-100 tegn.'), { statusCode: 400 });
-      const destination = await client.channels.fetch(destinationChannelId);
-      const destinationType = ensureDestination(destination, tagId);
+      const destination = await client.channels.fetch(destinationId);
+      const destinationError = validateDestination(destination, tagId);
+      if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
       const now = new Date().toISOString();
+      const type = destinationTypeForChannel(destination);
       const draft = {
         id: makeShortId(4),
         title,
         forumId: destination.id,
-        destinationType,
+        destinationType: type,
         destinationChannelId: destination.id,
-        appliedTagIds: destinationType === 'forum' && tagId ? [tagId] : [],
+        appliedTagIds: type === 'forum' && tagId ? [tagId] : [],
         createdBy: session.user.id,
         createdAt: now,
         updatedAt: now,
         builder: createBuilderTemplate(template, title)
       };
-      await store.saveDraft(draft);
+      await store.saveDraft(draft, { revision: false });
       json(response, 201, { scope: { kind: 'd', id: draft.id }, entity: draft, stats: getBuilderStats(draft, { kind: 'd', id: draft.id }) });
+      return;
+    }
+
+    if (url.pathname === '/api/import/discohook' && method === 'POST') {
+      const body = await readJsonBody(request, 3_000_000);
+      const destinationId = String(body.destinationId ?? '').trim();
+      const tagId = String(body.tagId ?? '').trim() || null;
+      const destination = await client.channels.fetch(destinationId);
+      const destinationError = validateDestination(destination, tagId);
+      if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
+      const converted = convertDiscohook(body.payload, body.title || null);
+      const now = new Date().toISOString();
+      const type = destinationTypeForChannel(destination);
+      const draft = {
+        id: makeShortId(4),
+        title: converted.title,
+        forumId: destination.id,
+        destinationType: type,
+        destinationChannelId: destination.id,
+        appliedTagIds: type === 'forum' && tagId ? [tagId] : [],
+        createdBy: session.user.id,
+        createdAt: now,
+        updatedAt: now,
+        builder: converted.builder
+      };
+      await store.saveDraft(draft, { revision: false });
+      json(response, 201, { scope: { kind: 'd', id: draft.id }, entity: draft, warnings: converted.warnings, stats: getBuilderStats(draft, { kind: 'd', id: draft.id }) });
       return;
     }
 
     const entityMatch = url.pathname.match(/^\/api\/entities\/([dp])\/([^/]+)$/);
     if (entityMatch) {
       const [, kind, rawId] = entityMatch;
-      const id = decodeURIComponent(rawId);
-      const resolved = resolveEntity(store, kind, id);
+      let resolved = resolveEntity(store, kind, decodeURIComponent(rawId));
       if (!resolved) { json(response, 404, { error: 'Opslaget blev ikke fundet.' }); return; }
-
+      if (kind === 'p') {
+        const refreshed = await refreshManagedPostState({ client, post: resolved.entity, store });
+        resolved = { ...resolved, id: entityId(refreshed, 'p'), entity: refreshed };
+      }
       if (method === 'GET') {
         json(response, 200, {
-          scope: { kind, id },
-          entity: resolved.entity,
+          scope: { kind, id: resolved.id }, entity: resolved.entity,
           modified: kind === 'p' ? isPostModified(resolved.entity) : true,
-          stats: getBuilderStats(resolved.entity, { kind, id })
+          revisions: store.listRevisions(kind, resolved.id),
+          stats: getBuilderStats(resolved.entity, { kind, id: resolved.id })
         });
         return;
       }
-
       if (method === 'PUT') {
         const body = await readJsonBody(request);
         const title = String(body.title ?? resolved.entity.title).trim();
         if (!title || title.length > 100) throw Object.assign(new Error('Titel skal være 1-100 tegn.'), { statusCode: 400 });
-        const saved = await saveEntity(store, kind, {
-          ...structuredClone(resolved.entity),
-          title,
-          builder: validateBuilder(body.builder ?? resolved.entity.builder)
-        });
+        const saved = await saveEntity(store, kind, { ...structuredClone(resolved.entity), title, builder: validateBuilder(body.builder ?? resolved.entity.builder) }, 'web-save');
         json(response, 200, {
-          scope: { kind, id },
-          entity: saved,
+          scope: { kind, id: entityId(saved, kind) }, entity: saved,
           modified: kind === 'p' ? isPostModified(saved) : true,
-          stats: getBuilderStats(saved, { kind, id })
+          revisions: store.listRevisions(kind, entityId(saved, kind)),
+          stats: getBuilderStats(saved, { kind, id: entityId(saved, kind) })
         });
         return;
       }
-
       if (method === 'DELETE') {
-        const deletion = kind === 'd'
-          ? (await store.removeDraft(id), { ok: true, draft: true })
-          : await deleteManagedPost({ client, post: resolved.entity, store });
-        json(response, 200, { ok: true, ...deletion });
+        if (kind === 'd') await store.removeDraft(resolved.id);
+        else await deleteManagedPost({ client, post: resolved.entity, store });
+        json(response, 200, { ok: true });
+        return;
+      }
+    }
+
+    const revisionMatch = url.pathname.match(/^\/api\/entities\/([dp])\/([^/]+)\/revisions(?:\/([^/]+)\/restore)?$/);
+    if (revisionMatch) {
+      const [, kind, rawId, rawRevision] = revisionMatch;
+      const id = decodeURIComponent(rawId);
+      if (method === 'GET' && !rawRevision) { json(response, 200, store.listRevisions(kind, id)); return; }
+      if (method === 'POST' && rawRevision) {
+        const restored = await store.restoreRevision(kind, id, decodeURIComponent(rawRevision));
+        json(response, 200, { scope: { kind, id: entityId(restored, kind) }, entity: restored, revisions: store.listRevisions(kind, entityId(restored, kind)) });
         return;
       }
     }
@@ -389,8 +437,7 @@ export function createWebServer({ client, store, config }) {
     const cloneMatch = url.pathname.match(/^\/api\/entities\/([dp])\/([^/]+)\/clone$/);
     if (cloneMatch && method === 'POST') {
       const [, kind, rawId] = cloneMatch;
-      const id = decodeURIComponent(rawId);
-      const resolved = resolveEntity(store, kind, id);
+      const resolved = resolveEntity(store, kind, decodeURIComponent(rawId));
       if (!resolved) { json(response, 404, { error: 'Opslaget blev ikke fundet.' }); return; }
       const body = await readJsonBody(request);
       const draft = await cloneEntityToDraft(store, resolved.entity, kind, session.user.id, body.title || null);
@@ -398,21 +445,63 @@ export function createWebServer({ client, store, config }) {
       return;
     }
 
-    const publishMatch = url.pathname.match(/^\/api\/entities\/([dp])\/([^/]+)\/publish$/);
+    const publishMatch = url.pathname.match(/^\/api\/entities\/([dp])\/([^/]+)\/(publish|recreate)$/);
     if (publishMatch && method === 'POST') {
-      const [, kind, rawId] = publishMatch;
-      const id = decodeURIComponent(rawId);
-      const resolved = resolveEntity(store, kind, id);
+      const [, kind, rawId, operation] = publishMatch;
+      const resolved = resolveEntity(store, kind, decodeURIComponent(rawId));
       if (!resolved) { json(response, 404, { error: 'Opslaget blev ikke fundet.' }); return; }
-
+      const body = await readJsonBody(request);
       if (kind === 'd') {
-        const destination = await client.channels.fetch(getDestinationChannelId(resolved.entity));
-        ensureDestination(destination, resolved.entity.appliedTagIds?.[0] ?? null);
-        const post = await createManagedPost({ destination, draft: resolved.entity, store });
-        json(response, 200, { scope: { kind: 'p', id: post.threadId }, entity: post, modified: false, stats: getBuilderStats(post, { kind: 'p', id: post.threadId }) });
+        const destinationId = String(body.destinationId ?? getDestinationChannelId(resolved.entity) ?? '').trim();
+        const destination = await client.channels.fetch(destinationId);
+        const tagId = body.tagId !== undefined ? String(body.tagId || '') || null : resolved.entity.appliedTagIds?.[0] ?? null;
+        const destinationError = validateDestination(destination, tagId);
+        if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
+        const type = destinationTypeForChannel(destination);
+        const draft = { ...resolved.entity, destinationType: type, destinationChannelId: destination.id, forumId: destination.id, appliedTagIds: type === 'forum' && tagId ? [tagId] : [] };
+        const post = await createManagedPost({ destination, draft, store });
+        json(response, 200, { scope: { kind: 'p', id: post.builderId }, entity: post, modified: false, revisions: store.listRevisions('p', post.builderId), stats: getBuilderStats(post, { kind: 'p', id: post.builderId }) });
+        return;
+      }
+
+      const refreshed = await refreshManagedPostState({ client, post: resolved.entity, store });
+      const destinationId = body.destinationId ? String(body.destinationId) : null;
+      const destination = destinationId ? await client.channels.fetch(destinationId) : null;
+      const wantsRecreate = operation === 'recreate' || refreshed.discordState?.status === 'deleted' || Boolean(destination);
+      let post;
+      if (wantsRecreate) {
+        if (destination) {
+          const tagId = body.tagId !== undefined ? String(body.tagId || '') || null : refreshed.appliedTagIds?.[0] ?? null;
+          const destinationError = validateDestination(destination, tagId);
+          if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
+          post = await recreateManagedPost({ client, post: refreshed, store, destination, tagId, removeOld: true });
+        } else {
+          post = await recreateManagedPost({ client, post: refreshed, store, removeOld: true });
+        }
       } else {
-        const post = await updateManagedPost({ client, post: resolved.entity, store });
-        json(response, 200, { scope: { kind: 'p', id: post.threadId }, entity: post, modified: false, stats: getBuilderStats(post, { kind: 'p', id: post.threadId }) });
+        post = await updateManagedPost({ client, post: refreshed, store });
+      }
+      json(response, 200, { scope: { kind: 'p', id: post.builderId }, entity: post, modified: false, revisions: store.listRevisions('p', post.builderId), stats: getBuilderStats(post, { kind: 'p', id: post.builderId }) });
+      return;
+    }
+
+    const destinationMatch = url.pathname.match(/^\/api\/entities\/([dp])\/([^/]+)\/destination$/);
+    if (destinationMatch && method === 'PUT') {
+      const [, kind, rawId] = destinationMatch;
+      const resolved = resolveEntity(store, kind, decodeURIComponent(rawId));
+      if (!resolved) { json(response, 404, { error: 'Opslaget blev ikke fundet.' }); return; }
+      const body = await readJsonBody(request);
+      const destination = await client.channels.fetch(String(body.destinationId || ''));
+      const tagId = String(body.tagId || '') || null;
+      const destinationError = validateDestination(destination, tagId);
+      if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
+      if (kind === 'p') {
+        const moved = await recreateManagedPost({ client, post: resolved.entity, store, destination, tagId, removeOld: true });
+        json(response, 200, { scope: { kind: 'p', id: moved.builderId }, entity: moved });
+      } else {
+        const type = destinationTypeForChannel(destination);
+        const saved = await saveEntity(store, kind, { ...resolved.entity, forumId: destination.id, destinationType: type, destinationChannelId: destination.id, appliedTagIds: type === 'forum' && tagId ? [tagId] : [] }, 'change-destination');
+        json(response, 200, { scope: { kind: 'd', id: saved.id }, entity: saved });
       }
       return;
     }
@@ -420,10 +509,7 @@ export function createWebServer({ client, store, config }) {
     const profileMatch = url.pathname.match(/^\/api\/profiles\/([a-z0-9_]+)\/([a-z0-9_]+)$/);
     if (profileMatch) {
       const [, classKey, resolutionKey] = profileMatch;
-      if (!findClass(classKey) || !findResolution(resolutionKey)) {
-        json(response, 404, { error: 'Ugyldig class eller opløsning.' });
-        return;
-      }
+      if (!findClass(classKey) || !findResolution(resolutionKey)) { json(response, 404, { error: 'Ugyldig class eller opløsning.' }); return; }
       if (method === 'GET') {
         const value = store.getProfile(classKey, resolutionKey);
         json(response, 200, { classKey, resolutionKey, value, length: value.length });
@@ -444,76 +530,49 @@ export function createWebServer({ client, store, config }) {
       }
     }
 
-    if (url.pathname === '/api/profile-status' && method === 'GET') {
-      const values = {};
-      for (const wowClass of WOW_CLASSES) {
-        values[wowClass.key] = {};
-        for (const resolution of RESOLUTIONS) {
-          const value = store.getProfile(wowClass.key, resolution.key);
-          values[wowClass.key][resolution.key] = { exists: Boolean(value), length: value.length };
-        }
-      }
-      json(response, 200, values);
-      return;
-    }
-
     json(response, 404, { error: 'API route not found.' });
   }
 
-  return http.createServer(async (request, response) => {
+  const server = http.createServer(async (request, response) => {
     try {
       const host = request.headers.host || 'localhost';
       const url = new URL(request.url || '/', `http://${host}`);
-
       if (url.pathname === '/health') {
         json(response, client.isReady() ? 200 : 503, {
-          ok: client.isReady(),
-          version: VERSION,
-          bot: client.user?.tag ?? null,
-          webBuilder: config.webEnabled,
-          oauthLoginPath: '/auth/discord',
-          builderPath: '/builder',
-          supportedDestinations: ['forum', 'text', 'announcement'],
+          ok: client.isReady(), version: VERSION, bot: client.user?.tag ?? null, webBuilder: config.webEnabled,
+          oauthLoginPath: '/auth/discord', builderPath: '/builder', supportedDestinations: ['forum', 'text', 'announcement'],
+          features: ['orphan-recreate', 'change-destination', 'markdown-toolbar', 'quote-escape', 'media-gallery', 'thumbnail', 'undo-redo', 'revisions', 'discohook-import', 'nested-ephemeral'],
           uptimeSeconds: Math.floor(process.uptime())
         });
         return;
       }
-
       if (url.pathname === '/app.css') { await serveFile(response, 'app.css', 'text/css; charset=utf-8'); return; }
       if (url.pathname === '/app.js') { await serveFile(response, 'app.js', 'text/javascript; charset=utf-8'); return; }
       if (url.pathname === '/auth/discord') { await beginOAuth(response); return; }
       if (url.pathname === '/auth/discord/callback') { await finishOAuth(request, response, url); return; }
-
       if (url.pathname === '/logout') {
         const session = currentSession(request);
         if (session) sessions.delete(session.token);
         redirect(response, '/', { 'set-cookie': clearSessionCookie(secureCookies) });
         return;
       }
-
       if (url.pathname === '/') {
-        if (!config.webEnabled) {
-          text(response, 200, authSetupPage(config), 'text/html; charset=utf-8');
-          return;
-        }
+        if (!config.webEnabled) { text(response, 200, authSetupPage(config), 'text/html; charset=utf-8'); return; }
         redirect(response, currentSession(request) ? '/builder' : '/auth/discord');
         return;
       }
-
       if (url.pathname === '/builder') {
         const session = currentSession(request);
         if (!session) { redirect(response, '/auth/discord'); return; }
         await serveFile(response, 'index.html', 'text/html; charset=utf-8');
         return;
       }
-
       if (url.pathname.startsWith('/api/')) {
         const session = currentSession(request);
         if (!session) { json(response, 401, { error: 'Not authenticated.' }); return; }
         await handleApi(request, response, url, session);
         return;
       }
-
       text(response, 404, 'Not found');
     } catch (error) {
       console.error('Web request error:', error);
@@ -522,4 +581,5 @@ export function createWebServer({ client, store, config }) {
       else response.end();
     }
   });
+  return server;
 }
