@@ -1,58 +1,92 @@
 import { MessageFlags } from 'discord.js';
 import { buildBuilderPayloads } from './builder/render.js';
+import {
+  destinationTypeForChannel,
+  getDestinationChannelId,
+  getDestinationType,
+  getManagedPostId
+} from './destinations.js';
 
-async function fetchManagedThread(client, threadId) {
-  const channel = await client.channels.fetch(threadId);
-  if (!channel?.isThread()) {
-    throw new Error('Forum-posten blev ikke fundet, eller ID’et er ikke en tråd.');
+const GONE_OR_INACCESSIBLE_CODES = new Set([10003, 10008, 50001, 50013]);
+
+function isGoneOrInaccessible(error) {
+  return GONE_OR_INACCESSIBLE_CODES.has(Number(error?.code));
+}
+
+async function fetchChannelOrNull(client, channelId) {
+  if (!channelId) return null;
+  try {
+    return await client.channels.fetch(channelId);
+  } catch (error) {
+    if (isGoneOrInaccessible(error)) return null;
+    throw error;
   }
-  return channel;
 }
 
 async function prepareThread(thread) {
   if (thread.archived) {
-    await thread.setArchived(false, 'Shrouded Info Bot opdaterer opslaget');
+    await thread.setArchived(false, 'Timewizzard opdaterer opslaget');
   }
 }
 
-async function removeMessages(thread, messageIds) {
+async function removeMessages(target, messageIds) {
   for (const messageId of messageIds ?? []) {
     try {
-      const message = await thread.messages.fetch(messageId);
+      const message = await target.messages.fetch(messageId);
       await message.delete();
     } catch (error) {
-      if (error?.code !== 10008) {
-        console.warn(`Could not remove continuation message ${messageId}:`, error);
+      if (!isGoneOrInaccessible(error)) {
+        console.warn(`Could not remove managed message ${messageId}:`, error);
       }
     }
   }
 }
 
-async function sendContinuationMessages(thread, payloads) {
+async function sendContinuationMessages(target, payloads) {
   const ids = [];
   try {
     for (const payload of payloads) {
-      const message = await thread.send(payload);
+      const message = await target.send(payload);
       ids.push(message.id);
     }
     return ids;
   } catch (error) {
-    await removeMessages(thread, ids);
+    await removeMessages(target, ids);
     throw error;
   }
 }
 
-async function replaceContinuationMessages(thread, oldMessageIds, payloads) {
-  // Send the replacement set first. If Discord rejects one of them, the old
-  // continuation messages remain intact and the partial new set is rolled back.
-  const newIds = await sendContinuationMessages(thread, payloads);
-  await removeMessages(thread, oldMessageIds);
+async function replaceContinuationMessages(target, oldMessageIds, payloads) {
+  const newIds = await sendContinuationMessages(target, payloads);
+  await removeMessages(target, oldMessageIds);
   return newIds;
 }
 
-export async function createManagedPost({ forum, draft, store }) {
-  let thread = null;
+function buildBasePost(draft, destination, postId) {
+  const destinationType = destinationTypeForChannel(destination);
+  return {
+    title: draft.title,
+    builder: structuredClone(draft.builder),
+    publishedBuilder: structuredClone(draft.builder),
+    publishedTitle: draft.title,
+    publishedAt: new Date().toISOString(),
+    appliedTagIds: destinationType === 'forum' ? [...(draft.appliedTagIds ?? [])] : [],
+    createdBy: draft.createdBy,
+    postId,
+    threadId: postId,
+    destinationType,
+    destinationChannelId: destination.id,
+    // Keep the legacy field so old builder/controller paths continue to work.
+    forumChannelId: destination.id,
+    starterMessageId: null,
+    continuationMessageIds: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
 
+async function createForumPost({ forum, draft, store }) {
+  let thread = null;
   try {
     thread = await forum.threads.create({
       name: draft.title,
@@ -64,27 +98,10 @@ export async function createManagedPost({ forum, draft, store }) {
       reason: `Informationsopslag oprettet af ${draft.createdBy}`
     });
 
-    const post = {
-      title: draft.title,
-      builder: structuredClone(draft.builder),
-      publishedBuilder: structuredClone(draft.builder),
-      publishedTitle: draft.title,
-      publishedAt: new Date().toISOString(),
-      appliedTagIds: [...(draft.appliedTagIds ?? [])],
-      createdBy: draft.createdBy,
-      threadId: thread.id,
-      forumChannelId: forum.id,
-      starterMessageId: null,
-      continuationMessageIds: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    const payloads = buildBuilderPayloads(post, { kind: 'p', id: thread.id });
+    const post = buildBasePost(draft, forum, thread.id);
+    const payloads = buildBuilderPayloads(post, { kind: 'p', id: post.postId });
     const starterMessage = await thread.fetchStarterMessage();
-    if (!starterMessage) {
-      throw new Error('Discord returnerede ikke forum-postens startbesked.');
-    }
+    if (!starterMessage) throw new Error('Discord returnerede ikke forum-postens startbesked.');
 
     await starterMessage.edit({
       content: null,
@@ -96,38 +113,69 @@ export async function createManagedPost({ forum, draft, store }) {
 
     post.starterMessageId = starterMessage.id;
     post.continuationMessageIds = await sendContinuationMessages(thread, payloads.slice(1));
-
     await store.savePost(post);
-    try {
-      await store.removeDraft(draft.id);
-    } catch (cleanupError) {
-      // The published post is already durable. Do not delete it because a draft
-      // cleanup failed; log the cleanup issue and let the administrator remove
-      // the stale draft later.
-      console.warn(`Published ${post.threadId}, but could not remove draft ${draft.id}:`, cleanupError);
-    }
+    await store.removeDraft(draft.id).catch((error) => console.warn(`Could not remove draft ${draft.id}:`, error));
     return post;
   } catch (error) {
-    if (thread) {
-      await thread.delete('Rydder op efter mislykket oprettelse').catch(() => undefined);
-    }
+    if (thread) await thread.delete('Rydder op efter mislykket oprettelse').catch(() => undefined);
     throw error;
   }
 }
 
-export async function updateManagedPost({ client, post, store }) {
-  const thread = await fetchManagedThread(client, post.threadId);
+async function createChannelPost({ channel, draft, store }) {
+  let starterMessage = null;
+  const sentIds = [];
+  try {
+    starterMessage = await channel.send({
+      content: 'Opretter informationspanelet…',
+      allowedMentions: { parse: [] }
+    });
+    sentIds.push(starterMessage.id);
+
+    // For normal channels the starter message ID doubles as the stable managed-post ID.
+    const post = buildBasePost(draft, channel, starterMessage.id);
+    const payloads = buildBuilderPayloads(post, { kind: 'p', id: post.postId });
+
+    await starterMessage.edit({
+      content: null,
+      embeds: [],
+      components: payloads[0].components,
+      flags: MessageFlags.IsComponentsV2,
+      allowedMentions: { parse: [] }
+    });
+
+    post.starterMessageId = starterMessage.id;
+    post.continuationMessageIds = await sendContinuationMessages(channel, payloads.slice(1));
+    sentIds.push(...post.continuationMessageIds);
+    await store.savePost(post);
+    await store.removeDraft(draft.id).catch((error) => console.warn(`Could not remove draft ${draft.id}:`, error));
+    return post;
+  } catch (error) {
+    if (starterMessage) await removeMessages(channel, sentIds);
+    throw error;
+  }
+}
+
+export async function createManagedPost({ destination, forum, draft, store }) {
+  const target = destination ?? forum;
+  const type = destinationTypeForChannel(target);
+  if (type === 'forum') return createForumPost({ forum: target, draft, store });
+  if (type === 'channel') return createChannelPost({ channel: target, draft, store });
+  throw new Error('Destinationen skal være en forum-, tekst- eller announcement-kanal.');
+}
+
+async function updateForumPost({ client, post, store }) {
+  const thread = await fetchChannelOrNull(client, post.threadId);
+  if (!thread?.isThread()) {
+    throw new Error('Forum-posten findes ikke længere. Du kan stadig slette den fra Builder for at rydde den gemte post-reference.');
+  }
   await prepareThread(thread);
+  if (thread.name !== post.title) await thread.setName(post.title, 'Informationsopslag redigeret');
 
-  if (thread.name !== post.title) {
-    await thread.setName(post.title, 'Informationsopslag redigeret');
-  }
-
-  const payloads = buildBuilderPayloads(post, { kind: 'p', id: post.threadId });
+  const postId = getManagedPostId(post);
+  const payloads = buildBuilderPayloads(post, { kind: 'p', id: postId });
   const starterMessage = await thread.fetchStarterMessage();
-  if (!starterMessage) {
-    throw new Error('Forum-postens startbesked kunne ikke hentes.');
-  }
+  if (!starterMessage) throw new Error('Forum-postens startbesked kunne ikke hentes.');
 
   await starterMessage.edit({
     content: null,
@@ -137,14 +185,10 @@ export async function updateManagedPost({ client, post, store }) {
     allowedMentions: { parse: [] }
   });
 
-  const continuationMessageIds = await replaceContinuationMessages(
-    thread,
-    post.continuationMessageIds,
-    payloads.slice(1)
-  );
-
+  const continuationMessageIds = await replaceContinuationMessages(thread, post.continuationMessageIds, payloads.slice(1));
   const updatedPost = {
     ...post,
+    postId,
     starterMessageId: starterMessage.id,
     continuationMessageIds,
     publishedBuilder: structuredClone(post.builder),
@@ -152,13 +196,91 @@ export async function updateManagedPost({ client, post, store }) {
     publishedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
-
   await store.savePost(updatedPost);
   return updatedPost;
 }
 
+async function updateChannelPost({ client, post, store }) {
+  const channel = await fetchChannelOrNull(client, getDestinationChannelId(post));
+  if (!channel || destinationTypeForChannel(channel) !== 'channel') {
+    throw new Error('Destination-kanalen findes ikke længere. Du kan stadig slette opslaget fra Builder for at rydde den gemte post-reference.');
+  }
+
+  const starterMessage = await channel.messages.fetch(post.starterMessageId).catch((error) => {
+    if (isGoneOrInaccessible(error)) return null;
+    throw error;
+  });
+  if (!starterMessage) {
+    throw new Error('Den primære Discord-besked findes ikke længere. Slet opslaget fra Builder eller klon det til en ny kladde.');
+  }
+
+  const postId = getManagedPostId(post);
+  const payloads = buildBuilderPayloads(post, { kind: 'p', id: postId });
+  await starterMessage.edit({
+    content: null,
+    embeds: [],
+    components: payloads[0].components,
+    flags: MessageFlags.IsComponentsV2,
+    allowedMentions: { parse: [] }
+  });
+
+  const continuationMessageIds = await replaceContinuationMessages(channel, post.continuationMessageIds, payloads.slice(1));
+  const updatedPost = {
+    ...post,
+    postId,
+    continuationMessageIds,
+    publishedBuilder: structuredClone(post.builder),
+    publishedTitle: post.title,
+    publishedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  await store.savePost(updatedPost);
+  return updatedPost;
+}
+
+export async function updateManagedPost({ client, post, store }) {
+  return getDestinationType(post) === 'channel'
+    ? updateChannelPost({ client, post, store })
+    : updateForumPost({ client, post, store });
+}
+
 export async function deleteManagedPost({ client, post, store }) {
-  const thread = await fetchManagedThread(client, post.threadId);
-  await thread.delete('Informationsopslag slettet via Shrouded Post Builder');
-  await store.removePost(post.threadId);
+  const postId = getManagedPostId(post);
+  let discordDeleted = false;
+  let destinationMissing = false;
+  let warning = null;
+
+  try {
+    if (getDestinationType(post) === 'channel') {
+      const channel = await fetchChannelOrNull(client, getDestinationChannelId(post));
+      if (!channel) {
+        destinationMissing = true;
+      } else {
+        await removeMessages(channel, [post.starterMessageId, ...(post.continuationMessageIds ?? [])]);
+        discordDeleted = true;
+      }
+    } else {
+      const thread = await fetchChannelOrNull(client, post.threadId);
+      if (!thread) {
+        destinationMissing = true;
+      } else {
+        try {
+          await thread.delete('Informationsopslag slettet via Timewizzard Post Builder');
+          discordDeleted = true;
+        } catch (error) {
+          if (isGoneOrInaccessible(error)) destinationMissing = true;
+          else throw error;
+        }
+      }
+    }
+  } catch (error) {
+    warning = error?.message || String(error);
+    console.warn(`Could not delete Discord target for managed post ${postId}:`, error);
+  } finally {
+    // The Builder record must always remain removable, even when the Discord
+    // channel/thread/message was deleted outside the bot or access was revoked.
+    await store.removePost(postId);
+  }
+
+  return { postId, discordDeleted, destinationMissing, warning };
 }
