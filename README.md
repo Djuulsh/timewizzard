@@ -1,84 +1,25 @@
-# Timewizzard Info Bot — clean baseline
+# Shrouded Info Bot v1.2.0
 
-This repository is the clean restart of the Discord information bot.
+v1.2 contains the full v1.1.1 Discord-native builder **plus a Railway-hosted Web Builder**.
 
-## Current scope
+The Web Builder uses the same `bot-data.json`, builder schema, profile strings and publishing engine as the Discord bot. You can switch between Discord and the browser without maintaining two copies of a post.
 
-The baseline intentionally contains only the stable core:
+## v1.2 highlights
 
-- Discord login through Railway
-- `/status`
-- `/profil gem`
-- `/profil importer`
-- `/profil vis`
-- `/profil liste`
-- `/profil slet`
-- `/post opret`
-- `/post rediger`
-- `/post opdater`
-- `/post liste`
-- `/post slet`
-- Forum post with header banner, description and one compact class/resolution select menu
-- 18 profile targets: 9 TBC classes × FHD/QHD
-- Ephemeral profile responses
-- Persistent JSON storage
-- `/health` HTTP endpoint for Railway diagnostics
+- True drag-and-drop block ordering in the browser.
+- Touch/pointer drag support in addition to desktop drag-and-drop.
+- Discord OAuth login.
+- Access restricted to the configured guild and users with **Manage Server** / Administrator / guild owner access.
+- Side-by-side Discord-style live preview.
+- Create, edit, save, clone, publish and delete posts from the browser.
+- Direct editing of all 18 MerfinUI FHD/QHD TXT values, including strings over Discord modal limits.
+- Generic text, image, separator, Open, URL and select blocks.
+- Existing Discord-native v1.1.1 builder remains fully available.
+- `/webbuilder` gives an ephemeral button to open the web interface.
 
-The Web Builder/OAuth layer is deliberately **not** part of this baseline. It should only be added after this version has been proven stable on Railway.
+## Required Railway variables
 
-## Repository structure
-
-```text
-/
-├── src/
-│   ├── index.js
-│   ├── commands.js
-│   ├── config.js
-│   ├── constants.js
-│   ├── interactions.js
-│   ├── postService.js
-│   ├── render.js
-│   └── storage.js
-├── data/
-│   └── .gitkeep
-├── package.json
-├── Dockerfile
-├── .dockerignore
-├── .gitignore
-└── .env.example
-```
-
-## Discord Developer Portal
-
-Use the same Discord Application for all three values below.
-
-1. **General Information → Application ID** → `CLIENT_ID`
-2. **Bot → Token** → `DISCORD_TOKEN`
-3. Enable Developer Mode in Discord, right-click your server, **Copy Server ID** → `GUILD_ID`
-
-Install the bot on the server with these scopes:
-
-```text
-bot
-applications.commands
-```
-
-Recommended permissions:
-
-```text
-View Channels
-Send Messages
-Send Messages in Threads
-Manage Threads
-Read Message History
-Embed Links
-Attach Files
-Use External Emojis
-```
-
-## Railway variables
-
-Set these on the bot service:
+Existing variables:
 
 ```env
 CLIENT_ID=...
@@ -88,88 +29,45 @@ DATA_DIR=/data
 NODE_ENV=production
 ```
 
-Do **not** add `PUBLIC_BASE_URL` or `DISCORD_CLIENT_SECRET` yet. They belong to the later Web Builder phase.
+New for the Web Builder:
 
-## Railway volume
-
-Create one persistent volume and mount it at:
-
-```text
-/data
+```env
+DISCORD_CLIENT_SECRET=...
+PUBLIC_BASE_URL=https://YOUR-SERVICE.up.railway.app
 ```
 
-The bot stores:
+If the two web variables are omitted, the Discord bot still runs, but the Web Builder reports that it is not configured.
+
+## Required Discord OAuth redirect
+
+In Discord Developer Portal, add this exact redirect URL:
 
 ```text
-/data/store.json
-/data/store.json.bak
+https://YOUR-SERVICE.up.railway.app/auth/discord/callback
 ```
 
-Use one replica.
+It must match `PUBLIC_BASE_URL` exactly.
 
-## Railway networking
+## Railway public domain
 
-The bot does not need a public domain for Discord itself. The clean baseline still exposes an HTTP health endpoint so networking can be tested independently later.
+v1.1.x did not require a public domain. **v1.2 Web Builder does.**
 
-If you generate a Railway domain, these should work:
+Generate a Railway domain for the bot service, then use that HTTPS domain as `PUBLIC_BASE_URL`.
+
+## Open the builder
+
+In Discord:
 
 ```text
-/
-/health
+/webbuilder
 ```
 
-`/health` returns JSON with the running version and Discord-ready state.
-
-## Expected startup logs
-
-A healthy deployment should contain lines similar to:
+or visit:
 
 ```text
-HTTP health server listening on 0.0.0.0:8080
-Logged in as TimewizzardBot#....
-Registered 3 guild commands for YOUR_GUILD_ID
+https://YOUR-SERVICE.up.railway.app/builder
 ```
 
-## First Discord test
+The browser redirects to Discord OAuth and asks for `identify` + `guilds`. It does not request message-content access.
 
-Run in this order:
-
-```text
-/status
-/profil liste
-/profil gem klasse:Warrior oplosning:FHD
-/profil vis klasse:Warrior oplosning:FHD
-/post opret forum:#your-forum
-```
-
-The post creation modal asks for:
-
-- forum post title
-- heading
-- description
-- optional banner URL
-- accent color
-
-The published forum post uses a single select menu with all 18 combinations, so the information post remains one Discord message.
-
-## Long profile strings
-
-For strings longer than the Discord modal limit, save a UTF-8 `.txt` file and use:
-
-```text
-/profil importer
-```
-
-When a stored string is too long for a normal ephemeral message, the bot returns it as an ephemeral TXT attachment instead.
-
-## Next phase
-
-Only after this baseline is verified should the project add:
-
-1. generic block-based post builder
-2. `/webbuilder`
-3. public Railway domain
-4. Discord OAuth
-5. drag-and-drop web interface
-
-This staged approach keeps Discord, Railway networking and OAuth failures separate and diagnosable.
+Read [UPGRADE_v1.2_DA.md](UPGRADE_v1.2_DA.md) for the complete deployment procedure.

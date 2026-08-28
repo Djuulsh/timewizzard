@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Shrouded Web Builder v1.2</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div>
+        <strong>Shrouded Web Builder</strong>
+        <small>v1.2 · Railway + Discord OAuth</small>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span id="identity" class="identity">Indlæser…</span>
+      <button id="refreshBtn" class="btn ghost">↻ Refresh</button>
+      <button id="newDraftBtn" class="btn primary">+ New draft</button>
+      <a class="btn ghost" href="/logout">Log out</a>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="sidebar panel">
+      <div class="panel-title-row">
+        <h2>Posts</h2>
+        <span id="entityCount" class="pill">0</span>
+      </div>
+      <label class="search-label">
+        <span>Search</span>
+        <input id="entitySearch" type="search" placeholder="Find post or draft…">
+      </label>
+      <div id="entityList" class="entity-list"></div>
+    </aside>
+
+    <section class="builder panel">
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon">🛠️</div>
+        <h1>Choose a post or create a draft</h1>
+        <p>The Discord builder and this Web Builder use the same data on your Railway Volume.</p>
+        <button class="btn primary" data-action="new-draft">Create first draft</button>
+      </div>
+
+      <div id="editor" class="editor hidden">
+        <div class="editor-head">
+          <div class="title-editor">
+            <label for="postTitle">Forum post title</label>
+            <input id="postTitle" maxlength="100" autocomplete="off">
+            <div class="title-subrow"><div id="editorMeta" class="meta"></div><label class="accent-control">Accent <input id="postAccent" type="color" value="#f1c40f"></label></div>
+          </div>
+          <div class="editor-actions">
+            <button id="saveBtn" class="btn primary">Save</button>
+            <button id="publishBtn" class="btn success">Publish</button>
+            <button id="cloneBtn" class="btn ghost">Clone</button>
+            <button id="exportBtn" class="btn ghost">Export JSON</button>
+            <button id="deleteBtn" class="btn danger">Delete</button>
+          </div>
+        </div>
+
+        <div class="builder-grid">
+          <div class="block-column">
+            <div class="section-heading">
+              <div>
+                <h2>Blocks</h2>
+                <p>Drag the handle to reorder. Changes are local until you press Save.</p>
+              </div>
+              <span id="dirtyBadge" class="pill neutral">Saved</span>
+            </div>
+
+            <div id="blockList" class="block-list"></div>
+
+            <div class="add-block">
+              <h3>Add block</h3>
+              <div class="add-grid">
+                <button data-add="text">📝 Text</button>
+                <button data-add="image">🖼️ Image</button>
+                <button data-add="separator">➖ Separator</button>
+                <button data-add="open">🔘 Open</button>
+                <button data-add="link">🔗 Link</button>
+                <button data-add="select">🔽 Select</button>
+                <button data-add="profile_select">🎮 MerfinUI Select</button>
+                <button data-add="profile_open_list">📋 Legacy Open List</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="inspector-column">
+            <div class="section-heading">
+              <div>
+                <h2>Inspector</h2>
+                <p>Edit the selected block.</p>
+              </div>
+            </div>
+            <div id="inspector" class="inspector-placeholder">
+              Select a block to edit it.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="preview panel">
+      <div class="section-heading preview-heading">
+        <div>
+          <h2>Live Discord preview</h2>
+          <p>Visual approximation · updates immediately</p>
+        </div>
+        <span id="previewStats" class="pill neutral">—</span>
+      </div>
+      <div class="discord-surface">
+        <div class="discord-message">
+          <div class="bot-avatar">S</div>
+          <div class="message-body">
+            <div class="message-author">Shrouded Bot <span>APP</span></div>
+            <div id="previewContent" class="discord-container empty-preview">Select a post to preview.</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toastHost" class="toast-host" aria-live="polite"></div>
+
+  <dialog id="newDraftDialog" class="dialog">
+    <form id="newDraftForm" method="dialog">
+      <div class="dialog-head">
+        <div>
+          <h2>Create draft</h2>
+          <p>Choose the forum destination and starting template.</p>
+        </div>
+        <button type="button" class="icon-btn" data-close-dialog="newDraftDialog">×</button>
+      </div>
+      <label>Title<input id="newTitle" maxlength="100" required placeholder="MerfinUI Profiles"></label>
+      <label>Forum<select id="newForum" required></select></label>
+      <label>Forum tag<select id="newTag"><option value="">No tag</option></select></label>
+      <label>Template<select id="newTemplate"></select></label>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" data-close-dialog="newDraftDialog">Cancel</button>
+        <button type="submit" class="btn primary">Create draft</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="profileDialog" class="dialog profile-dialog">
+    <form id="profileForm" method="dialog">
+      <div class="dialog-head">
+        <div>
+          <h2 id="profileDialogTitle">Profile</h2>
+          <p id="profileDialogMeta">MerfinUI class/resolution TXT</p>
+        </div>
+        <button type="button" class="icon-btn" data-close-dialog="profileDialog">×</button>
+      </div>
+      <label>TXT content<textarea id="profileText" rows="16" spellcheck="false" placeholder="!GenereretTextString"></textarea></label>
+      <div class="dialog-actions split">
+        <button id="clearProfileBtn" type="button" class="btn danger">Clear</button>
+        <div>
+          <button type="button" class="btn ghost" data-close-dialog="profileDialog">Cancel</button>
+          <button type="submit" class="btn primary">Save profile</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

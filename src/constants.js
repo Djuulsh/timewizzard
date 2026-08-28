@@ -1,15 +1,17 @@
-export const VERSION = '2.0.0-clean';
+export const DEFAULT_ACCENT_COLOR = 0xF1C40F;
+export const MAX_PROFILE_FILE_BYTES = 1_000_000;
+export const MAX_ROWS_PER_MESSAGE = 10;
 
 export const WOW_CLASSES = [
-  { key: 'warrior', name: 'Warrior', emoji: { name: 'warrior', id: '1387122765043335382' } },
-  { key: 'druid', name: 'Druid', emoji: { name: 'druid', id: '1387122752590446632' } },
-  { key: 'hunter', name: 'Hunter', emoji: { name: 'hunter', id: '1387122753970110464' } },
-  { key: 'mage', name: 'Mage', emoji: { name: 'mage', id: '1387122756054679562' } },
-  { key: 'paladin', name: 'Paladin', emoji: { name: 'paladin', id: '1387122758307282964' } },
-  { key: 'priest', name: 'Priest', emoji: { name: 'priest', id: '1387122604170805379' } },
-  { key: 'rogue', name: 'Rogue', emoji: { name: 'rogue', id: '1387122760240857098' } },
-  { key: 'shaman', name: 'Shaman', emoji: { name: 'shaman', id: '1387122761704669277' } },
-  { key: 'warlock', name: 'Warlock', emoji: { name: 'warlock', id: '1387122763407298622' } }
+  { key: 'warrior', name: 'Warrior', emojiName: 'warrior', emojiId: '1387122765043335382' },
+  { key: 'druid', name: 'Druid', emojiName: 'druid', emojiId: '1387122752590446632' },
+  { key: 'hunter', name: 'Hunter', emojiName: 'hunter', emojiId: '1387122753970110464' },
+  { key: 'mage', name: 'Mage', emojiName: 'mage', emojiId: '1387122756054679562' },
+  { key: 'paladin', name: 'Paladin', emojiName: 'paladin', emojiId: '1387122758307282964' },
+  { key: 'priest', name: 'Priest', emojiName: 'priest', emojiId: '1387122604170805379' },
+  { key: 'rogue', name: 'Rogue', emojiName: 'rogue', emojiId: '1387122760240857098' },
+  { key: 'shaman', name: 'Shaman', emojiName: 'shaman', emojiId: '1387122761704669277' },
+  { key: 'warlock', name: 'Warlock', emojiName: 'warlock', emojiId: '1387122763407298622' }
 ];
 
 export const RESOLUTIONS = [
@@ -17,12 +19,14 @@ export const RESOLUTIONS = [
   { key: 'qhd', name: 'QHD' }
 ];
 
-export const DEFAULT_COLOR = 0xF1C40F;
+export const PROFILE_ROWS = WOW_CLASSES.flatMap((wowClass) =>
+  RESOLUTIONS.map((resolution) => ({ wowClass, resolution }))
+);
 
-export function getClass(classKey) {
-  return WOW_CLASSES.find((item) => item.key === classKey);
+export function findClass(key) {
+  return WOW_CLASSES.find((item) => item.key === key) ?? null;
 }
 
-export function getResolution(resolutionKey) {
-  return RESOLUTIONS.find((item) => item.key === resolutionKey);
+export function findResolution(key) {
+  return RESOLUTIONS.find((item) => item.key === key) ?? null;
 }

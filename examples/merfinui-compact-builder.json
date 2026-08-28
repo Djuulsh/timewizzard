@@ -1,0 +1,29 @@
+{
+  "format": "shrouded-info-builder",
+  "version": 1,
+  "title": "MerfinUI Class Profiles",
+  "builder": {
+    "schemaVersion": 1,
+    "mode": "components_v2",
+    "accentColor": 15844367,
+    "blocks": [
+      {
+        "id": "txt001",
+        "type": "text",
+        "content": "# MerfinUI Class Profiles\nVælg din World of Warcraft class og opløsning nedenfor. Den korrekte tekststreng sendes privat."
+      },
+      {
+        "id": "sep001",
+        "type": "separator",
+        "divider": true,
+        "spacing": 2
+      },
+      {
+        "id": "prof01",
+        "type": "profile_select",
+        "placeholder": "Vælg class og opløsning…"
+      }
+    ],
+    "actions": {}
+  }
+}

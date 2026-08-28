@@ -4,97 +4,227 @@ import {
   SlashCommandBuilder
 } from 'discord.js';
 import { RESOLUTIONS, WOW_CLASSES } from './constants.js';
+import { POST_TEMPLATES } from './builder/templates.js';
 
-function addClassChoices(option) {
-  return option
-    .setName('klasse')
-    .setDescription('World of Warcraft class')
-    .setRequired(true)
-    .addChoices(...WOW_CLASSES.map((item) => ({ name: item.name, value: item.key })));
+function addClassOption(subcommand) {
+  return subcommand.addStringOption((option) =>
+    option
+      .setName('klasse')
+      .setDescription('World of Warcraft class')
+      .setRequired(true)
+      .addChoices(...WOW_CLASSES.map((wowClass) => ({
+        name: wowClass.name,
+        value: wowClass.key
+      })))
+  );
 }
 
-function addResolutionChoices(option) {
-  return option
-    .setName('oplosning')
-    .setDescription('Resolution')
-    .setRequired(true)
-    .addChoices(...RESOLUTIONS.map((item) => ({ name: item.name, value: item.key })));
+function addResolutionOption(subcommand) {
+  return subcommand.addStringOption((option) =>
+    option
+      .setName('oplosning')
+      .setDescription('FHD eller QHD')
+      .setRequired(true)
+      .addChoices(...RESOLUTIONS.map((resolution) => ({
+        name: resolution.name,
+        value: resolution.key
+      })))
+  );
 }
 
-export const commandBuilders = [
-  new SlashCommandBuilder()
-    .setName('status')
-    .setDescription('Show bot status')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+function addForumOption(subcommand) {
+  return subcommand.addChannelOption((option) =>
+    option
+      .setName('forum')
+      .setDescription('Forum-kanalen hvor opslaget senere skal publiceres')
+      .setRequired(true)
+      .addChannelTypes(ChannelType.GuildForum)
+  );
+}
 
-  new SlashCommandBuilder()
-    .setName('profil')
-    .setDescription('Manage class/resolution text strings')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
-    .addSubcommand((sub) => sub
-      .setName('gem')
-      .setDescription('Save or replace a profile string')
-      .addStringOption(addClassChoices)
-      .addStringOption(addResolutionChoices))
-    .addSubcommand((sub) => sub
-      .setName('importer')
-      .setDescription('Import a long profile string from a UTF-8 .txt file')
-      .addStringOption(addClassChoices)
-      .addStringOption(addResolutionChoices)
-      .addAttachmentOption((option) => option
-        .setName('fil')
-        .setDescription('UTF-8 .txt file')
-        .setRequired(true)))
-    .addSubcommand((sub) => sub
-      .setName('vis')
-      .setDescription('Preview one profile response')
-      .addStringOption(addClassChoices)
-      .addStringOption(addResolutionChoices))
-    .addSubcommand((sub) => sub
-      .setName('liste')
-      .setDescription('Show which profile strings are configured'))
-    .addSubcommand((sub) => sub
-      .setName('slet')
-      .setDescription('Delete one profile string')
-      .addStringOption(addClassChoices)
-      .addStringOption(addResolutionChoices)),
+function addTagOption(subcommand) {
+  return subcommand.addStringOption((option) =>
+    option
+      .setName('tag')
+      .setDescription('Valgfrit forum-tag')
+      .setRequired(false)
+      .setAutocomplete(true)
+  );
+}
 
-  new SlashCommandBuilder()
-    .setName('post')
-    .setDescription('Manage information forum posts')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
-    .addSubcommand((sub) => sub
+const postCommand = new SlashCommandBuilder()
+  .setName('post')
+  .setDescription('Byg, publicer og administrer informationsopslag')
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+  .addSubcommand((subcommand) => {
+    subcommand
       .setName('opret')
-      .setDescription('Create a new information post')
-      .addChannelOption((option) => option
-        .setName('forum')
-        .setDescription('Destination forum channel')
+      .setDescription('Opret en ny kladde og åbn Post Builder');
+    addForumOption(subcommand);
+    subcommand.addStringOption((option) =>
+      option
+        .setName('titel')
+        .setDescription('Forum-postens titel')
         .setRequired(true)
-        .addChannelTypes(ChannelType.GuildForum)))
-    .addSubcommand((sub) => sub
+        .setMinLength(1)
+        .setMaxLength(100)
+    );
+    subcommand.addStringOption((option) =>
+      option
+        .setName('template')
+        .setDescription('Start med en tom builder eller en færdig skabelon')
+        .setRequired(false)
+        .addChoices(...POST_TEMPLATES)
+    );
+    addTagOption(subcommand);
+    return subcommand;
+  })
+  .addSubcommand((subcommand) =>
+    subcommand
       .setName('rediger')
-      .setDescription('Edit an existing bot-managed post')
-      .addStringOption((option) => option
-        .setName('post')
-        .setDescription('Forum thread ID')
-        .setRequired(true)))
-    .addSubcommand((sub) => sub
+      .setDescription('Åbn Post Builder for en kladde eller publiceret post')
+      .addStringOption((option) =>
+        option
+          .setName('post')
+          .setDescription('Kladde-ID, forum-post ID, kanalhenvisning eller Discord-link')
+          .setRequired(true)
+      )
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
       .setName('opdater')
-      .setDescription('Re-render an existing post')
-      .addStringOption((option) => option
-        .setName('post')
-        .setDescription('Forum thread ID')
-        .setRequired(true)))
-    .addSubcommand((sub) => sub
-      .setName('liste')
-      .setDescription('List posts managed by the bot'))
-    .addSubcommand((sub) => sub
+      .setDescription('Publicer gemte builder-ændringer til en eksisterende forum-post')
+      .addStringOption((option) =>
+        option
+          .setName('post')
+          .setDescription('Forum-postens ID, kanalhenvisning eller Discord-link')
+          .setRequired(true)
+      )
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
       .setName('slet')
-      .setDescription('Delete a bot-managed forum post')
-      .addStringOption((option) => option
-        .setName('post')
-        .setDescription('Forum thread ID')
-        .setRequired(true)))
-];
+      .setDescription('Slet en kladde eller en publiceret forum-post')
+      .addStringOption((option) =>
+        option
+          .setName('post')
+          .setDescription('Kladde-ID, forum-post ID, kanalhenvisning eller Discord-link')
+          .setRequired(true)
+      )
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName('liste')
+      .setDescription('Vis kladder og publicerede opslag')
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName('klon')
+      .setDescription('Klon en kladde eller publiceret post til en ny kladde')
+      .addStringOption((option) =>
+        option
+          .setName('post')
+          .setDescription('Kladde-ID, forum-post ID, kanalhenvisning eller Discord-link')
+          .setRequired(true)
+      )
+      .addStringOption((option) =>
+        option
+          .setName('titel')
+          .setDescription('Valgfri titel på kopien')
+          .setRequired(false)
+          .setMinLength(1)
+          .setMaxLength(100)
+      )
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName('eksporter')
+      .setDescription('Eksporter et builder-opslag som JSON')
+      .addStringOption((option) =>
+        option
+          .setName('post')
+          .setDescription('Kladde-ID, forum-post ID, kanalhenvisning eller Discord-link')
+          .setRequired(true)
+      )
+  )
+  .addSubcommand((subcommand) => {
+    subcommand
+      .setName('importer')
+      .setDescription('Importer en builder-JSON som ny kladde');
+    addForumOption(subcommand);
+    subcommand.addAttachmentOption((option) =>
+      option
+        .setName('fil')
+        .setDescription('JSON-fil eksporteret fra Shrouded Info Bot')
+        .setRequired(true)
+    );
+    subcommand.addStringOption((option) =>
+      option
+        .setName('titel')
+        .setDescription('Valgfri ny forum-titel (ellers bruges titlen fra JSON)')
+        .setRequired(false)
+        .setMinLength(1)
+        .setMaxLength(100)
+    );
+    addTagOption(subcommand);
+    return subcommand;
+  });
 
-export const commandJson = commandBuilders.map((command) => command.toJSON());
+const profileCommand = new SlashCommandBuilder()
+  .setName('profil')
+  .setDescription('Administrer class- og opløsningsstrenge')
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+  .addSubcommand((subcommand) => {
+    subcommand
+      .setName('gem')
+      .setDescription('Gem en tekststreng via en Discord-formular');
+    addClassOption(subcommand);
+    addResolutionOption(subcommand);
+    return subcommand;
+  })
+  .addSubcommand((subcommand) => {
+    subcommand
+      .setName('importer')
+      .setDescription('Importer en lang tekststreng fra en .txt-fil');
+    addClassOption(subcommand);
+    addResolutionOption(subcommand);
+    return subcommand.addAttachmentOption((option) =>
+      option
+        .setName('fil')
+        .setDescription('UTF-8 tekstfil med den komplette streng')
+        .setRequired(true)
+    );
+  })
+  .addSubcommand((subcommand) => {
+    subcommand
+      .setName('vis')
+      .setDescription('Vis den gemte tekststreng privat');
+    addClassOption(subcommand);
+    addResolutionOption(subcommand);
+    return subcommand;
+  })
+  .addSubcommand((subcommand) => {
+    subcommand
+      .setName('slet')
+      .setDescription('Slet den gemte tekststreng');
+    addClassOption(subcommand);
+    addResolutionOption(subcommand);
+    return subcommand;
+  })
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName('liste')
+      .setDescription('Vis status og længde for alle class-strenge')
+  );
+
+const helpCommand = new SlashCommandBuilder()
+  .setName('hjaelp')
+  .setDescription('Vis bottens kommandoer og Post Builder-arbejdsgang')
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
+
+const webBuilderCommand = new SlashCommandBuilder()
+  .setName('webbuilder')
+  .setDescription('Åbn v1.2 Web Builder med drag-and-drop')
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
+
+export const commands = [postCommand, profileCommand, helpCommand, webBuilderCommand];

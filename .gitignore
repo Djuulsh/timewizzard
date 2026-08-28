@@ -1,6 +1,5 @@
 node_modules/
 .env
-data/*.json
-data/*.bak
+data/
 *.log
 .DS_Store
