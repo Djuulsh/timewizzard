@@ -3,6 +3,7 @@ import { RESOLUTIONS, WOW_CLASSES } from '../constants.js';
 
 const MAX_COMPONENTS = 40;
 const MAX_TEXT = 4_000;
+export const MULTILINE_QUOTE_ESCAPE = '\\>>>';
 
 function countComponents(component) {
   let count = 1;
@@ -29,14 +30,32 @@ function emojiObject(wowClass) {
   return { name: wowClass.emojiName, id: wowClass.emojiId };
 }
 
+function splitTextDisplays(content) {
+  const lines = String(content ?? '').split(/\r?\n/);
+  const segments = [];
+  let current = [];
+  const flush = () => {
+    const text = current.join('\n').replace(/^\n+|\n+$/g, '');
+    if (text) segments.push(text);
+    current = [];
+  };
+
+  for (const line of lines) {
+    if (line.trim() === MULTILINE_QUOTE_ESCAPE) {
+      flush();
+      continue;
+    }
+    current.push(line);
+  }
+  flush();
+  return segments.length ? segments : [''];
+}
+
 function profileOpenSections() {
   return WOW_CLASSES.flatMap((wowClass) =>
     RESOLUTIONS.map((resolution) => ({
       type: 9,
-      components: [{
-        type: 10,
-        content: `🔗 • ${customEmoji(wowClass)} **${wowClass.name} — ${resolution.name}**`
-      }],
+      components: [{ type: 10, content: `🔗 • ${customEmoji(wowClass)} **${wowClass.name} — ${resolution.name}**` }],
       accessory: {
         type: 2,
         style: 2,
@@ -86,26 +105,39 @@ function genericSelect(block, scope) {
   };
 }
 
+function mediaItem(item) {
+  return {
+    media: { url: item.url },
+    ...(item.description ? { description: item.description } : {}),
+    ...(item.spoiler ? { spoiler: true } : {})
+  };
+}
+
 function blockToComponents(block, scope) {
   switch (block.type) {
     case 'text':
-      return [{ type: 10, content: block.content }];
+      return splitTextDisplays(block.content).map((content) => ({ type: 10, content }));
 
     case 'image':
+      return [{ type: 12, items: [mediaItem(block)] }];
+
+    case 'gallery':
+      return [{ type: 12, items: block.items.map(mediaItem) }];
+
+    case 'thumbnail':
       return [{
-        type: 12,
-        items: [{
+        type: 9,
+        components: [{ type: 10, content: block.text }],
+        accessory: {
+          type: 11,
           media: { url: block.url },
-          ...(block.description ? { description: block.description } : {})
-        }]
+          ...(block.description ? { description: block.description } : {}),
+          ...(block.spoiler ? { spoiler: true } : {})
+        }
       }];
 
     case 'separator':
-      return [{
-        type: 14,
-        divider: block.divider !== false,
-        spacing: block.spacing === 1 ? 1 : 2
-      }];
+      return [{ type: 14, divider: block.divider !== false, spacing: block.spacing === 1 ? 1 : 2 }];
 
     case 'open':
       return [{
@@ -131,25 +163,16 @@ function blockToComponents(block, scope) {
         }
       }];
 
-    case 'select':
-      return [genericSelect(block, scope)];
-
-    case 'profile_select':
-      return [profileSelect(block, scope)];
-
-    case 'profile_open_list':
-      return profileOpenSections();
-
-    default:
-      throw new Error(`Ukendt builder block-type: ${block.type}`);
+    case 'select': return [genericSelect(block, scope)];
+    case 'profile_select': return [profileSelect(block, scope)];
+    case 'profile_open_list': return profileOpenSections();
+    default: throw new Error(`Ukendt builder block-type: ${block.type}`);
   }
 }
 
 export function getBuilderStats(entity, scope = { kind: 'd', id: 'preview' }) {
   const components = entity.builder.blocks.flatMap((block) => blockToComponents(block, scope));
-  if (components.length === 0) {
-    return { blockCount: 0, componentCount: 0, textLength: 0, messageCount: 0 };
-  }
+  if (components.length === 0) return { blockCount: 0, componentCount: 0, textLength: 0, messageCount: 0 };
 
   let messageCount = 1;
   let messageComponents = 1;
@@ -160,38 +183,23 @@ export function getBuilderStats(entity, scope = { kind: 'd', id: 'preview' }) {
   for (const component of components) {
     const componentCount = countComponents(component);
     const textCount = countText(component);
-
-    if (componentCount + 1 > MAX_COMPONENTS || textCount > MAX_TEXT) {
-      throw new Error('Et enkelt builder-block overskrider Discord-grænserne.');
-    }
-
-    if (
-      messageComponents + componentCount > MAX_COMPONENTS ||
-      messageText + textCount > MAX_TEXT
-    ) {
+    if (componentCount + 1 > MAX_COMPONENTS || textCount > MAX_TEXT) throw new Error('Et enkelt builder-block overskrider Discord-grænserne.');
+    if (messageComponents + componentCount > MAX_COMPONENTS || messageText + textCount > MAX_TEXT) {
       messageCount += 1;
       messageComponents = 1;
       messageText = 0;
     }
-
     messageComponents += componentCount;
     messageText += textCount;
     totalComponents += componentCount;
     totalText += textCount;
   }
 
-  return {
-    blockCount: entity.builder.blocks.length,
-    componentCount: totalComponents,
-    textLength: totalText,
-    messageCount
-  };
+  return { blockCount: entity.builder.blocks.length, componentCount: totalComponents, textLength: totalText, messageCount };
 }
 
 export function buildBuilderPayloads(entity, scope) {
-  if (!entity?.builder?.blocks?.length) {
-    throw new Error('Opslaget har ingen blocks. Tilføj mindst ét block før Preview eller Publish.');
-  }
+  if (!entity?.builder?.blocks?.length) throw new Error('Opslaget har ingen blocks. Tilføj mindst ét block før Preview eller Publish.');
 
   const components = entity.builder.blocks.flatMap((block) => blockToComponents(block, scope));
   const groups = [];
@@ -202,35 +210,22 @@ export function buildBuilderPayloads(entity, scope) {
   for (const component of components) {
     const componentCount = countComponents(component);
     const textCount = countText(component);
-
-    if (componentCount + 1 > MAX_COMPONENTS || textCount > MAX_TEXT) {
-      throw new Error('Et enkelt builder-block overskrider Discord-grænserne.');
-    }
-
-    if (
-      current.length > 0 &&
-      (currentComponentCount + componentCount > MAX_COMPONENTS || currentText + textCount > MAX_TEXT)
-    ) {
+    if (componentCount + 1 > MAX_COMPONENTS || textCount > MAX_TEXT) throw new Error('Et enkelt builder-block overskrider Discord-grænserne.');
+    if (current.length > 0 && (currentComponentCount + componentCount > MAX_COMPONENTS || currentText + textCount > MAX_TEXT)) {
       groups.push(current);
       current = [];
       currentComponentCount = 1;
       currentText = 0;
     }
-
     current.push(component);
     currentComponentCount += componentCount;
     currentText += textCount;
   }
-
   if (current.length > 0) groups.push(current);
 
   return groups.map((group) => ({
     flags: MessageFlags.IsComponentsV2,
     allowedMentions: { parse: [] },
-    components: [{
-      type: 17,
-      accent_color: entity.builder.accentColor,
-      components: group
-    }]
+    components: [{ type: 17, accent_color: entity.builder.accentColor, components: group }]
   }));
 }
