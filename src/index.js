@@ -20,19 +20,28 @@ await store.init();
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const controller = new BotController({ client, store, config });
 
+const statusCommand = {
+  name: 'status',
+  description: 'Vis bot- og Web Builder-status',
+  type: 1,
+  default_member_permissions: '32'
+};
+
 async function registerGuildCommands() {
   const rest = new REST({ version: '10' }).setToken(config.token);
+  const body = [...commands.map((command) => command.toJSON()), statusCommand];
   await rest.put(
     Routes.applicationGuildCommands(config.clientId, config.guildId),
-    { body: commands.map((command) => command.toJSON()) }
+    { body }
   );
+  return body.length;
 }
 
 client.once(Events.ClientReady, async (readyClient) => {
   console.log(`Logged in as ${readyClient.user.tag}`);
   try {
-    await registerGuildCommands();
-    console.log(`Registered ${commands.length} guild commands for ${config.guildId}`);
+    const commandCount = await registerGuildCommands();
+    console.log(`Registered ${commandCount} guild commands for ${config.guildId}`);
   } catch (error) {
     console.error('Could not register guild commands:', error);
   }
@@ -42,8 +51,23 @@ client.once(Events.ClientReady, async (readyClient) => {
     : 'Web Builder disabled: set DISCORD_CLIENT_SECRET and PUBLIC_BASE_URL to enable it.');
 });
 
-client.on(Events.InteractionCreate, (interaction) => {
-  void controller.handle(interaction);
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isChatInputCommand() && interaction.commandName === 'status') {
+    await interaction.reply({
+      content: [
+        '**Timewizzard Info Bot**',
+        `Bot: ${client.user?.tag ?? 'starter...'}`,
+        `Guild: ${config.guildId}`,
+        `Web Builder: ${config.webEnabled ? '✅ enabled' : '❌ disabled'}`,
+        config.webEnabled ? `Builder: ${config.publicBaseUrl}/builder` : null,
+        `Storage: ${path.join(config.dataDir, 'store.json')}`
+      ].filter(Boolean).join('\n'),
+      ephemeral: true
+    });
+    return;
+  }
+
+  await controller.handle(interaction);
 });
 
 client.on(Events.Error, (error) => console.error('Discord client error:', error));
