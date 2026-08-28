@@ -8,9 +8,11 @@
     "node": ">=24.17.0"
   },
   "scripts": {
+    "prepare:web": "node scripts/prepare-web.mjs",
+    "prestart": "npm run prepare:web",
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "validate": "node scripts/validate.js",
+    "validate": "node scripts/validate.js && node --check scripts/prepare-web.mjs",
     "test": "npm run validate"
   },
   "dependencies": {

@@ -1,31 +1,18 @@
 # Changelog
 
-## 1.2.0
-
-### Web Builder
-- Added Railway-hosted browser UI.
-- Added Discord OAuth2 login using `identify guilds`.
-- Added guild permission gate for Manage Guild, Administrator or guild owner.
-- Added desktop drag-and-drop and touch/pointer block reordering.
-- Added live Discord-style side-by-side preview.
-- Added browser block inspector for Text, Image, Separator, Open, Link, Select, MerfinUI Select and legacy Open List.
-- Added browser post create/save/publish/clone/delete flow.
-- Added browser profile TXT editor without the 4,000-character Discord modal limit.
-- Added visual Synced / Modified / Unsaved state.
-- Added browser JSON export.
-
-### Discord
-- Added `/webbuilder` command.
-- All v1.1.1 native builder features remain available.
-
-### Infrastructure
-- Health endpoint is now served by the shared bot/Web Builder HTTP server.
-- Added optional `DISCORD_CLIENT_SECRET` and `PUBLIC_BASE_URL` configuration.
-- Persistent storage schema remains version 3, compatible with v1.1.1.
-
 ## 1.2.1
 
-- Repository-ready full build with all runtime files included.
-- `/webbuilder` now links directly to `/auth/discord` before entering `/builder`.
-- `/health` exposes the running version and expected OAuth/builder route paths for deployment diagnostics.
-- Startup log prints both OAuth login and builder URLs when Web Builder is enabled.
+### Restored builder baseline
+- Restored the full Discord-native builder and Railway-hosted Web Builder on top of the clean, working deployment baseline.
+- Preserved the clean `/data/store.json` path and added in-place migration to the builder schema.
+- Restored `/status`, `/webbuilder`, clone/import/export and MerfinUI profile management.
+
+### Discord Markdown compatibility update
+- Added a startup preparation step for the Web Builder Markdown preview.
+- Added preview support for Discord subtext (`-#`), italic, underline, strikethrough, spoilers, code, block quotes, lists and masked links.
+- Added preview support for custom/animated emoji, mention-like Discord tokens and timestamp syntax.
+- Added a built-in Markdown reference under the Web Builder Inspector.
+- Added `DISCORD_MARKDOWN.md` with the supported syntax and bot-specific notes.
+
+### Notes
+- Published Components V2 Text Display content already uses Discord's native Markdown parser; this update primarily makes the browser preview and authoring help match Discord more closely.
