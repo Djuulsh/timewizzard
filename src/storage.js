@@ -25,6 +25,19 @@ function createDefaultData() {
   };
 }
 
+function isCleanBaselineShape(source) {
+  const profileKeys = Object.keys(source?.profiles ?? {});
+  if (profileKeys.some((key) => key.includes(':'))) return true;
+
+  return Object.values(source?.posts ?? {}).some((post) =>
+    post && typeof post === 'object' && (
+      'forumTitle' in post ||
+      'forumId' in post ||
+      ('heading' in post && !post.builder)
+    )
+  );
+}
+
 function migrateCleanBaseline(source) {
   const migrated = {
     version: 1,
@@ -63,12 +76,7 @@ function migrateCleanBaseline(source) {
 
 function normalizeSource(data) {
   if (!data || typeof data !== 'object') return {};
-
-  const profileKeys = Object.keys(data.profiles ?? {});
-  const cleanBaselineShape = profileKeys.some((key) => key.includes(':'));
-  if (cleanBaselineShape) return migrateCleanBaseline(data);
-
-  return data;
+  return isCleanBaselineShape(data) ? migrateCleanBaseline(data) : data;
 }
 
 function migratePublishedState(post, builder) {
@@ -137,7 +145,7 @@ export class JsonStore {
       const raw = await fs.readFile(this.filePath, 'utf8');
       const parsed = JSON.parse(raw);
       const previousVersion = Number(parsed?.version ?? 1);
-      const cleanBaselineShape = Object.keys(parsed?.profiles ?? {}).some((key) => key.includes(':'));
+      const cleanBaselineShape = isCleanBaselineShape(parsed);
       this.data = mergeDefaults(parsed);
       if (previousVersion !== CURRENT_VERSION || cleanBaselineShape || this.#needsPersistence(parsed)) {
         await this.save();
