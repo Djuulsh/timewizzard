@@ -9,10 +9,11 @@
   },
   "scripts": {
     "prepare:web": "node scripts/prepare-web.mjs",
-    "prestart": "npm run prepare:web",
+    "prepare:destinations": "node scripts/prepare-destinations.mjs",
+    "prestart": "npm run prepare:web && npm run prepare:destinations",
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "validate": "node scripts/validate.js && node --check scripts/prepare-web.mjs && node --check src/destinations.js && node --check src/destinationSupport.js && node --check src/postService.js && node --check src/web/server.js && node --check src/commands.js && node --check src/index.js",
+    "validate": "node scripts/validate.js && node --check scripts/prepare-web.mjs && node --check scripts/prepare-destinations.mjs && node --check src/destinations.js && node --check src/destinationSupport.js && node --check src/postService.js && node --check src/web/server.js && node --check src/commands.js && node --check src/index.js",
     "test": "npm run validate"
   },
   "dependencies": {
