@@ -1,25 +1,39 @@
-# Shrouded Info Bot v1.2.0
+# Timewizzard Info Bot — restored v1.2.1 feature set
 
-v1.2 contains the full v1.1.1 Discord-native builder **plus a Railway-hosted Web Builder**.
+This repository contains the full feature set from before the failed upload/deployment cycle, restored on top of the clean Railway baseline.
 
-The Web Builder uses the same `bot-data.json`, builder schema, profile strings and publishing engine as the Discord bot. You can switch between Discord and the browser without maintaining two copies of a post.
+## Included now
 
-## v1.2 highlights
+- Discord-native Post Builder
+- Generic Components V2 blocks: text, image/banner, separator, Open + ephemeral, URL button and select + ephemeral
+- MerfinUI class/resolution compact select
+- Legacy MerfinUI Open list
+- Direct management of all 18 FHD/QHD profile strings
+- Move block to position, duplicate block and edit block
+- Draft / Modified / Synced post state
+- Clone, import and export posts
+- Railway-hosted Web Builder
+- Real browser drag-and-drop plus touch/pointer support
+- Side-by-side Discord-style live preview
+- Discord OAuth login restricted to the configured guild and Manage Server/Admin/owner users
+- `/webbuilder`
+- `/status` compatibility command
+- `/health` deployment diagnostic endpoint
 
-- True drag-and-drop block ordering in the browser.
-- Touch/pointer drag support in addition to desktop drag-and-drop.
-- Discord OAuth login.
-- Access restricted to the configured guild and users with **Manage Server** / Administrator / guild owner access.
-- Side-by-side Discord-style live preview.
-- Create, edit, save, clone, publish and delete posts from the browser.
-- Direct editing of all 18 MerfinUI FHD/QHD TXT values, including strings over Discord modal limits.
-- Generic text, image, separator, Open, URL and select blocks.
-- Existing Discord-native v1.1.1 builder remains fully available.
-- `/webbuilder` gives an ephemeral button to open the web interface.
+## Persistent storage
 
-## Required Railway variables
+The clean baseline already used:
 
-Existing variables:
+```text
+/data/store.json
+/data/store.json.bak
+```
+
+The restored builder continues to use the same file. On first startup it migrates the clean-baseline profile/post schema in-place to the builder schema, so a second database file is not created.
+
+## Railway variables
+
+Required for the Discord bot:
 
 ```env
 CLIENT_ID=...
@@ -29,45 +43,89 @@ DATA_DIR=/data
 NODE_ENV=production
 ```
 
-New for the Web Builder:
+Required to enable the Web Builder:
 
 ```env
 DISCORD_CLIENT_SECRET=...
 PUBLIC_BASE_URL=https://YOUR-SERVICE.up.railway.app
 ```
 
-If the two web variables are omitted, the Discord bot still runs, but the Web Builder reports that it is not configured.
+`PUBLIC_BASE_URL` must not include a trailing slash.
 
-## Required Discord OAuth redirect
+If the two Web Builder variables are omitted, Discord still runs normally and `/status` reports the Web Builder as disabled.
 
-In Discord Developer Portal, add this exact redirect URL:
+## Discord OAuth redirect
+
+In Discord Developer Portal → OAuth2 → Redirects, add exactly:
 
 ```text
 https://YOUR-SERVICE.up.railway.app/auth/discord/callback
 ```
 
-It must match `PUBLIC_BASE_URL` exactly.
+The hostname must be identical to `PUBLIC_BASE_URL`.
 
 ## Railway public domain
 
-v1.1.x did not require a public domain. **v1.2 Web Builder does.**
+The Discord bot itself does not need a domain, but the Web Builder does. Generate a public Railway domain for the bot service and point it at the same service/PORT that serves `/health`.
 
-Generate a Railway domain for the bot service, then use that HTTPS domain as `PUBLIC_BASE_URL`.
-
-## Open the builder
-
-In Discord:
+Test in this order after deployment:
 
 ```text
-/webbuilder
-```
-
-or visit:
-
-```text
+https://YOUR-SERVICE.up.railway.app/health
+https://YOUR-SERVICE.up.railway.app/auth/discord
 https://YOUR-SERVICE.up.railway.app/builder
 ```
 
-The browser redirects to Discord OAuth and asks for `identify` + `guilds`. It does not request message-content access.
+Expected `/health` fields include:
 
-Read [UPGRADE_v1.2_DA.md](UPGRADE_v1.2_DA.md) for the complete deployment procedure.
+```json
+{
+  "ok": true,
+  "version": "1.2.1",
+  "webBuilder": true,
+  "oauthLoginPath": "/auth/discord",
+  "builderPath": "/builder"
+}
+```
+
+## Discord commands
+
+```text
+/status
+/post opret
+/post rediger
+/post opdater
+/post slet
+/post liste
+/post klon
+/post eksporter
+/post importer
+/profil gem
+/profil importer
+/profil vis
+/profil slet
+/profil liste
+/hjaelp
+/webbuilder
+```
+
+`/post opret` supports these templates:
+
+```text
+Tom builder
+MerfinUI — compact select
+MerfinUI — Open list (legacy)
+```
+
+## Recommended first test
+
+1. Wait for Railway to deploy the newest `main` commit.
+2. Run `/status` in Discord.
+3. Confirm `/profil liste` still shows your profile data.
+4. Open `/health` in the browser.
+5. Add the two Web Builder variables if `/health` reports `webBuilder: false`.
+6. Add the exact OAuth callback in Discord Developer Portal.
+7. Test `/auth/discord`.
+8. Test `/webbuilder` and the drag-and-drop builder.
+
+The Web Builder and the Discord-native builder use the same persistent storage and publishing engine.
