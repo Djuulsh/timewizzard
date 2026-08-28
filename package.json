@@ -1,6 +1,6 @@
 {
   "name": "shrouded-info-bot",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "private": true,
   "description": "Discord Components V2 information bot with Discord-native builder plus Railway-hosted OAuth drag-and-drop Web Builder.",
   "type": "module",
@@ -12,7 +12,7 @@
     "prestart": "npm run prepare:web",
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "validate": "node scripts/validate.js && node --check scripts/prepare-web.mjs",
+    "validate": "node scripts/validate.js && node --check scripts/prepare-web.mjs && node --check src/destinations.js && node --check src/destinationSupport.js && node --check src/postService.js && node --check src/web/server.js && node --check src/commands.js && node --check src/index.js",
     "test": "npm run validate"
   },
   "dependencies": {
