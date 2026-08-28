@@ -1,0 +1,59 @@
+{
+  "format": "shrouded-info-builder",
+  "version": 1,
+  "title": "Example Information",
+  "builder": {
+    "schemaVersion": 1,
+    "mode": "components_v2",
+    "accentColor": 15844367,
+    "blocks": [
+      {
+        "id": "txt001",
+        "type": "text",
+        "content": "# Example Information\nChoose an option below."
+      },
+      {
+        "id": "sep001",
+        "type": "separator",
+        "divider": true,
+        "spacing": 2
+      },
+      {
+        "id": "open01",
+        "type": "open",
+        "text": "🔗 • **Read more**",
+        "label": "Open",
+        "actionId": "act001"
+      },
+      {
+        "id": "sel001",
+        "type": "select",
+        "placeholder": "Choose a resolution…",
+        "options": [
+          { "label": "FHD", "actionId": "actfhd" },
+          { "label": "QHD", "actionId": "actqhd" }
+        ]
+      }
+    ],
+    "actions": {
+      "act001": {
+        "id": "act001",
+        "type": "ephemeral_text",
+        "title": "Read more",
+        "content": "This response is only visible to the user who clicked Open."
+      },
+      "actfhd": {
+        "id": "actfhd",
+        "type": "ephemeral_text",
+        "title": "FHD",
+        "content": "Your FHD information goes here."
+      },
+      "actqhd": {
+        "id": "actqhd",
+        "type": "ephemeral_text",
+        "title": "QHD",
+        "content": "Your QHD information goes here."
+      }
+    }
+  }
+}
