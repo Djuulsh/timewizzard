@@ -4,16 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Shrouded Web Builder v1.2</title>
+  <title>Timewizzard Web Builder v1.2.2</title>
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <div class="brand-mark">S</div>
+      <div class="brand-mark">T</div>
       <div>
-        <strong>Shrouded Web Builder</strong>
-        <small>v1.2 · Railway + Discord OAuth</small>
+        <strong>Timewizzard Web Builder</strong>
+        <small>v1.2.2 · Railway + Discord OAuth</small>
       </div>
     </div>
     <div class="top-actions">
@@ -41,14 +41,14 @@
       <div id="emptyState" class="empty-state">
         <div class="empty-icon">🛠️</div>
         <h1>Choose a post or create a draft</h1>
-        <p>The Discord builder and this Web Builder use the same data on your Railway Volume.</p>
+        <p>Build information posts for Discord forum channels, normal text channels and announcement channels.</p>
         <button class="btn primary" data-action="new-draft">Create first draft</button>
       </div>
 
       <div id="editor" class="editor hidden">
         <div class="editor-head">
           <div class="title-editor">
-            <label for="postTitle">Forum post title</label>
+            <label for="postTitle">Post title / Builder name</label>
             <input id="postTitle" maxlength="100" autocomplete="off">
             <div class="title-subrow"><div id="editorMeta" class="meta"></div><label class="accent-control">Accent <input id="postAccent" type="color" value="#f1c40f"></label></div>
           </div>
@@ -113,9 +113,9 @@
       </div>
       <div class="discord-surface">
         <div class="discord-message">
-          <div class="bot-avatar">S</div>
+          <div class="bot-avatar">T</div>
           <div class="message-body">
-            <div class="message-author">Shrouded Bot <span>APP</span></div>
+            <div class="message-author">TimewizzardBot <span>APP</span></div>
             <div id="previewContent" class="discord-container empty-preview">Select a post to preview.</div>
           </div>
         </div>
@@ -130,13 +130,13 @@
       <div class="dialog-head">
         <div>
           <h2>Create draft</h2>
-          <p>Choose the forum destination and starting template.</p>
+          <p>Choose a Discord destination and starting template.</p>
         </div>
         <button type="button" class="icon-btn" data-close-dialog="newDraftDialog">×</button>
       </div>
-      <label>Title<input id="newTitle" maxlength="100" required placeholder="MerfinUI Profiles"></label>
-      <label>Forum<select id="newForum" required></select></label>
-      <label>Forum tag<select id="newTag"><option value="">No tag</option></select></label>
+      <label>Title / Builder name<input id="newTitle" maxlength="100" required placeholder="MerfinUI Profiles"></label>
+      <label>Destination<select id="newForum" required></select></label>
+      <label>Forum tag (forum destinations only)<select id="newTag"><option value="">No tag</option></select></label>
       <label>Template<select id="newTemplate"></select></label>
       <div class="dialog-actions">
         <button type="button" class="btn ghost" data-close-dialog="newDraftDialog">Cancel</button>
