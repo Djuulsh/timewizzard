@@ -19,6 +19,32 @@ This repository contains the full feature set from before the failed upload/depl
 - `/webbuilder`
 - `/status` compatibility command
 - `/health` deployment diagnostic endpoint
+- Expanded Discord Markdown-aware Web Builder preview and built-in Markdown reference
+
+## Discord Markdown
+
+Text blocks are published through Discord Components V2 `Text Display`, so Discord's normal Markdown rules apply to the final Discord message. The Web Builder preview now mirrors the common syntax more closely, including:
+
+```text
+# Heading
+## Heading
+### Heading
+-# Subtext
+**bold**
+*italic*
+__underline__
+~~strikethrough~~
+||spoiler||
+> quote
+>>> multi-line quote
+- bullet
+1. ordered item
+[text](https://example.com)
+```
+
+It also previews custom/animated emoji, Discord mention-like tokens and timestamps such as `<t:UNIX:R>`.
+
+See [DISCORD_MARKDOWN.md](DISCORD_MARKDOWN.md) for the complete reference.
 
 ## Persistent storage
 
@@ -123,9 +149,9 @@ MerfinUI — Open list (legacy)
 2. Run `/status` in Discord.
 3. Confirm `/profil liste` still shows your profile data.
 4. Open `/health` in the browser.
-5. Add the two Web Builder variables if `/health` reports `webBuilder: false`.
-6. Add the exact OAuth callback in Discord Developer Portal.
-7. Test `/auth/discord`.
-8. Test `/webbuilder` and the drag-and-drop builder.
+5. Confirm `webBuilder: true` if the two Web Builder variables are configured.
+6. Open `/webbuilder` and create or edit a Text block.
+7. Test `-# Subtext`, headings, emphasis, lists, quotes, links and spoilers in the live preview.
+8. Publish a test post and compare the final rendering in Discord.
 
 The Web Builder and the Discord-native builder use the same persistent storage and publishing engine.
