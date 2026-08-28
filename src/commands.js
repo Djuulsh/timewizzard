@@ -32,13 +32,19 @@ function addResolutionOption(subcommand) {
   );
 }
 
-function addForumOption(subcommand) {
+// The option keeps the legacy name `forum` so existing controller/UI flows stay
+// backwards compatible, but it now accepts both forum and normal message channels.
+function addDestinationOption(subcommand) {
   return subcommand.addChannelOption((option) =>
     option
       .setName('forum')
-      .setDescription('Forum-kanalen hvor opslaget senere skal publiceres')
+      .setDescription('Destination: forum-, tekst- eller announcement-kanal')
       .setRequired(true)
-      .addChannelTypes(ChannelType.GuildForum)
+      .addChannelTypes(
+        ChannelType.GuildForum,
+        ChannelType.GuildText,
+        ChannelType.GuildAnnouncement
+      )
   );
 }
 
@@ -46,7 +52,7 @@ function addTagOption(subcommand) {
   return subcommand.addStringOption((option) =>
     option
       .setName('tag')
-      .setDescription('Valgfrit forum-tag')
+      .setDescription('Valgfrit forum-tag (ignoreres for normale kanaler)')
       .setRequired(false)
       .setAutocomplete(true)
   );
@@ -60,11 +66,11 @@ const postCommand = new SlashCommandBuilder()
     subcommand
       .setName('opret')
       .setDescription('Opret en ny kladde og åbn Post Builder');
-    addForumOption(subcommand);
+    addDestinationOption(subcommand);
     subcommand.addStringOption((option) =>
       option
         .setName('titel')
-        .setDescription('Forum-postens titel')
+        .setDescription('Postens navn/titel i Builder')
         .setRequired(true)
         .setMinLength(1)
         .setMaxLength(100)
@@ -86,29 +92,29 @@ const postCommand = new SlashCommandBuilder()
       .addStringOption((option) =>
         option
           .setName('post')
-          .setDescription('Kladde-ID, forum-post ID, kanalhenvisning eller Discord-link')
+          .setDescription('Kladde-ID, post-ID, Discord-henvisning eller link')
           .setRequired(true)
       )
   )
   .addSubcommand((subcommand) =>
     subcommand
       .setName('opdater')
-      .setDescription('Publicer gemte builder-ændringer til en eksisterende forum-post')
+      .setDescription('Publicer gemte builder-ændringer til et eksisterende opslag')
       .addStringOption((option) =>
         option
           .setName('post')
-          .setDescription('Forum-postens ID, kanalhenvisning eller Discord-link')
+          .setDescription('Post-ID, Discord-henvisning eller link')
           .setRequired(true)
       )
   )
   .addSubcommand((subcommand) =>
     subcommand
       .setName('slet')
-      .setDescription('Slet en kladde eller en publiceret forum-post')
+      .setDescription('Slet en kladde eller et publiceret opslag')
       .addStringOption((option) =>
         option
           .setName('post')
-          .setDescription('Kladde-ID, forum-post ID, kanalhenvisning eller Discord-link')
+          .setDescription('Kladde-ID, post-ID, Discord-henvisning eller link')
           .setRequired(true)
       )
   )
@@ -124,7 +130,7 @@ const postCommand = new SlashCommandBuilder()
       .addStringOption((option) =>
         option
           .setName('post')
-          .setDescription('Kladde-ID, forum-post ID, kanalhenvisning eller Discord-link')
+          .setDescription('Kladde-ID, post-ID, Discord-henvisning eller link')
           .setRequired(true)
       )
       .addStringOption((option) =>
@@ -143,7 +149,7 @@ const postCommand = new SlashCommandBuilder()
       .addStringOption((option) =>
         option
           .setName('post')
-          .setDescription('Kladde-ID, forum-post ID, kanalhenvisning eller Discord-link')
+          .setDescription('Kladde-ID, post-ID, Discord-henvisning eller link')
           .setRequired(true)
       )
   )
@@ -151,17 +157,17 @@ const postCommand = new SlashCommandBuilder()
     subcommand
       .setName('importer')
       .setDescription('Importer en builder-JSON som ny kladde');
-    addForumOption(subcommand);
+    addDestinationOption(subcommand);
     subcommand.addAttachmentOption((option) =>
       option
         .setName('fil')
-        .setDescription('JSON-fil eksporteret fra Shrouded Info Bot')
+        .setDescription('JSON-fil eksporteret fra Timewizzard')
         .setRequired(true)
     );
     subcommand.addStringOption((option) =>
       option
         .setName('titel')
-        .setDescription('Valgfri ny forum-titel (ellers bruges titlen fra JSON)')
+        .setDescription('Valgfrit nyt Builder-navn (ellers bruges titlen fra JSON)')
         .setRequired(false)
         .setMinLength(1)
         .setMaxLength(100)
@@ -224,7 +230,7 @@ const helpCommand = new SlashCommandBuilder()
 
 const webBuilderCommand = new SlashCommandBuilder()
   .setName('webbuilder')
-  .setDescription('Åbn v1.2 Web Builder med drag-and-drop')
+  .setDescription('Åbn Web Builder med drag-and-drop')
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
 export const commands = [postCommand, profileCommand, helpCommand, webBuilderCommand];
