@@ -10,13 +10,14 @@ import { commands } from './commands.js';
 import { config } from './config.js';
 import { BotController } from './controller.js';
 import { installDestinationSupport } from './destinationSupport.js';
+import { installV13Support } from './v13Support.js';
 import { JsonStore } from './storage.js';
 import { createWebServer } from './web/server.js';
 
 installDestinationSupport(BotController);
+installV13Support(BotController);
 
-// Keep using the clean-install storage filename so existing Railway data is
-// migrated in-place instead of silently creating a second database file.
+const VERSION = '1.3.0';
 const store = new JsonStore(path.join(config.dataDir, 'store.json'));
 await store.init();
 
@@ -50,7 +51,7 @@ client.once(Events.ClientReady, async (readyClient) => {
   }
 
   console.log(config.webEnabled
-    ? `Web Builder v1.2.2 enabled. Login: ${config.publicBaseUrl}/auth/discord | Builder: ${config.publicBaseUrl}/builder`
+    ? `Web Builder v${VERSION} enabled. Login: ${config.publicBaseUrl}/auth/discord | Builder: ${config.publicBaseUrl}/builder`
     : 'Web Builder disabled: set DISCORD_CLIENT_SECRET and PUBLIC_BASE_URL to enable it.');
 });
 
@@ -59,6 +60,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await interaction.reply({
       content: [
         '**Timewizzard Info Bot**',
+        `Version: ${VERSION}`,
         `Bot: ${client.user?.tag ?? 'starter...'}`,
         `Guild: ${config.guildId}`,
         `Web Builder: ${config.webEnabled ? '✅ enabled' : '❌ disabled'}`,
@@ -86,7 +88,6 @@ async function shutdown(signal, exitCode = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
   console.log(`Received ${signal}. Shutting down...`);
-
   await new Promise((resolve) => webServer.close(resolve));
   client.destroy();
   process.exitCode = exitCode;
