@@ -158,7 +158,7 @@ export function validateSmartBlock(block) {
   if (block.type === 'heading') {
     if (!asText(block.title) || asText(block.title).length > 200) throw new Error('Heading skal have en titel på højst 200 tegn.');
     if (asText(block.subtitle).length > 1_000) throw new Error('Heading subtitle er over 1000 tegn.');
-    if (asText(block.emoji).length > 24) throw new Error('Heading emoji/prefix er for lang.');
+    if (asText(block.emoji).length > 80) throw new Error('Heading emoji/prefix er for lang.');
     if (![1, 2, 3].includes(Number(block.level))) throw new Error('Heading level skal være 1, 2 eller 3.');
   }
 
