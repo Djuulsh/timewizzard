@@ -10,6 +10,7 @@ import {
   parseSelectOptions
 } from './builder/blocks.js';
 import { makeShortId } from './builder/ids.js';
+import { buildBlockPicker, buildBuilderPanel } from './builder/ui.js';
 import { getDestinationChannelId, getDestinationType } from './destinations.js';
 import { refreshManagedPostState } from './postService.js';
 import { truncate } from './utils.js';
@@ -48,6 +49,13 @@ function deleteActionTree(builder, actionId, seen = new Set()) {
   const action = builder.actions?.[actionId];
   for (const child of action?.children ?? []) deleteActionTree(builder, child.actionId, seen);
   delete builder.actions[actionId];
+}
+
+function referencedActionIds(block) {
+  const ids = [];
+  if (block?.actionId) ids.push(block.actionId);
+  for (const option of block?.options ?? []) if (option.actionId) ids.push(option.actionId);
+  return ids;
 }
 
 function stablePostId(post) {
@@ -135,6 +143,32 @@ export function installNativeV13Support(BotController) {
       return;
     }
     return originalEditBlockFromModal.call(this, entity, block, interaction);
+  };
+
+  const originalBuilderButton = BotController.prototype.handleBuilderButton;
+  BotController.prototype.handleBuilderButton = async function handleBuilderButtonNativeV13(interaction, parts) {
+    const [action, kind, id, blockId] = parts;
+    if (action === 'builder_block_delete') {
+      const resolved = this.getScopedEntity(kind, id);
+      if (!resolved) {
+        await interaction.update({ content: 'Denne kladde/post findes ikke længere.', components: [] });
+        return;
+      }
+      const updated = structuredClone(resolved.entity);
+      const index = updated.builder.blocks.findIndex((block) => block.id === blockId);
+      if (index < 0) {
+        await interaction.update(buildBlockPicker(updated, resolved.scope));
+        return;
+      }
+      const [removed] = updated.builder.blocks.splice(index, 1);
+      for (const actionId of referencedActionIds(removed)) deleteActionTree(updated.builder, actionId);
+      const saved = await this.saveScopedEntity(resolved.scope, updated);
+      await interaction.update(saved.builder.blocks.length
+        ? buildBlockPicker(saved, resolved.scope)
+        : buildBuilderPanel(saved, resolved.scope));
+      return;
+    }
+    return originalBuilderButton.call(this, interaction, parts);
   };
 
   const originalHandlePostCommand = BotController.prototype.handlePostCommand;
