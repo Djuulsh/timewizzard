@@ -1,0 +1,14 @@
+/* Timewizzard v1.5.16 — fixed-width inline-code Facts labels */
+
+.v1516-facts-preview{display:grid;gap:6px}
+.v1516-facts-preview-title>:last-child{margin-bottom:0}
+.v1516-facts-preview-list{display:grid;gap:3px}
+.v1516-facts-preview-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px;align-items:start;min-width:0;padding:2px 0}
+.v1516-facts-preview-label{display:inline-block;width:18ch;box-sizing:content-box;white-space:pre;overflow:hidden;text-overflow:clip;padding:2px 4px;border-radius:4px;background:#1e1f22;color:#dbdee1;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;line-height:1.35}
+.v1516-facts-preview-value{min-width:0;overflow-wrap:anywhere}
+.v1516-facts-preview-value>*{margin-top:0;margin-bottom:0}
+
+@media(max-width:420px){
+  .v1516-facts-preview-row{gap:5px}
+  .v1516-facts-preview-label{font-size:.86em;padding-left:3px;padding-right:3px}
+}
