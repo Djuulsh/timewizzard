@@ -1,0 +1,134 @@
+/* Timewizzard v1.5.8 — whole-row drag, :: grip, Inspector cleanup, resilient dialog actions */
+
+/* Desktop/fine pointers: the complete content row / Container header is the
+   drag surface. Buttons and other controls keep their normal pointer cursor. */
+@media(pointer:fine){
+  body.v158-whole-row-drag .block-card,
+  body.v158-whole-row-drag .v140-container-head,
+  body.v158-whole-row-drag .block-main,
+  body.v158-whole-row-drag .v140-container-main{
+    cursor:grab!important;
+  }
+  body.v158-whole-row-drag .block-card:active,
+  body.v158-whole-row-drag .v140-container-head:active,
+  body.v158-whole-row-drag .block-main:active,
+  body.v158-whole-row-drag .v140-container-main:active{
+    cursor:grabbing!important;
+  }
+  body.v158-whole-row-drag .block-actions button,
+  body.v158-whole-row-drag .v140-collapse,
+  body.v158-whole-row-drag [data-container-add]{
+    cursor:pointer!important;
+  }
+}
+
+/* Restore the compact :: grip requested for both pointer and touch movement. */
+body.v158-whole-row-drag .drag-handle.v156-click-move-handle{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace!important;
+  font-size:14px!important;
+  font-weight:900!important;
+  letter-spacing:-1px!important;
+  line-height:1!important;
+}
+
+/* Inspector still shows block identity/location and Move to POST root, but block
+   reordering is intentionally owned by the Blocks panel only. */
+.v153-inspector-head.v158-inspector-no-drag{
+  grid-template-columns:minmax(0,1fr) auto!important;
+}
+.v153-inspector-head.v158-inspector-no-drag .v153-inspector-identity{
+  grid-column:1!important;
+}
+.v153-inspector-head.v158-inspector-no-drag .v153-inspector-head-actions{
+  grid-column:2!important;
+}
+
+/* Use a flex column for picker shells. This avoids grid-row shifting when tabs
+   are hidden or extra rows (such as Heading None) are inserted. The list is the
+   only flexible/scrolling region; dialog-actions always remains visible. */
+.v131-picker-dialog,
+.v152-add-dialog{
+  max-height:calc(100vh - 8px)!important;
+  max-height:calc(100dvh - 8px)!important;
+  overflow:hidden!important;
+}
+.v131-picker-shell,
+.v152-add-shell{
+  display:flex!important;
+  flex-direction:column!important;
+  width:100%!important;
+  height:min(760px,calc(100vh - 12px))!important;
+  height:min(760px,calc(100dvh - 12px))!important;
+  max-height:calc(100vh - 12px)!important;
+  max-height:calc(100dvh - 12px)!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+.v131-picker-shell>.dialog-head,
+.v131-picker-shell>.v131-picker-tabs,
+.v131-picker-shell>.v131-picker-tools,
+.v131-picker-shell>.v131-picker-hint,
+.v131-picker-shell>.v154-emoji-none-row,
+.v152-add-shell>.dialog-head,
+.v152-add-shell>.v152-add-toolbar,
+.v152-add-shell>.v152-add-categories,
+.v152-add-shell>.v152-add-result-head{
+  flex:0 0 auto!important;
+}
+.v131-picker-list,
+.v152-add-grid{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:auto!important;
+  overscroll-behavior:contain;
+}
+.v131-picker-shell>.dialog-actions,
+.v152-add-shell>.dialog-actions{
+  position:relative!important;
+  bottom:auto!important;
+  z-index:30!important;
+  display:flex!important;
+  flex:0 0 auto!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  width:100%!important;
+  min-height:46px!important;
+  margin:0!important;
+  border-top:1px solid var(--line-soft)!important;
+  box-shadow:0 -8px 18px rgba(0,0,0,.12)!important;
+  padding:8px 10px max(8px,env(safe-area-inset-bottom))!important;
+}
+.v131-picker-shell>.dialog-actions{
+  background:#171a20!important;
+}
+.v152-add-shell>.dialog-actions{
+  background:#12151b!important;
+}
+.v131-picker-shell>.dialog-actions [data-v131-close="v131PickerDialog"],
+.v152-add-shell>.dialog-actions button{
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-height:34px!important;
+}
+
+@media(max-height:480px){
+  .v131-picker-shell>.dialog-head p,
+  .v152-add-shell>.dialog-head p{display:none!important}
+  .v131-picker-shell>.dialog-head,
+  .v152-add-shell>.dialog-head{padding-top:7px!important;padding-bottom:7px!important}
+  .v131-picker-hint{padding-top:4px!important;padding-bottom:3px!important;min-height:0!important}
+  .v154-emoji-none-row{padding-top:3px!important;padding-bottom:4px!important}
+  .v131-picker-shell>.dialog-actions,
+  .v152-add-shell>.dialog-actions{min-height:40px!important;padding-top:5px!important}
+}
+
+@media(max-width:760px){
+  .v153-inspector-head.v158-inspector-no-drag{
+    grid-template-columns:1fr!important;
+  }
+  .v153-inspector-head.v158-inspector-no-drag .v153-inspector-head-actions{
+    grid-column:1!important;
+    justify-content:flex-start!important;
+  }
+}
