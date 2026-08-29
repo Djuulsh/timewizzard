@@ -17,6 +17,8 @@ import { truncate } from '../utils.js';
 const TYPE_NAMES = {
   text: 'Tekst / Markdown',
   image: 'Billede / banner',
+  gallery: 'Media Gallery',
+  thumbnail: 'Thumbnail',
   separator: 'Separator',
   open: 'Open-knap + ephemeral svar',
   link: 'Link-knap',
@@ -28,6 +30,8 @@ const TYPE_NAMES = {
 const TYPE_ICONS = {
   text: '📝',
   image: '🖼️',
+  gallery: '🖼️',
+  thumbnail: '🔲',
   separator: '➖',
   open: '🔘',
   link: '🔗',
@@ -64,10 +68,18 @@ function profilePart(classKey, resolutionKey) {
   return `${classKey}:${resolutionKey}`;
 }
 
+function serializeGalleryItems(block) {
+  return (block.items ?? [])
+    .map((item) => `${item.url} | ${item.description ?? ''} | ${item.spoiler ? 'ja' : 'nej'}`)
+    .join('\n');
+}
+
 function blockSummary(block) {
   switch (block.type) {
     case 'text': return `Tekst: ${truncate(String(block.content ?? '').replace(/\s+/g, ' '), 65)}`;
     case 'image': return `Billede: ${truncate(block.url, 65)}`;
+    case 'gallery': return `Media Gallery: ${block.items?.length ?? 0} billeder`;
+    case 'thumbnail': return `Thumbnail: ${truncate(String(block.text ?? '').replace(/\s+/g, ' '), 55)}`;
     case 'separator': return 'Separator';
     case 'open': return `Open: ${truncate(String(block.text ?? '').replace(/\s+/g, ' '), 65)}`;
     case 'link': return `Link: ${truncate(String(block.text ?? '').replace(/\s+/g, ' '), 65)}`;
@@ -99,22 +111,36 @@ export function buildBuilderPanel(entity, scope) {
   }
 
   const modified = isPublishedModified(entity, scope);
+  const deleted = scope.kind === 'p' && entity.discordState?.status === 'deleted';
   const status = scope.kind === 'd'
     ? '🟡 Kladde'
-    : modified
-      ? '🟠 Ændringer ikke publiceret'
-      : '🟢 Synkroniseret';
-  const publishLabel = scope.kind === 'd' ? 'Publicer' : modified ? 'Publicer ændringer' : 'Genpublicer';
+    : deleted
+      ? '🔴 Slettet på Discord'
+      : modified
+        ? '🟠 Ændringer ikke publiceret'
+        : '🟢 Synkroniseret';
+  const publishLabel = scope.kind === 'd'
+    ? 'Publicer'
+    : deleted
+      ? 'Genskab'
+      : modified
+        ? 'Publicer ændringer'
+        : 'Genpublicer';
   const noBlocks = (entity.builder?.blocks?.length ?? 0) === 0;
 
   const lines = [
-    '## 🛠 Shrouded Post Builder v1.2',
+    '## 🛠 Timewizzard Post Builder v1.3.0',
     `**${entity.title}**`,
-    `${status} · ID: \`${scope.id}\``,
+    `${status} · Builder-ID: \`${scope.id}\``,
     `Blocks: **${stats.blockCount}** · Discord-beskeder: **${stats.messageCount}** · Accent: \`${colorToHex(entity.builder.accentColor)}\``
   ];
 
-  if (scope.kind === 'p' && modified) {
+  if (deleted) {
+    const destinationMissing = entity.discordState?.reason === 'destination_missing';
+    lines.push(destinationMissing
+      ? '⚠️ Discord-destinationen findes ikke længere. Builder-data er bevaret. Vælg en ny destination i Web Builder og genskab opslaget.'
+      : '⚠️ Discord-beskeden/tråden er slettet, men Builder-data er bevaret. Brug **Genskab** for at publicere igen.');
+  } else if (scope.kind === 'p' && modified) {
     lines.push('⚠️ Builderen er ændret siden sidste publicering. Brug **Publicer ændringer** når previewet ser rigtigt ud.');
   } else if (scope.kind === 'p') {
     lines.push('Builderen matcher det senest publicerede opslag. Du kan stadig **Genpublicere** for at genopbygge Discord-layoutet.');
@@ -126,7 +152,7 @@ export function buildBuilderPanel(entity, scope) {
     new ButtonBuilder().setCustomId(`builder_add:${scopePart(scope)}`).setLabel('+ Block').setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId(`builder_blocks:${scopePart(scope)}`).setLabel('Blocks').setStyle(ButtonStyle.Secondary).setDisabled(noBlocks),
     new ButtonBuilder().setCustomId(`builder_preview:${scopePart(scope)}`).setLabel('Preview').setStyle(ButtonStyle.Secondary).setDisabled(noBlocks || Boolean(statsError)),
-    new ButtonBuilder().setCustomId(`builder_publish:${scopePart(scope)}`).setLabel(publishLabel).setStyle(ButtonStyle.Success).setDisabled(noBlocks || Boolean(statsError))
+    new ButtonBuilder().setCustomId(`builder_publish:${scopePart(scope)}`).setLabel(publishLabel).setStyle(ButtonStyle.Success).setDisabled(noBlocks || Boolean(statsError) || (deleted && entity.discordState?.reason === 'destination_missing'))
   );
 
   const secondRow = new ActionRowBuilder().addComponents(
@@ -149,6 +175,8 @@ export function buildAddBlockPicker(entity, scope) {
     .addOptions(
       { label: 'Tekst / Markdown', value: 'text', description: 'Overskrifter, beskrivelser og fri Markdown-tekst' },
       { label: 'Billede / banner', value: 'image', description: 'Et header-banner eller andet billede' },
+      { label: 'Media Gallery', value: 'gallery', description: '1-10 billeder i en Components V2 gallery' },
+      { label: 'Thumbnail', value: 'thumbnail', description: 'Tekst med et thumbnail som accessory' },
       { label: 'Separator', value: 'separator', description: 'En rigtig Components V2 skillelinje' },
       { label: 'Open-knap', value: 'open', description: 'Tekstlinje + Open-knap med ephemeral svar' },
       { label: 'Link-knap', value: 'link', description: 'Tekstlinje + knap der åbner en URL' },
@@ -380,7 +408,7 @@ export function buildSettingsModal(entity, scope) {
     .setTitle('Post settings')
     .addLabelComponents(
       makeLabel({
-        label: 'Forum-postens titel',
+        label: 'Postens titel / Builder-navn',
         input: makeInput({ id: 'post_title', maxLength: 100, value: entity.title, placeholder: 'Informationsopslag' })
       }),
       makeLabel({
@@ -397,7 +425,7 @@ export function buildAddBlockModal(type, entity, scope) {
       return new ModalBuilder().setCustomId(id).setTitle('Tilføj tekst').addLabelComponents(
         makeLabel({
           label: 'Markdown-tekst',
-          description: 'Discord Markdown er understøttet.',
+          description: 'Discord Markdown + Timewizzard \\>>> quote-stop er understøttet.',
           input: makeInput({ id: 'content', style: TextInputStyle.Paragraph, maxLength: 4_000, placeholder: '# Overskrift\nBeskrivelse…' })
         })
       );
@@ -405,6 +433,21 @@ export function buildAddBlockModal(type, entity, scope) {
       return new ModalBuilder().setCustomId(id).setTitle('Tilføj billede').addLabelComponents(
         makeLabel({ label: 'Billed-URL', input: makeInput({ id: 'url', maxLength: 1_000, placeholder: 'https://.../banner.png' }) }),
         makeLabel({ label: 'Beskrivelse / alt text', input: makeInput({ id: 'description', required: false, maxLength: 1_000, placeholder: 'Valgfri beskrivelse' }) })
+      );
+    case 'gallery':
+      return new ModalBuilder().setCustomId(id).setTitle('Tilføj Media Gallery').addLabelComponents(
+        makeLabel({
+          label: 'Gallery items',
+          description: 'Én pr. linje: URL | beskrivelse | ja/nej (spoiler). Maks. 10.',
+          input: makeInput({ id: 'items', style: TextInputStyle.Paragraph, maxLength: 4_000, placeholder: 'https://.../1.png | Første billede | nej\nhttps://.../2.png | Spoiler | ja' })
+        })
+      );
+    case 'thumbnail':
+      return new ModalBuilder().setCustomId(id).setTitle('Tilføj Thumbnail').addLabelComponents(
+        makeLabel({ label: 'Tekst / Markdown', input: makeInput({ id: 'text', style: TextInputStyle.Paragraph, maxLength: 4_000, placeholder: '## Information\nTekst ved thumbnail…' }) }),
+        makeLabel({ label: 'Thumbnail URL', input: makeInput({ id: 'url', maxLength: 1_000, placeholder: 'https://.../thumb.png' }) }),
+        makeLabel({ label: 'Beskrivelse / alt text', input: makeInput({ id: 'description', required: false, maxLength: 1_000, placeholder: 'Valgfri beskrivelse' }) }),
+        makeLabel({ label: 'Spoiler?', input: makeInput({ id: 'spoiler', required: false, maxLength: 5, value: 'nej', placeholder: 'ja/nej' }) })
       );
     case 'open':
       return new ModalBuilder().setCustomId(id).setTitle('Tilføj Open-knap').addLabelComponents(
@@ -444,12 +487,30 @@ export function buildEditBlockModal(entity, scope, block) {
   switch (block.type) {
     case 'text':
       return new ModalBuilder().setCustomId(id).setTitle('Rediger tekst').addLabelComponents(
-        makeLabel({ label: 'Markdown-tekst', input: makeInput({ id: 'content', style: TextInputStyle.Paragraph, maxLength: 4_000, value: block.content }) })
+        makeLabel({ label: 'Markdown-tekst', description: 'Brug \\>>> på en selvstændig linje for at afslutte en >>> quote.', input: makeInput({ id: 'content', style: TextInputStyle.Paragraph, maxLength: 4_000, value: block.content }) })
       );
     case 'image':
       return new ModalBuilder().setCustomId(id).setTitle('Rediger billede').addLabelComponents(
         makeLabel({ label: 'Billed-URL', input: makeInput({ id: 'url', maxLength: 1_000, value: block.url }) }),
         makeLabel({ label: 'Beskrivelse / alt text', input: makeInput({ id: 'description', required: false, maxLength: 1_000, value: block.description }) })
+      );
+    case 'gallery': {
+      const items = serializeGalleryItems(block);
+      if (items.length > 4_000) throw new Error('Gallery-data er for stor til Discords modal-editor. Brug Web Builder til at redigere den.');
+      return new ModalBuilder().setCustomId(id).setTitle('Rediger Media Gallery').addLabelComponents(
+        makeLabel({
+          label: 'Gallery items',
+          description: 'Én pr. linje: URL | beskrivelse | ja/nej (spoiler).',
+          input: makeInput({ id: 'items', style: TextInputStyle.Paragraph, maxLength: 4_000, value: items })
+        })
+      );
+    }
+    case 'thumbnail':
+      return new ModalBuilder().setCustomId(id).setTitle('Rediger Thumbnail').addLabelComponents(
+        makeLabel({ label: 'Tekst / Markdown', input: makeInput({ id: 'text', style: TextInputStyle.Paragraph, maxLength: 4_000, value: block.text }) }),
+        makeLabel({ label: 'Thumbnail URL', input: makeInput({ id: 'url', maxLength: 1_000, value: block.url }) }),
+        makeLabel({ label: 'Beskrivelse / alt text', input: makeInput({ id: 'description', required: false, maxLength: 1_000, value: block.description }) }),
+        makeLabel({ label: 'Spoiler?', input: makeInput({ id: 'spoiler', required: false, maxLength: 5, value: block.spoiler ? 'ja' : 'nej' }) })
       );
     case 'open':
       return new ModalBuilder().setCustomId(id).setTitle('Rediger Open-knap').addLabelComponents(
@@ -467,13 +528,13 @@ export function buildEditBlockModal(entity, scope, block) {
     case 'select': {
       const specification = serializeSelectOptions(block, entity.builder.actions);
       if (specification.length > 4_000) {
-        throw new Error('Denne importerede select er for stor til Discords modal-editor. Eksporter JSON og rediger den dér.');
+        throw new Error('Denne importerede select er for stor til Discords modal-editor. Eksporter JSON eller brug Web Builder.');
       }
       return new ModalBuilder().setCustomId(id).setTitle('Rediger select box').addLabelComponents(
         makeLabel({ label: 'Placeholder', input: makeInput({ id: 'placeholder', maxLength: 150, value: block.placeholder || 'Vælg en mulighed…' }) }),
         makeLabel({
           label: 'Options',
-          description: 'Én pr. linje: Label | Svar. Brug \\n for linjeskift i svaret.',
+          description: 'Én pr. linje: Label | Svar. Nested next-steps bevares for eksisterende options.',
           input: makeInput({ id: 'options', style: TextInputStyle.Paragraph, maxLength: 4_000, value: specification })
         })
       );
