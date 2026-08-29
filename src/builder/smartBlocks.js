@@ -68,18 +68,13 @@ function stepsContent(block) {
 
 function factsContent(block) {
   const title = asText(block.title);
-  const items = (block.items ?? []).map((item) => ({
-    label: asText(item?.label),
-    value: asText(item?.value)
-  }));
-  const labelWidth = Math.min(18, Math.max(0, ...items.map((item) => item.label.length)));
-  const rows = items.map((item) => {
-    const valueLines = item.value.split(/\r?\n/);
-    const gap = '\u2007'.repeat(Math.max(2, labelWidth - Math.min(item.label.length, labelWidth) + 2));
-    const continuation = '\u2007'.repeat(labelWidth + 2);
+  const gap = '\u2003\u2003';
+  const rows = (block.items ?? []).map((item) => {
+    const label = asText(item?.label);
+    const valueLines = asText(item?.value).split(/\r?\n/);
     return [
-      `**${item.label}**${gap}${valueLines[0] ?? ''}`,
-      ...valueLines.slice(1).map((line) => `${continuation}${line}`)
+      `**${label}**${gap}${valueLines[0] ?? ''}`,
+      ...valueLines.slice(1).map((line) => `${gap}${line}`)
     ].join('\n');
   });
   return [title ? `### ${title}` : null, ...rows].filter(Boolean).join('\n');
