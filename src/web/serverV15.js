@@ -3,11 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createWebServer as createBaseWebServer } from './server.js';
 
-const VERSION = '1.5.1';
+const VERSION = '1.5.2';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(__dirname, '../../web');
-const V151_JS = fs.readFileSync(path.join(WEB_ROOT, 'v151.js'), 'utf8');
-const V151_CSS = fs.readFileSync(path.join(WEB_ROOT, 'v151.css'), 'utf8');
+const EXTRA_JS = ['v151.js', 'v152.js'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
+const EXTRA_CSS = ['v151.css', 'v152.css'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
 
 const V15_FEATURES = [
   'template-categories',
@@ -23,7 +23,13 @@ const V15_FEATURES = [
   'smart-countdown',
   'smart-code',
   'smart-progress',
-  'heading-emoji-picker'
+  'heading-emoji-picker',
+  'sticky-editor-toolbar',
+  'header-add-block',
+  'block-picker-categories',
+  'block-picker-search',
+  'block-target-picker',
+  'compact-post-actions'
 ];
 
 function patchResponse(request, response) {
@@ -35,12 +41,8 @@ function patchResponse(request, response) {
   response.end = (chunk, encoding, callback) => {
     const raw = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk ?? '');
 
-    if (pathname === '/app.js') {
-      return originalEnd(`${raw}\n\n${V151_JS}`, encoding, callback);
-    }
-    if (pathname === '/app.css') {
-      return originalEnd(`${raw}\n\n${V151_CSS}`, encoding, callback);
-    }
+    if (pathname === '/app.js') return originalEnd(`${raw}\n\n${EXTRA_JS}`, encoding, callback);
+    if (pathname === '/app.css') return originalEnd(`${raw}\n\n${EXTRA_CSS}`, encoding, callback);
 
     try {
       const data = JSON.parse(raw);
