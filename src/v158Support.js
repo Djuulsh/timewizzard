@@ -5,7 +5,7 @@ import {
   MessageFlags
 } from 'discord.js';
 
-const VERSION = '1.5.18';
+const VERSION = '1.5.19';
 
 export function installV158Support(ControllerClass) {
   ControllerClass.prototype.showWebBuilder = async function showWebBuilderV158(interaction) {
@@ -32,9 +32,10 @@ export function installV158Support(ControllerClass) {
         '',
         '**Flyt blocks:** Træk hele block-rækken på computer, eller klik/tap `::` og vælg destination.',
         '**Redigér blocks:** Et almindeligt klik på blockets indhold åbner det i Inspector.',
-        '**Facts / Key Values:** Den strukturerede row-editor beholdes, mens Discord-output viser Label over Value for sikker wrapping.',
-        '**Search:** Block- og template-søgning søger nu globalt på tværs af alle kategorier.',
-        '**Templates:** Web Builderen indeholder nu 35 skabeloner, inklusive 10 nye use-case templates.'
+        '**Markdown:** Én fælles toolbar følger nu det aktive Markdown-felt og Discord Insert arbejder på samme aktive felt.',
+        '**Responsive UX:** Heading, Facts, Button Row og øvrige Inspector-felter tilpasser sig Inspectorens faktiske bredde på computer, iPad og mobil.',
+        '**Header:** Add block, Save, Publish, Undo og Redo forbliver direkte tilgængelige; sekundære handlinger flyttes til More på smallere skærme uden horisontal scroll.',
+        '**Search:** Block- og template-søgning søger globalt på tværs af alle kategorier.'
       ].join('\n'),
       components: [row],
       flags: MessageFlags.Ephemeral,
