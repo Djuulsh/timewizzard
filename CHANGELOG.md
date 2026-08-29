@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.5.3
+
+### Inspector & Editor UX pass
+- Moved every Inspector Markdown toolbar below its related textarea, directly before Markdown help where a reference panel is present.
+- Added embedded character counters to larger text fields. The counter lives in a reserved footer inside the field frame, so typed text can never overlap it.
+- Character counters use subtle thresholds: neutral below 80%, yellow from 80%, orange from 95%, and red at the limit/over-limit. No extra “characters left” text is shown.
+- Added textarea autosizing up to a sensible maximum height, with internal scrolling only for longer content.
+
+### Clearer Inspector structure
+- Added a consistent Inspector header showing block type and whether the block is at **POST root** or inside a named **Container**.
+- Blocks inside a Container get a one-click **Move to POST root** action.
+- Added a dedicated Inspector drag handle. Blocks can be dragged from the Inspector into the existing block tree or dropped onto a POST-root drop zone to move them out of a Container.
+- Added lightweight **Content**, **Appearance** and collapsed **Advanced** grouping where those sections improve readability without adding unnecessary headings.
+- Destructive Container actions remain visually separated from everyday editing controls.
+
+### Inline feedback and visual editing
+- Added inline URL/event validation near the field being edited instead of relying on disruptive toast errors while typing.
+- Live Discord Preview elements are now linked to their Builder blocks: selecting a block highlights the matching preview element, and clicking a preview element selects the corresponding block in Blocks + Inspector.
+- Mobile Markdown toolbars stay on one horizontal scrolling row instead of wrapping into several compact lines.
+
 ## 1.5.2
 
 ### Header-first Add Block workflow
@@ -147,7 +167,7 @@
 ## 1.3.0
 
 ### Reliability and post lifecycle
-- Published posts now have stable Builder IDs independent of Discord message/thread IDs.
+- Published posts now have stable Builder IDs independent from Discord message/thread IDs.
 - Detects when a managed Discord message, forum thread or destination disappears.
 - Missing targets are marked **Deleted on Discord** while Builder data remains editable.
 - Added **Re-create** flow in the original destination or a newly selected destination.
