@@ -13,6 +13,8 @@ export const SMART_BLOCK_TYPES = Object.freeze([
   'progress'
 ]);
 
+export const FACTS_LABEL_WIDTH = 18;
+
 const SMART_BLOCK_SET = new Set(SMART_BLOCK_TYPES);
 const CALLOUT_TONES = new Set(['info', 'success', 'warning', 'danger', 'neutral']);
 const TONE_ICON = {
@@ -66,18 +68,23 @@ function stepsContent(block) {
   return [title ? `## ${title}` : null, ...rows].filter((value, index, values) => value !== null && !(value === '' && values[index + 1] === '')).join('\n').trim();
 }
 
+function factsLabelCell(value) {
+  const source = Array.from(asText(value).replaceAll('`', 'ˋ'));
+  const clipped = source.length > FACTS_LABEL_WIDTH
+    ? [...source.slice(0, FACTS_LABEL_WIDTH - 1), '…']
+    : source;
+  const padding = '\u00A0'.repeat(Math.max(0, FACTS_LABEL_WIDTH - clipped.length));
+  return `\`${clipped.join('')}${padding}\``;
+}
+
 function factsContent(block) {
   const title = asText(block.title);
-  // Discord collapses/handles several Unicode spacing characters inconsistently
-  // in proportional text. Three NBSPs are preserved by Discord and provide the
-  // same visual gap after every label without pretending to be a fixed column.
-  const gap = '\u00A0\u00A0\u00A0';
   const rows = (block.items ?? []).map((item) => {
-    const label = asText(item?.label);
+    const labelCell = factsLabelCell(item?.label);
     const valueLines = asText(item?.value).split(/\r?\n/);
     return [
-      `**${label}**${gap}${valueLines[0] ?? ''}`,
-      ...valueLines.slice(1).map((line) => `${gap}${line}`)
+      `${labelCell} ${valueLines[0] ?? ''}`,
+      ...valueLines.slice(1).map((line) => `${'\u00A0'.repeat(FACTS_LABEL_WIDTH + 2)}${line}`)
     ].join('\n');
   });
   return [title ? `### ${title}` : null, ...rows].filter(Boolean).join('\n');
