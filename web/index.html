@@ -1,105 +1,41 @@
 <!doctype html>
-<html lang="da">
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <title>Timewizzard Web Builder v1.3.1</title>
+  <meta name="theme-color" content="#11141a">
+  <title>Timewizzard Web Builder</title>
   <link rel="stylesheet" href="/app.css">
-  <style>
-    /* v1.3 UI polish: keep boolean controls compact and make separator spacing obvious. */
-    #inspector .inspector-card > label:has(> input[type="checkbox"]) {
-      display: inline-flex !important;
-      width: max-content;
-      max-width: 100%;
-      align-items: center;
-      gap: 7px;
-      margin-top: 5px;
-      padding: 5px 8px;
-      border: 1px solid var(--line-soft);
-      border-radius: 7px;
-      background: #11141a;
-      cursor: pointer;
-    }
-    #inspector .inspector-card > label:has(> input[type="checkbox"]) > input[type="checkbox"] {
-      width: 14px;
-      height: 14px;
-      margin: 0;
-      padding: 0;
-      flex: 0 0 auto;
-    }
-    .separator-size-demo {
-      margin: 8px 0 2px;
-      padding: 7px 9px;
-      border: 1px solid var(--line-soft);
-      border-radius: 7px;
-      background: #11141a;
-      color: var(--muted);
-      font-size: 10px;
-    }
-    .separator-size-demo .separator-size-demo-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-    }
-    .separator-size-demo strong { color: #d8dbe0; font-size: 10px; }
-    .separator-size-demo-track {
-      position: relative;
-      transition: height .12s ease;
-    }
-    .separator-size-demo-track::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 50%;
-      border-top: 1px solid #5b5e66;
-    }
-    .separator-size-demo.small .separator-size-demo-track { height: 14px; }
-    .separator-size-demo.large .separator-size-demo-track { height: 38px; }
-    .preview-separator.separator-small {
-      margin: 5px 10px;
-      border-top-color: #4d5058;
-      opacity: .72;
-    }
-    .preview-separator.separator-large {
-      margin: 18px 10px;
-      border-top-color: #656871;
-      opacity: 1;
-    }
-    .preview-separator-space-small { height: 10px !important; }
-    .preview-separator-space-large { height: 30px !important; }
-  </style>
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <div class="brand-mark">T</div>
-      <div><strong>Timewizzard Web Builder</strong><small>v1.3.1 · Discord-native content editor</small></div>
+      <div class="brand-mark" aria-hidden="true">T</div>
+      <div><strong>Timewizzard Web Builder</strong><small>Discord-native content editor</small></div>
     </div>
     <div class="top-actions">
-      <span id="identity" class="identity">Indlæser…</span>
-      <button id="refreshBtn" class="btn ghost">↻ Refresh</button>
-      <button id="importDiscohookBtn" class="btn ghost">Import DiscoHook</button>
-      <button id="newDraftBtn" class="btn primary">+ New draft</button>
+      <span id="identity" class="identity">Loading…</span>
+      <button id="refreshBtn" class="btn ghost" type="button">↻ Refresh</button>
+      <button id="importDiscohookBtn" class="btn ghost" type="button">Import DiscoHook</button>
+      <button id="newDraftBtn" class="btn primary" type="button">+ New draft</button>
       <a class="btn ghost" href="/logout">Log out</a>
     </div>
   </header>
 
   <main class="workspace">
-    <aside class="sidebar panel">
+    <aside id="postsSidebar" class="sidebar panel" aria-label="Posts and drafts">
       <div class="panel-title-row"><h2>Posts</h2><span id="entityCount" class="pill">0</span></div>
-      <label class="search-label"><span>Search</span><input id="entitySearch" type="search" placeholder="Find post or draft…"></label>
+      <label class="search-label"><span>Search</span><input id="entitySearch" type="search" placeholder="Find post or draft…" autocomplete="off"></label>
       <div id="entityList" class="entity-list"></div>
     </aside>
 
-    <section class="builder panel">
+    <section class="builder panel" aria-label="Post editor">
       <div id="emptyState" class="empty-state">
-        <div class="empty-icon">🛠️</div>
+        <div class="empty-icon" aria-hidden="true">🛠️</div>
         <h1>Choose a post or create a draft</h1>
-        <p>Builder-data er persistent og kan genskabe opslag, selv hvis Discord-beskeden bliver slettet.</p>
-        <button class="btn primary" data-action="new-draft">Create first draft</button>
+        <p>Builder data is persistent and can recreate a post even when its Discord message is removed.</p>
+        <button class="btn primary" type="button" data-action="new-draft">Create first draft</button>
       </div>
 
       <div id="editor" class="editor hidden">
@@ -108,50 +44,50 @@
             <label for="postTitle">Post title</label>
             <input id="postTitle" maxlength="100" autocomplete="off">
             <div class="title-subrow">
-              <div id="editorMeta" class="meta"></div>
+              <div id="editorMeta" class="meta" aria-live="polite"></div>
               <label class="accent-control">Accent <input id="postAccent" type="color" value="#f1c40f"></label>
             </div>
           </div>
-          <div class="editor-actions">
-            <button id="undoBtn" class="btn ghost" title="Undo">↶ Undo</button>
-            <button id="redoBtn" class="btn ghost" title="Redo">↷ Redo</button>
-            <button id="saveBtn" class="btn primary">Save</button>
-            <button id="publishBtn" class="btn success">Publish</button>
-            <button id="destinationBtn" class="btn ghost">Destination</button>
-            <button id="historyBtn" class="btn ghost">History</button>
-            <button id="cloneBtn" class="btn ghost">Clone</button>
-            <button id="exportBtn" class="btn ghost">Export JSON</button>
-            <button id="deleteBtn" class="btn danger">Delete</button>
+          <div class="editor-actions" aria-label="Post actions">
+            <button id="undoBtn" class="btn ghost" type="button" title="Undo">↶ Undo</button>
+            <button id="redoBtn" class="btn ghost" type="button" title="Redo">↷ Redo</button>
+            <button id="saveBtn" class="btn primary" type="button">Save</button>
+            <button id="publishBtn" class="btn success" type="button">Publish</button>
+            <button id="destinationBtn" class="btn ghost" type="button">Destination</button>
+            <button id="historyBtn" class="btn ghost" type="button">History</button>
+            <button id="cloneBtn" class="btn ghost" type="button">Clone</button>
+            <button id="exportBtn" class="btn ghost" type="button">Export JSON</button>
+            <button id="deleteBtn" class="btn danger" type="button">Delete</button>
           </div>
         </div>
 
-        <div id="orphanBanner" class="orphan-banner hidden"></div>
+        <div id="orphanBanner" class="orphan-banner hidden" role="status"></div>
 
         <div class="builder-grid">
-          <div class="block-column">
+          <div class="block-column" tabindex="-1">
             <div class="section-heading">
-              <div><h2>Blocks</h2><p>Drag to reorder. Ctrl/Cmd+S saves. Undo/Redo is local until Save.</p></div>
+              <div><h2>Blocks</h2><p>Drag on desktop or use :: and choose a destination. Ctrl/Cmd+S saves.</p></div>
               <span id="dirtyBadge" class="pill neutral">Saved</span>
             </div>
             <div id="blockList" class="block-list"></div>
-            <div class="add-block">
+            <div class="add-block" aria-hidden="true">
               <h3>Add block</h3>
               <div class="add-grid">
-                <button data-add="text">📝 Text</button>
-                <button data-add="image">🖼️ Image</button>
-                <button data-add="gallery">🖼️ Gallery</button>
-                <button data-add="thumbnail">🔲 Thumbnail</button>
-                <button data-add="separator">➖ Separator</button>
-                <button data-add="open">🔘 Open</button>
-                <button data-add="link">🔗 Link</button>
-                <button data-add="select">🔽 Select</button>
-                <button data-add="profile_select">🎮 MerfinUI Select</button>
-                <button data-add="profile_open_list">📋 Legacy Open List</button>
+                <button data-add="text" type="button">📝 Text</button>
+                <button data-add="image" type="button">🖼️ Image</button>
+                <button data-add="gallery" type="button">🖼️ Gallery</button>
+                <button data-add="thumbnail" type="button">🔲 Thumbnail</button>
+                <button data-add="separator" type="button">➖ Separator</button>
+                <button data-add="open" type="button">🔘 Open</button>
+                <button data-add="link" type="button">🔗 Link</button>
+                <button data-add="select" type="button">🔽 Select</button>
+                <button data-add="profile_select" type="button">🎮 MerfinUI Select</button>
+                <button data-add="profile_open_list" type="button">📋 Legacy Open List</button>
               </div>
             </div>
           </div>
 
-          <div class="inspector-column">
+          <div class="inspector-column" tabindex="-1">
             <div class="section-heading"><div><h2>Inspector</h2><p>Edit the selected block.</p></div></div>
             <div id="inspector" class="inspector-placeholder">Select a block to edit it.</div>
           </div>
@@ -159,14 +95,14 @@
       </div>
     </section>
 
-    <aside class="preview panel">
+    <aside class="preview panel" aria-label="Live Discord preview" tabindex="-1">
       <div class="section-heading preview-heading">
-        <div><h2>Live Discord preview</h2><p>Visual approximation · Discord remains authoritative</p></div>
+        <div><h2>Live Discord preview</h2><p>Validated against the publish payload before posting</p></div>
         <span id="previewStats" class="pill neutral">—</span>
       </div>
       <div class="discord-surface">
         <div class="discord-message">
-          <div class="bot-avatar">T</div>
+          <div class="bot-avatar" aria-hidden="true">T</div>
           <div class="message-body">
             <div class="message-author">Timewizzard <span>APP</span></div>
             <div id="previewContent" class="discord-container empty-preview">Select a post to preview.</div>
@@ -176,11 +112,11 @@
     </aside>
   </main>
 
-  <div id="toastHost" class="toast-host" aria-live="polite"></div>
+  <div id="toastHost" class="toast-host" aria-live="polite" aria-atomic="true"></div>
 
   <dialog id="newDraftDialog" class="dialog">
     <form id="newDraftForm" method="dialog">
-      <div class="dialog-head"><div><h2>Create draft</h2><p>Choose destination and template.</p></div><button type="button" class="icon-btn" data-close-dialog="newDraftDialog">×</button></div>
+      <div class="dialog-head"><div><h2>Create draft</h2><p>Choose destination and template.</p></div><button type="button" class="icon-btn" data-close-dialog="newDraftDialog" aria-label="Close">×</button></div>
       <label>Title<input id="newTitle" maxlength="100" required placeholder="Information"></label>
       <label>Destination<select id="newForum" required></select></label>
       <label>Forum tag<select id="newTag"><option value="">No tag</option></select></label>
@@ -191,7 +127,7 @@
 
   <dialog id="destinationDialog" class="dialog">
     <form id="destinationForm" method="dialog">
-      <div class="dialog-head"><div><h2>Destination / Repair</h2><p>Move, relink or re-create the current post.</p></div><button type="button" class="icon-btn" data-close-dialog="destinationDialog">×</button></div>
+      <div class="dialog-head"><div><h2>Destination / Repair</h2><p>Move, relink or re-create the current post.</p></div><button type="button" class="icon-btn" data-close-dialog="destinationDialog" aria-label="Close">×</button></div>
       <label>Destination<select id="destinationSelect" required></select></label>
       <label>Forum tag<select id="destinationTag"><option value="">No tag</option></select></label>
       <div id="destinationHint" class="dialog-note"></div>
@@ -201,7 +137,7 @@
 
   <dialog id="historyDialog" class="dialog history-dialog">
     <form method="dialog">
-      <div class="dialog-head"><div><h2>Revision history</h2><p>Restore a saved builder revision.</p></div><button type="button" class="icon-btn" data-close-dialog="historyDialog">×</button></div>
+      <div class="dialog-head"><div><h2>Revision history</h2><p>Restore a saved builder revision.</p></div><button type="button" class="icon-btn" data-close-dialog="historyDialog" aria-label="Close">×</button></div>
       <div id="historyList" class="history-list"></div>
       <div class="dialog-actions"><button type="button" class="btn ghost" data-close-dialog="historyDialog">Close</button></div>
     </form>
@@ -209,7 +145,7 @@
 
   <dialog id="discohookDialog" class="dialog profile-dialog">
     <form id="discohookForm" method="dialog">
-      <div class="dialog-head"><div><h2>Import DiscoHook JSON</h2><p>Converts text, embeds, images, links and supported Components V2.</p></div><button type="button" class="icon-btn" data-close-dialog="discohookDialog">×</button></div>
+      <div class="dialog-head"><div><h2>Import DiscoHook JSON</h2><p>Converts text, embeds, images, links and supported Components V2.</p></div><button type="button" class="icon-btn" data-close-dialog="discohookDialog" aria-label="Close">×</button></div>
       <label>Optional title<input id="discohookTitle" maxlength="100" placeholder="Imported DiscoHook"></label>
       <label>Destination<select id="discohookDestination" required></select></label>
       <label>Forum tag<select id="discohookTag"><option value="">No tag</option></select></label>
@@ -220,93 +156,12 @@
 
   <dialog id="profileDialog" class="dialog profile-dialog">
     <form id="profileForm" method="dialog">
-      <div class="dialog-head"><div><h2 id="profileDialogTitle">Profile</h2><p id="profileDialogMeta">MerfinUI class/resolution TXT</p></div><button type="button" class="icon-btn" data-close-dialog="profileDialog">×</button></div>
-      <label>TXT content<textarea id="profileText" rows="16" spellcheck="false" placeholder="!GenereretTextString"></textarea></label>
+      <div class="dialog-head"><div><h2 id="profileDialogTitle">Profile</h2><p id="profileDialogMeta">MerfinUI class/resolution TXT</p></div><button type="button" class="icon-btn" data-close-dialog="profileDialog" aria-label="Close">×</button></div>
+      <label>TXT content<textarea id="profileText" rows="16" spellcheck="false" placeholder="!GeneratedTextString"></textarea></label>
       <div class="dialog-actions split"><button id="clearProfileBtn" type="button" class="btn danger">Clear</button><div><button type="button" class="btn ghost" data-close-dialog="profileDialog">Cancel</button><button type="submit" class="btn primary">Save profile</button></div></div>
     </form>
   </dialog>
 
   <script type="module" src="/app.js"></script>
-  <script type="module">
-    const blockList = document.getElementById('blockList');
-    const previewContent = document.getElementById('previewContent');
-    const inspector = document.getElementById('inspector');
-
-    function separatorCards() {
-      return [...blockList.querySelectorAll('.block-card')].filter((card) =>
-        /Separator/i.test(card.querySelector('.block-main strong')?.textContent || '')
-      );
-    }
-
-    function separatorPreviewNodes() {
-      return [...previewContent.children].filter((node) => {
-        if (node.matches?.('hr.preview-separator')) return true;
-        if (node.tagName !== 'DIV') return false;
-        return /height\s*:\s*10px/i.test(node.getAttribute('style') || '');
-      });
-    }
-
-    function spacingForCard(card) {
-      if (!card) return 'large';
-      if (card.classList.contains('selected')) {
-        const selectedSpacing = inspector.querySelector('#iSpacing');
-        if (selectedSpacing) return selectedSpacing.value === '1' ? 'small' : 'large';
-      }
-      return /Spacing\s+small/i.test(card.querySelector('.block-main small')?.textContent || '') ? 'small' : 'large';
-    }
-
-    function syncSeparatorPreview() {
-      const cards = separatorCards();
-      const nodes = separatorPreviewNodes();
-      nodes.forEach((node, index) => {
-        const size = spacingForCard(cards[index]);
-        node.classList.remove('separator-small', 'separator-large', 'preview-separator-space-small', 'preview-separator-space-large');
-        if (node.matches?.('hr.preview-separator')) {
-          node.classList.add(size === 'small' ? 'separator-small' : 'separator-large');
-        } else {
-          node.classList.add(size === 'small' ? 'preview-separator-space-small' : 'preview-separator-space-large');
-        }
-      });
-    }
-
-    function syncSeparatorInspector() {
-      const spacing = inspector.querySelector('#iSpacing');
-      if (!spacing) return;
-      let demo = inspector.querySelector('.separator-size-demo');
-      if (!demo) {
-        demo = document.createElement('div');
-        demo.innerHTML = '<div class="separator-size-demo-head"><span>Spacing preview</span><strong></strong></div><div class="separator-size-demo-track"></div>';
-        spacing.closest('label')?.insertAdjacentElement('afterend', demo);
-      }
-      const large = spacing.value !== '1';
-      demo.className = `separator-size-demo ${large ? 'large' : 'small'}`;
-      const title = demo.querySelector('strong');
-      const nextTitle = large ? 'Large' : 'Small';
-      if (title && title.textContent !== nextTitle) title.textContent = nextTitle;
-    }
-
-    function syncUiPolish() {
-      syncSeparatorInspector();
-      syncSeparatorPreview();
-    }
-
-    let polishScheduled = false;
-    function scheduleUiPolish() {
-      if (polishScheduled) return;
-      polishScheduled = true;
-      requestAnimationFrame(() => {
-        polishScheduled = false;
-        syncUiPolish();
-      });
-    }
-
-    new MutationObserver(scheduleUiPolish).observe(blockList, { childList: true, subtree: true });
-    new MutationObserver(scheduleUiPolish).observe(previewContent, { childList: true, subtree: true });
-    new MutationObserver(scheduleUiPolish).observe(inspector, { childList: true, subtree: true });
-    inspector.addEventListener('change', (event) => {
-      if (event.target?.id === 'iSpacing') scheduleUiPolish();
-    });
-    syncUiPolish();
-  </script>
 </body>
 </html>
