@@ -1,5 +1,9 @@
 import { makeShortId } from './ids.js';
 
+export function makeContainerBlock({ label = 'New embed', accentColor = 0xF1C40F } = {}) {
+  return { id: makeShortId(3), type: 'container', label, accentColor };
+}
+
 export function makeTextBlock(content) {
   return { id: makeShortId(3), type: 'text', content };
 }
