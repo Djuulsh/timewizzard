@@ -1,5 +1,6 @@
 import {
   addNestedAction,
+  makeContainerBlock,
   makeGalleryBlock,
   makeImageBlock,
   makeOpenBlock,
@@ -28,6 +29,11 @@ validateBuilder(compactBuilder);
 const compactStats = getBuilderStats(makeEntity('compact', 'MerfinUI', compactBuilder), { kind: 'd', id: 'compact' });
 if (compactStats.messageCount !== 1) throw new Error('Compact MerfinUI template must fit one message.');
 
+const legacyBuilder = createBuilderTemplate('merfin_open_list', 'Legacy Profiles');
+validateBuilder(legacyBuilder);
+const legacyStats = getBuilderStats(makeEntity('legacy', 'Legacy Profiles', legacyBuilder), { kind: 'd', id: 'legacy' });
+if (legacyStats.messageCount !== 1) throw new Error('Legacy profile list must fit one message after removing Open buttons.');
+
 const quoteBuilder = createBuilderTemplate('blank', 'Quote escape');
 quoteBuilder.blocks.push({
   id: 'quote01',
@@ -50,6 +56,23 @@ mediaBuilder.blocks.push(
 validateBuilder(mediaBuilder);
 const mediaPayloads = buildBuilderPayloads(makeEntity('media', 'Media', mediaBuilder), { kind: 'd', id: 'media' });
 if (!mediaPayloads.length) throw new Error('Gallery/thumbnail rendering produced no payload.');
+
+const multiContainerBuilder = createBuilderTemplate('blank', 'Multiple embeds');
+multiContainerBuilder.blocks.push(
+  { id: 'maintext', type: 'text', content: '# First embed\nPrimary content.' },
+  makeContainerBlock({ label: 'Second embed', accentColor: 0xFF0000 }),
+  { id: 'secondtext', type: 'text', content: '## Second embed\nSecondary content.' }
+);
+validateBuilder(multiContainerBuilder);
+const multiPayloads = buildBuilderPayloads(makeEntity('multi', 'Multiple embeds', multiContainerBuilder), { kind: 'd', id: 'multi' });
+if (multiPayloads.length !== 1 || multiPayloads[0].components.length !== 2) throw new Error('Two Components V2 containers should remain inside one Discord message when limits allow it.');
+
+for (const template of ['announcement', 'guide', 'faq', 'links', 'youtube']) {
+  const builder = createBuilderTemplate(template, `Template ${template}`);
+  validateBuilder(builder);
+  const stats = getBuilderStats(makeEntity(`tpl-${template}`, template, builder), { kind: 'd', id: `tpl-${template}` });
+  if (stats.messageCount !== 1) throw new Error(`${template} template should fit one Discord message by default.`);
+}
 
 const actionBuilder = createBuilderTemplate('blank', 'Nested actions');
 const open = addActionResult(actionBuilder, makeOpenBlock({
@@ -92,9 +115,12 @@ if (selectedMentions.parse.length !== 0 || selectedMentions.users?.[0] !== '1234
 }
 
 console.log(`Compact template: ${compactStats.blockCount} blocks -> ${compactStats.messageCount} message.`);
+console.log(`Legacy profile list: ${legacyStats.blockCount} blocks -> ${legacyStats.messageCount} message.`);
+console.log('Multiple Components V2 containers in one message validation passed.');
+console.log('Base + YouTube template validation passed.');
 console.log('Quote escape split validation passed.');
 console.log('Gallery + thumbnail validation passed.');
 console.log('Nested ephemeral action validation passed.');
 console.log('DiscoHook import validation passed.');
 console.log('Safe mention validation passed.');
-console.log('Timewizzard v1.3.1 validation passed.');
+console.log('Timewizzard v1.3.2 validation passed.');
