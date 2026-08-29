@@ -3,11 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createWebServer as createBaseWebServer } from './server.js';
 
-const VERSION = '1.5.8';
+const VERSION = '1.5.9';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(__dirname, '../../web');
-const EXTRA_JS = ['v151.js', 'v152.js', 'v153.js', 'v154.js', 'v155.js', 'v156.js', 'v157.js', 'v158.js'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
-const EXTRA_CSS = ['v151.css', 'v152.css', 'v153.css', 'v154.css', 'v155.css', 'v156.css', 'v157.css', 'v158.css'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
+const EXTRA_JS = ['v151.js', 'v152.js', 'v153.js', 'v154.js', 'v155.js', 'v156.js', 'v157.js', 'v158.js', 'v159.js'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
+const EXTRA_CSS = ['v151.css', 'v152.css', 'v153.css', 'v154.css', 'v155.css', 'v156.css', 'v157.css', 'v158.css', 'v159.css'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
 
 const V15_FEATURES = [
   'template-categories',
@@ -57,7 +57,9 @@ const V15_FEATURES = [
   'block-grip-colon',
   'block-panel-only-reorder',
   'resilient-dialog-footer',
-  'discord-webbuilder-version'
+  'discord-webbuilder-version',
+  'whole-row-click-edit',
+  'drag-threshold-click-preservation'
 ];
 
 function patchResponse(request, response) {
