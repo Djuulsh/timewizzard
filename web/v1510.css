@@ -1,0 +1,38 @@
+/* Timewizzard v1.5.10 — grip + Separator alignment hotfix */
+
+/* Force the requested compact :: affordance for every Blocks-panel grip. */
+body.v1510-polish #blockList .drag-handle.v1510-block-grip{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace!important;
+  font-size:14px!important;
+  font-weight:900!important;
+  letter-spacing:-1px!important;
+  line-height:1!important;
+  text-align:center!important;
+}
+
+/* Separator toggle is a compact inline control: checkbox + copy on one line. */
+body.v1510-polish #inspector label.v1510-separator-toggle{
+  display:inline-flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:8px!important;
+  width:max-content!important;
+  max-width:100%!important;
+  margin:0!important;
+  white-space:nowrap!important;
+}
+body.v1510-polish #inspector label.v1510-separator-toggle #iDivider{
+  width:16px!important;
+  height:16px!important;
+  min-width:16px!important;
+  margin:0!important;
+  padding:0!important;
+  flex:0 0 16px!important;
+}
+
+@media(max-width:420px){
+  body.v1510-polish #inspector label.v1510-separator-toggle{
+    white-space:normal!important;
+  }
+}
