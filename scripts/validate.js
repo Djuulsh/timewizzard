@@ -7,13 +7,13 @@ import {
   makeThumbnailBlock
 } from '../src/builder/blocks.js';
 import { buildGenericActionReply } from '../src/builder/actions.js';
-import { buildBuilderPayloads, getBuilderStats, MULTILINE_QUOTE_ESCAPE } from '../src/builder/render.js';
+import { allowedMentionsFor, buildBuilderPayloads, getBuilderStats, MULTILINE_QUOTE_ESCAPE } from '../src/builder/render.js';
 import { createBuilderTemplate } from '../src/builder/templates.js';
 import { validateBuilder } from '../src/builder/validate.js';
 import { convertDiscohook } from '../src/discohook.js';
 
-function makeEntity(id, title, builder) {
-  return { id, title, builder };
+function makeEntity(id, title, builder, extra = {}) {
+  return { id, title, builder, ...extra };
 }
 
 function addActionResult(builder, result) {
@@ -82,9 +82,19 @@ const imported = convertDiscohook({
 if (!imported.builder.blocks.length) throw new Error('DiscoHook converter returned no blocks.');
 validateBuilder(imported.builder);
 
+const safeDefault = allowedMentionsFor(makeEntity('safe', 'Safe', compactBuilder));
+if (safeDefault.parse.length !== 0 || safeDefault.users || safeDefault.roles) throw new Error('Default mention policy must not notify anyone.');
+const selectedMentions = allowedMentionsFor(makeEntity('safe2', 'Selected', compactBuilder, {
+  mentionPolicy: { mode: 'selected', users: ['123456789012345678'], roles: ['234567890123456789'], everyone: true }
+}));
+if (selectedMentions.parse.length !== 0 || selectedMentions.users?.[0] !== '123456789012345678' || selectedMentions.roles?.[0] !== '234567890123456789') {
+  throw new Error('Selected mention policy did not preserve explicit user/role whitelist.');
+}
+
 console.log(`Compact template: ${compactStats.blockCount} blocks -> ${compactStats.messageCount} message.`);
 console.log('Quote escape split validation passed.');
 console.log('Gallery + thumbnail validation passed.');
 console.log('Nested ephemeral action validation passed.');
 console.log('DiscoHook import validation passed.');
-console.log('Timewizzard v1.3.0 validation passed.');
+console.log('Safe mention validation passed.');
+console.log('Timewizzard v1.3.1 validation passed.');
