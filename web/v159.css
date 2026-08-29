@@ -1,0 +1,15 @@
+/* Timewizzard v1.5.9 — make click-to-edit visually clear without losing row drag. */
+
+@media(pointer:fine){
+  /* The row/padding still communicates grab. The semantic content area uses a
+     pointer cursor because a short click opens that block in Inspector. Moving
+     beyond the drag threshold still starts whole-row drag from this same area. */
+  body.v159-click-edit-safe .block-main,
+  body.v159-click-edit-safe .v140-container-main{
+    cursor:pointer!important;
+  }
+  body.v159-click-edit-safe.v157-pointer-dragging .block-main,
+  body.v159-click-edit-safe.v157-pointer-dragging .v140-container-main{
+    cursor:grabbing!important;
+  }
+}
