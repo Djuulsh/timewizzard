@@ -11,6 +11,7 @@ import { config } from './config.js';
 import { BotController } from './controller.js';
 import { installDestinationSupport } from './destinationSupport.js';
 import { installV13Support } from './v13Support.js';
+import { installV158Support } from './v158Support.js';
 import { installNativeV13Support } from './nativeV13Support.js';
 import { installNativeV14Support } from './nativeV14Support.js';
 import { JsonStore } from './storage.js';
@@ -20,8 +21,9 @@ installDestinationSupport(BotController);
 installV13Support(BotController);
 installNativeV13Support(BotController);
 installNativeV14Support(BotController);
+installV158Support(BotController);
 
-const VERSION = '1.5.7';
+const VERSION = '1.5.8';
 const store = new JsonStore(path.join(config.dataDir, 'store.json'));
 await store.init();
 
