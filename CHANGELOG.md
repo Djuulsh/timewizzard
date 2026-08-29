@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.4.0
+
+### Plain posts and true Containers
+- New posts no longer receive an implicit colored Components V2 container.
+- Root-level Text, Image, Gallery, Thumbnail, Separator, YouTube, Link, Open and Select blocks publish as a normal Components V2 post.
+- Containers are now explicit hierarchical parents with their own `children` list and accent color.
+- A single Discord message can mix plain root content with multiple independently colored Containers when limits allow it.
+- The old post-level Accent picker is hidden in Web Builder because color now belongs to an actual Container.
+
+### Hierarchical Web Builder
+- Block tree now shows `POST → Container → child blocks` instead of flat container markers.
+- Containers can be collapsed/expanded, duplicated with all children, removed while keeping their children, or deleted together with their contents.
+- Blocks can be dragged between POST root and Containers and reordered inside their current parent.
+- Container Inspector is simplified to an editor-only name plus one color control.
+- Add Block is grouped into **Content**, **Layout**, **Interactions** and **Special** sections and clearly shows whether new content is being added to POST root or a selected Container.
+
+### Smart YouTube
+- Added a real YouTube content block.
+- Paste a YouTube, youtu.be, Shorts, Embed or Live URL and Timewizzard derives the video ID, canonical Watch URL and thumbnail automatically.
+- YouTube blocks can toggle thumbnail and Watch button independently and support editable title/description/button label.
+
+### Template gallery
+- New Draft now exposes visual template cards grouped by category.
+- Added **Blank Post**, **Simple Announcement**, **Styled Announcement**, **Guide / Information**, **FAQ**, **Links / Resources**, **Raid / Event**, **Recruitment**, **Patch / Update Notes**, **Important / Warning**, **Media / Gallery**, **YouTube Video**, **MerfinUI Select** and **MerfinUI Profile List** templates.
+- Plain templates stay plain; styled templates explicitly create a Container.
+
+### Migration and imports
+- Storage schema upgraded to v5 and Builder schema upgraded to v2.
+- Existing v1.3.x flat layouts are migrated into explicit Containers so their previous colored appearance is preserved.
+- Drafts, published state and revision snapshots are migrated together.
+- DiscoHook imports preserve each embed / Components V2 container as a separate v1.4 Container.
+- Legacy MerfinUI Profile List remains a compact single Text Display with no 18 Open buttons.
+
+### Validation
+- Validation now covers plain root publishing, explicit nested Containers, legacy flat migration, smart YouTube parsing/rendering, all starter templates, compact MerfinUI profiles, safe mentions, nested ephemeral actions and multi-embed DiscoHook import.
+
 ## 1.3.2
 
 ### Multi-embed Components V2 layouts
