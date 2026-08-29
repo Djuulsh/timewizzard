@@ -114,6 +114,23 @@ function v1517ButtonRowElement(block, button, index, total) {
   return row;
 }
 
+function v1517RemoveLegacyButtonEditor(card) {
+  const known = typeof v153LabelFor === 'function' ? v153LabelFor(card, 'v150ButtonRows') : null;
+  if (known) known.remove();
+
+  // Compatibility fallback for older smart-block markup: Button Row had one
+  // pipe-delimited textarea. Remove that field only when it is clearly the
+  // legacy Button Row definition editor.
+  card.querySelectorAll('label').forEach((label) => {
+    const textarea = label.querySelector('textarea');
+    if (!textarea) return;
+    const copy = `${label.textContent || ''} ${textarea.placeholder || ''}`.toLowerCase();
+    const looksLikeButtonRows = copy.includes('label') && (copy.includes('url') || copy.includes('|'));
+    if (looksLikeButtonRows) label.remove();
+  });
+  card.querySelectorAll('.v150-help').forEach((node) => node.remove());
+}
+
 function v1517EnhanceButtonRowInspector() {
   const found = v140Find(state.selectedBlockId);
   const block = found?.block;
@@ -122,10 +139,7 @@ function v1517EnhanceButtonRowInspector() {
   const card = els.inspector?.querySelector('.inspector-card');
   if (!card || card.querySelector('.v1517-button-editor')) return;
 
-  // Remove the old "Label | URL" textarea and helper text. Keep the existing
-  // Button Row description above the structured editor.
-  v153LabelFor(card, 'v150ButtonRows')?.remove();
-  card.querySelectorAll('.v150-help').forEach((node) => node.remove());
+  v1517RemoveLegacyButtonEditor(card);
 
   const content = card.querySelector('.v153-content') || card;
   const editor = document.createElement('div');
@@ -158,6 +172,15 @@ function v1517SeparatorPreviewMarkup(block) {
   return `<div class="preview-block v1517-separator-preview v1517-separator-${spacing}${divider ? ' has-divider' : ' no-divider'}">${divider ? '<hr>' : ''}</div>`;
 }
 
+function v1517RemoveLegacySeparatorModels(card) {
+  // Earlier versions rendered a generic live sample that did not represent
+  // Discord's Small/Large spacing correctly. Remove only separator sample UI;
+  // the actual spacing select and checkbox stay untouched.
+  card.querySelectorAll('.v150-live-sample,.separator-size-demo,.v140-separator-preview,.v150-separator-preview').forEach((node) => {
+    if (!node.classList.contains('v1517-separator-demo')) node.remove();
+  });
+}
+
 function v1517EnhanceSeparatorInspector() {
   const found = v140Find(state.selectedBlockId);
   const block = found?.block;
@@ -169,7 +192,9 @@ function v1517EnhanceSeparatorInspector() {
   const spacingLabel = spacingSelect?.closest('label');
   if (!card || !spacingSelect || !spacingLabel) return;
 
-  let demo = card.querySelector('.separator-size-demo');
+  v1517RemoveLegacySeparatorModels(card);
+
+  let demo = card.querySelector('.v1517-separator-demo');
   if (!demo) {
     demo = document.createElement('div');
     demo.className = 'separator-size-demo v1517-separator-demo';
