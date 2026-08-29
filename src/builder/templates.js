@@ -40,20 +40,30 @@ export const POST_TEMPLATES = [
   { name: 'Rules / guidelines', value: 'rules_guidelines', category: 'Community', icon: '📜', featured: true, description: 'Readable rules, expectations and acknowledgement steps.' },
   { name: 'Recruitment', value: 'recruitment', category: 'Community', icon: '🛡️', featured: true, description: 'Guild/team recruitment structure with requirements and contact.' },
   { name: 'Staff / team directory', value: 'staff_directory', category: 'Community', icon: '👥', description: 'Present officers, team leads and contact responsibilities.' },
+  { name: 'Channel information / Start here', value: 'channel_start_here', category: 'Community', icon: '📌', featured: true, description: 'Permanent channel introduction with purpose, first steps and useful links.' },
+  { name: 'Raid / team roster information', value: 'team_roster_info', category: 'Community', icon: '🛡️', description: 'Team schedule, contacts, expectations and useful roster links.' },
 
   { name: 'Raid / event', value: 'raid_event', category: 'Events', icon: '⚔️', featured: true, description: 'Event information prepared for timestamps, roles and channels.' },
   { name: 'Meeting / agenda', value: 'meeting_agenda', category: 'Events', icon: '🗓️', description: 'Meeting time, agenda items and meeting links in one post.' },
   { name: 'Weekly schedule', value: 'weekly_schedule', category: 'Events', icon: '📆', description: 'A compact recurring schedule for raids, events or activities.' },
   { name: 'Giveaway / contest', value: 'giveaway', category: 'Events', icon: '🎁', description: 'Prize, requirements and a live Discord countdown.' },
+  { name: 'Event signup / attendance', value: 'event_signup', category: 'Events', icon: '✅', featured: true, description: 'Event time, signup expectations, countdown and action links.' },
+  { name: 'Results / winners', value: 'results_winners', category: 'Events', icon: '🏆', description: 'Publish winners, results, highlights, media and follow-up links.' },
 
   { name: 'Guide / information', value: 'guide', category: 'Guides', icon: '📘', featured: true, description: 'Structured guide inside a clean information container.' },
   { name: 'Support / troubleshooting', value: 'support_troubleshooting', category: 'Guides', icon: '🆘', description: 'Checklist and step-by-step troubleshooting flow.' },
   { name: 'Class / build guide', value: 'class_guide', category: 'Guides', icon: '🧙', description: 'Facts, preparation checklist and resource links for game guides.' },
+  { name: 'Boss tactics / raid strategy', value: 'boss_tactics', category: 'Guides', icon: '🐉', featured: true, description: 'Raid encounter strategy with key mechanics, phases, assignments and resources.' },
+  { name: 'Knowledge base article', value: 'knowledge_base', category: 'Guides', icon: '📚', featured: true, description: 'Reusable documentation layout with quick answer, detailed steps and references.' },
+  { name: 'Support ticket instructions', value: 'support_ticket', category: 'Guides', icon: '🎫', description: 'Show members what to check and what information to include before asking for help.' },
+  { name: 'Tutorial / how-to', value: 'tutorial_howto', category: 'Guides', icon: '🧑‍🏫', description: 'Hands-on tutorial with steps, screenshots, completion checklist and references.' },
 
   { name: 'Patch / update notes', value: 'patch_update', category: 'Updates', icon: '🛠️', featured: true, description: 'Compact changelog/update layout.' },
   { name: 'Maintenance / outage', value: 'maintenance', category: 'Updates', icon: '🚧', description: 'Downtime notice with countdown, status and expected return.' },
   { name: 'Release / launch', value: 'release_launch', category: 'Updates', icon: '🚀', description: 'Launch countdown, progress and primary action links.' },
   { name: 'Important / warning', value: 'warning', category: 'Updates', icon: '⚠️', description: 'High-visibility warning container.' },
+  { name: 'Goals / progress tracker', value: 'goals_progress', category: 'Updates', icon: '🎯', description: 'Track a goal, milestone progress, remaining tasks and target date.' },
+  { name: 'Weekly community update', value: 'weekly_community_update', category: 'Updates', icon: '📰', description: 'Newsletter-style weekly summary with highlights, upcoming items and useful links.' },
 
   { name: 'Media / gallery', value: 'media_gallery', category: 'Media', icon: '🖼️', description: 'Title, gallery and supporting description.' },
   { name: 'YouTube video', value: 'youtube', category: 'Media', icon: '▶️', featured: true, description: 'Smart YouTube block: paste the video URL and Timewizzard builds the presentation.' },
@@ -182,6 +192,44 @@ export function createBuilderTemplate(templateKey = 'blank', title = 'Informatio
     return builder;
   }
 
+  if (templateKey === 'channel_start_here') {
+    builder.blocks.push(container('Start here', 0x5865F2, [
+      block('heading', { level: 1, emoji: '📌', title, subtitle: 'A permanent introduction explaining what this channel is for.' }),
+      block('callout', { tone: 'info', title: 'What belongs here', content: 'Explain the purpose of this channel and the type of information members should expect to find here.' }),
+      block('steps', { title: 'Start here', items: [
+        { title: 'Read the key information', content: 'Review the important notes and expectations before posting.' },
+        { title: 'Use the right resources', content: 'Use Discord Insert to point members to related channels, roles or people.' },
+        { title: 'Need help?', content: 'Tell members where questions should go.' }
+      ] }),
+      block('button_row', { buttons: [
+        { label: 'Community guide', url: 'https://example.com/guide' },
+        { label: 'Resources', url: 'https://example.com/resources' }
+      ] })
+    ]));
+    return builder;
+  }
+
+  if (templateKey === 'team_roster_info') {
+    builder.blocks.push(container('Team information', 0x3498DB, [
+      block('heading', { level: 1, emoji: '🛡️', title, subtitle: 'Keep the team schedule, contacts and expectations together.' }),
+      block('facts', { title: 'Team details', items: [
+        { label: 'Schedule', value: 'Add regular raid / event days and times' },
+        { label: 'Leader', value: 'Use Discord Insert to mention the team lead' },
+        { label: 'Signups', value: 'Use Discord Insert for the signup channel or system' }
+      ] }),
+      block('checklist', { title: 'Team expectations', items: [
+        { text: 'Be ready before the scheduled start', checked: true },
+        { text: 'Communicate absences early', checked: true },
+        { text: 'Review assignments and preparation notes', checked: true }
+      ] }),
+      block('button_row', { buttons: [
+        { label: 'Roster', url: 'https://example.com/roster' },
+        { label: 'Logs', url: 'https://example.com/logs' }
+      ] })
+    ]));
+    return builder;
+  }
+
   if (templateKey === 'raid_event') {
     const start = futureEpoch(24 * 60);
     builder.blocks.push(container('Raid / Event', 0xE67E22, [
@@ -238,6 +286,43 @@ export function createBuilderTemplate(templateKey = 'blank', title = 'Informatio
     return builder;
   }
 
+  if (templateKey === 'event_signup') {
+    const start = futureEpoch(24 * 60);
+    builder.blocks.push(container('Event signup', 0x57F287, [
+      block('heading', { level: 1, emoji: '✅', title, subtitle: 'Everything members need before signing up for the event.' }),
+      block('event', { title: 'Upcoming event', description: 'Add signup requirements, expected duration and any attendance notes.', startEpoch: start, endEpoch: start + 2 * 3600, location: '#event-channel' }),
+      block('countdown', { title: 'Starts', text: 'The relative timer updates automatically for every Discord user.', targetEpoch: start }),
+      block('checklist', { title: 'Before signing up', items: [
+        { text: 'Confirm you can attend the full event', checked: false },
+        { text: 'Review the requirements', checked: false },
+        { text: 'Notify the organizer if plans change', checked: false }
+      ] }),
+      block('button_row', { buttons: [
+        { label: 'Sign up', url: 'https://example.com/signup' },
+        { label: 'Event details', url: 'https://example.com/event' }
+      ] })
+    ]));
+    return builder;
+  }
+
+  if (templateKey === 'results_winners') {
+    builder.blocks.push(container('Results', 0xFEE75C, [
+      block('heading', { level: 1, emoji: '🏆', title, subtitle: 'Celebrate the result and keep the important follow-up information together.' }),
+      block('callout', { tone: 'success', title: 'Congratulations!', content: 'Announce the winner, result or achievement here.' }),
+      block('facts', { title: 'Result details', items: [
+        { label: 'Winner', value: 'Use Discord Insert to mention the winner' },
+        { label: 'Result', value: 'Add the winning score, placement or outcome' },
+        { label: 'Date', value: 'Add the result date or a Discord timestamp' }
+      ] }),
+      block('gallery', { items: [
+        { url: 'https://example.com/highlight1.png', description: 'Highlight 1', spoiler: false },
+        { url: 'https://example.com/highlight2.png', description: 'Highlight 2', spoiler: false }
+      ] }),
+      block('button_row', { buttons: [{ label: 'Full results', url: 'https://example.com/results' }] })
+    ]));
+    return builder;
+  }
+
   if (templateKey === 'guide') {
     builder.blocks.push(container('Guide', 0x3498DB, [
       block('heading', { level: 1, emoji: '📘', title, subtitle: 'Short introduction explaining what this guide covers.' }),
@@ -282,6 +367,97 @@ export function createBuilderTemplate(templateKey = 'blank', title = 'Informatio
         { text: 'Macros / addons tested', checked: false }
       ] }),
       block('button_row', { buttons: [{ label: 'Full build', url: 'https://example.com/build' }, { label: 'Logs', url: 'https://example.com/logs' }] })
+    ]));
+    return builder;
+  }
+
+  if (templateKey === 'boss_tactics') {
+    builder.blocks.push(container('Boss tactics', 0xE67E22, [
+      block('heading', { level: 1, emoji: '🐉', title, subtitle: 'A compact encounter plan that is easy to scan before and during the raid.' }),
+      block('callout', { tone: 'warning', title: 'Key mechanic', content: 'Write the one mechanic the raid absolutely must understand before pulling.' }),
+      block('steps', { title: 'Encounter flow', items: [
+        { title: 'Phase 1', content: 'Explain positioning, priority targets and the first important mechanic.' },
+        { title: 'Phase 2', content: 'Explain what changes and what the raid should focus on next.' },
+        { title: 'Finish', content: 'Add execute-phase notes, cooldown timing or final positioning.' }
+      ] }),
+      block('checklist', { title: 'Assignments', items: [
+        { text: 'Tanks know positioning and swaps', checked: false },
+        { text: 'Healers know major damage windows', checked: false },
+        { text: 'Interrupts / dispels / special jobs assigned', checked: false }
+      ] }),
+      block('button_row', { buttons: [
+        { label: 'Strategy reference', url: 'https://example.com/strategy' },
+        { label: 'Logs', url: 'https://example.com/logs' },
+        { label: 'Video', url: 'https://example.com/video' }
+      ] })
+    ]));
+    return builder;
+  }
+
+  if (templateKey === 'knowledge_base') {
+    builder.blocks.push(
+      block('heading', { level: 1, emoji: '📚', title, subtitle: 'Reusable documentation with a quick answer first and details below.' }),
+      container('Quick answer', 0x5865F2, [
+        block('callout', { tone: 'info', title: 'In short', content: 'Give the shortest useful answer here so readers can solve simple cases immediately.' })
+      ]),
+      container('Detailed instructions', 0x3498DB, [
+        block('steps', { title: 'How it works', items: [
+          { title: 'Prepare', content: 'List what the reader needs before starting.' },
+          { title: 'Do the task', content: 'Explain the main action in clear, short steps.' },
+          { title: 'Verify', content: 'Explain how to confirm the result is correct.' }
+        ] }),
+        block('checklist', { title: 'Before you finish', items: [
+          { text: 'Result verified', checked: false },
+          { text: 'Relevant settings saved', checked: false }
+        ] })
+      ]),
+      block('button_row', { buttons: [
+        { label: 'Documentation', url: 'https://example.com/docs' },
+        { label: 'Related article', url: 'https://example.com/article' }
+      ] })
+    );
+    return builder;
+  }
+
+  if (templateKey === 'support_ticket') {
+    builder.blocks.push(container('Support request', 0x3498DB, [
+      block('heading', { level: 1, emoji: '🎫', title, subtitle: 'Help members submit useful support requests the first time.' }),
+      block('callout', { tone: 'info', title: 'Before opening a ticket', content: 'Check the common fixes below. Good reports are faster to investigate and solve.' }),
+      block('checklist', { title: 'Quick checks', items: [
+        { text: 'Restarted the affected app / addon / device', checked: false },
+        { text: 'Confirmed the issue still happens on the latest version', checked: false },
+        { text: 'Checked the FAQ / known issues', checked: false }
+      ] }),
+      block('steps', { title: 'Include this information', items: [
+        { title: 'What happened?', content: 'Describe the problem and what you expected instead.' },
+        { title: 'How can we reproduce it?', content: 'List the shortest reliable reproduction steps.' },
+        { title: 'Attach evidence', content: 'Include screenshots, logs, error messages or version information.' }
+      ] }),
+      block('button_row', { buttons: [
+        { label: 'Open support', url: 'https://example.com/support' },
+        { label: 'Known issues', url: 'https://example.com/issues' }
+      ] })
+    ]));
+    return builder;
+  }
+
+  if (templateKey === 'tutorial_howto') {
+    builder.blocks.push(container('Tutorial', 0x57F287, [
+      block('heading', { level: 1, emoji: '🧑‍🏫', title, subtitle: 'A practical walkthrough readers can follow from start to finish.' }),
+      block('steps', { title: 'Walkthrough', items: [
+        { title: 'Prepare', content: 'Explain what the reader needs before beginning.' },
+        { title: 'Configure', content: 'Describe the main setup or configuration step.' },
+        { title: 'Test', content: 'Show how to confirm everything works.' }
+      ] }),
+      block('gallery', { items: [
+        { url: 'https://example.com/step1.png', description: 'Step 1 screenshot', spoiler: false },
+        { url: 'https://example.com/step2.png', description: 'Step 2 screenshot', spoiler: false }
+      ] }),
+      block('checklist', { title: 'Finished when', items: [
+        { text: 'Setup matches the guide', checked: false },
+        { text: 'Final test succeeds', checked: false }
+      ] }),
+      block('button_row', { buttons: [{ label: 'Further reading', url: 'https://example.com/learn-more' }] })
     ]));
     return builder;
   }
@@ -331,6 +507,41 @@ export function createBuilderTemplate(templateKey = 'blank', title = 'Informatio
       block('checklist', { title: 'Required action', items: [
         { text: 'Explain exactly what people need to do', checked: false },
         { text: 'Add a deadline if relevant', checked: false }
+      ] })
+    ]));
+    return builder;
+  }
+
+  if (templateKey === 'goals_progress') {
+    const target = futureEpoch(7 * 24 * 60);
+    builder.blocks.push(container('Goal tracker', 0x5865F2, [
+      block('heading', { level: 1, emoji: '🎯', title, subtitle: 'Track progress toward a shared goal or milestone.' }),
+      block('progress', { label: 'Overall progress', current: 6, total: 10, segments: 10, showNumbers: true, note: 'Update current and total as the team moves forward.' }),
+      block('checklist', { title: 'Remaining tasks', items: [
+        { text: 'Complete the next milestone', checked: false },
+        { text: 'Review outstanding blockers', checked: false },
+        { text: 'Share the final result', checked: false }
+      ] }),
+      block('countdown', { title: 'Target date', text: 'Use this as the next milestone or completion target.', targetEpoch: target }),
+      block('button_row', { buttons: [{ label: 'Project details', url: 'https://example.com/project' }] })
+    ]));
+    return builder;
+  }
+
+  if (templateKey === 'weekly_community_update') {
+    const nextEvent = futureEpoch(3 * 24 * 60);
+    builder.blocks.push(container('Weekly update', 0x5865F2, [
+      block('heading', { level: 1, emoji: '📰', title, subtitle: 'A quick weekly summary members can scan in under a minute.' }),
+      block('callout', { tone: 'neutral', title: 'This week', content: 'Write the biggest news, achievement or change from the past week.' }),
+      block('checklist', { title: 'Highlights', items: [
+        { text: 'Highlight or achievement #1', checked: true },
+        { text: 'Highlight or achievement #2', checked: true },
+        { text: 'Important reminder for members', checked: false }
+      ] }),
+      block('event', { title: 'Next up', description: 'The next important community event or activity.', startEpoch: nextEvent, endEpoch: nextEvent + 2 * 3600, location: '#community-channel' }),
+      block('button_row', { buttons: [
+        { label: 'Full update', url: 'https://example.com/update' },
+        { label: 'Calendar', url: 'https://example.com/calendar' }
       ] })
     ]));
     return builder;
