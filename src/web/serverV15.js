@@ -3,11 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createWebServer as createBaseWebServer } from './server.js';
 
-const VERSION = '1.5.4';
+const VERSION = '1.5.5';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(__dirname, '../../web');
-const EXTRA_JS = ['v151.js', 'v152.js', 'v153.js', 'v154.js'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
-const EXTRA_CSS = ['v151.css', 'v152.css', 'v153.css', 'v154.css'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
+const EXTRA_JS = ['v151.js', 'v152.js', 'v153.js', 'v154.js', 'v155.js'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
+const EXTRA_CSS = ['v151.css', 'v152.css', 'v153.css', 'v154.css', 'v155.css'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
 
 const V15_FEATURES = [
   'template-categories',
@@ -43,7 +43,10 @@ const V15_FEATURES = [
   'compact-heading-controls',
   'heading-none-in-emoji-picker',
   'block-tree-root-drag',
-  'sticky-create-draft-actions'
+  'sticky-create-draft-actions',
+  'touch-tap-block-move',
+  'mobile-click-to-move',
+  'touch-root-move-target'
 ];
 
 function patchResponse(request, response) {
