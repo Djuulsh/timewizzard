@@ -1,0 +1,43 @@
+/* Timewizzard v1.5.13 — structured Facts / Key Values rows */
+
+.v1513-facts-editor{display:grid;gap:8px;margin-top:2px}
+.v1513-facts-column-head{display:grid;grid-template-columns:minmax(90px,.7fr) minmax(0,1.3fr) 92px;gap:8px;padding:0 2px;color:var(--muted);font-size:8px;font-weight:850;letter-spacing:.07em;text-transform:uppercase}
+.v1513-facts-rows{display:grid;gap:7px}
+.v1513-fact-row{display:grid;grid-template-columns:minmax(90px,.7fr) minmax(0,1.3fr) 92px;gap:8px;align-items:start;padding:8px;border:1px solid var(--line-soft);border-radius:9px;background:#11141a}
+.v1513-fact-row label{margin:0!important}
+.v1513-fact-row label>span{display:none}
+.v1513-fact-label-cell input{min-height:38px}
+.v1513-fact-value-cell{display:grid;gap:5px;min-width:0}
+.v1513-fact-value-cell .v153-textarea-shell{margin:0}
+.v1513-fact-value-tools{display:flex;justify-content:flex-end}
+.v1513-discord-insert{border-color:rgba(88,101,242,.45)!important;background:rgba(88,101,242,.08)!important;color:#d9dcff!important}
+.v1513-discord-insert:hover{background:rgba(88,101,242,.16)!important}
+.v1513-fact-row-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding-top:1px}
+.v1513-fact-row-actions .mini-btn{min-width:0;min-height:34px;padding:5px 4px;font-size:11px}
+.v1513-fact-row-actions .mini-btn:disabled{opacity:.32;cursor:not-allowed}
+.v1513-delete-row:not(:disabled){color:#ff9a9c;border-color:rgba(237,66,69,.35)}
+.v1513-facts-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:1px}
+.v1513-facts-footer .v1513-add-row{padding:6px 9px;font-size:10px}
+.v1513-facts-footer small{color:var(--muted);font-size:8.5px}
+
+/* Live preview: a real visual label/value grid. Published Discord uses aligned
+   label/value text because Discord Markdown itself has no table component. */
+.v1513-facts-preview{display:grid;gap:6px}
+.v1513-facts-preview-title>:last-child{margin-bottom:0}
+.v1513-facts-preview-grid{display:grid;gap:3px}
+.v1513-facts-preview-row{display:grid;grid-template-columns:minmax(86px,30%) minmax(0,1fr);gap:12px;align-items:start;padding:2px 0}
+.v1513-facts-preview-label{font-weight:750;color:#f0f1f3;overflow-wrap:anywhere}
+.v1513-facts-preview-value{min-width:0;overflow-wrap:anywhere}
+.v1513-facts-preview-value>*{margin-top:0;margin-bottom:0}
+
+@media(max-width:760px){
+  .v1513-facts-column-head{display:none}
+  .v1513-fact-row{grid-template-columns:minmax(0,1fr) auto;gap:7px}
+  .v1513-fact-label-cell,.v1513-fact-value-cell{grid-column:1}
+  .v1513-fact-row-actions{grid-column:2;grid-row:1 / span 2;grid-template-columns:1fr;align-content:start;width:36px}
+  .v1513-fact-row label>span{display:block;margin-bottom:4px;color:var(--muted);font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+  .v1513-facts-preview-row{grid-template-columns:1fr;gap:2px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+  .v1513-facts-preview-row:last-child{border-bottom:0}
+  .v1513-facts-preview-label{font-size:10px}
+  .v1513-facts-footer{align-items:flex-end}
+}
