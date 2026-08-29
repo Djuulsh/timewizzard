@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.5.0
+
+### Category-first template browser
+- Create Draft now starts on a focused **Recommended** view instead of showing the entire template library at once.
+- Added category tabs for **Recommended**, **Basic**, **Community**, **Events**, **Guides**, **Updates**, **Media**, **Special** and **All**.
+- Added template search across names, descriptions and categories.
+- Template cards show their own icon, category and whether the layout starts as a **Plain** post or with a **Container**.
+
+### Expanded template library
+- Expanded the starter library to 25 templates.
+- Added **Welcome / Onboarding**, **Rules / Guidelines**, **Staff / Team Directory**, **Meeting / Agenda**, **Weekly Schedule**, **Giveaway / Contest**, **Support / Troubleshooting**, **Class / Build Guide**, **Maintenance / Outage**, **Release / Launch** and **Live Stream**.
+- Existing Announcement, Guide, FAQ, Links, Raid/Event, Recruitment, Update, Warning, Media, YouTube and MerfinUI templates were refreshed to use the new reusable smart blocks where appropriate.
+- All non-empty starter templates are validated to fit one Discord message in their default state.
+
+### Ten smart blocks
+- Added **Heading** with H1/H2/H3, emoji/prefix and subtitle controls.
+- Added **Callout** with Info, Success, Warning, Danger and Neutral tones.
+- Added **Checklist** with completed/uncompleted items.
+- Added **Steps** for numbered step-by-step instructions.
+- Added **Facts / Key Values** for compact label/value information.
+- Added **Button Row** with up to five URL buttons in one Discord Action Row.
+- Added **Event** with Discord-native start/end timestamps and a location/channel field.
+- Added **Countdown** using Discord relative timestamps that update automatically for viewers.
+- Added **Code Snippet** with language, caption and fenced code output.
+- Added **Progress** with current/total values, configurable bar length and optional progress note.
+
+### Builder organization and compatibility
+- Add Block now separates normal content, structured content, time/events, layout, interactions and special blocks.
+- Smart blocks work both at POST root and inside Containers and participate in drag/drop, duplication, revision history and live preview.
+- Advanced v1.5 blocks are protected from destructive editing in the Discord-native modal builder and redirect to Web Builder for full editing.
+- Runtime and Web Builder version reporting updated to v1.5.0.
+
+### Validation
+- Validation now covers all 25 template definitions and all 10 smart block types, including Button Row rendering, timestamps, Containers, plain posts, Smart YouTube, safe mentions, nested ephemeral actions and DiscoHook import.
+
 ## 1.4.0
 
 ### Plain posts and true Containers
