@@ -11,7 +11,8 @@ import {
 import { buildGenericActionReply } from '../src/builder/actions.js';
 import { allowedMentionsFor, buildBuilderPayloads, getBuilderStats, MULTILINE_QUOTE_ESCAPE } from '../src/builder/render.js';
 import { normalizeBuilderStructure } from '../src/builder/schema.js';
-import { createBuilderTemplate } from '../src/builder/templates.js';
+import { SMART_BLOCK_TYPES } from '../src/builder/smartBlocks.js';
+import { createBuilderTemplate, POST_TEMPLATES } from '../src/builder/templates.js';
 import { canonicalYoutubeUrl, youtubeThumbnailUrl, youtubeVideoId } from '../src/builder/youtube.js';
 import { validateBuilder } from '../src/builder/validate.js';
 import { convertDiscohook } from '../src/discohook.js';
@@ -112,11 +113,34 @@ if (!youtubePayload.components.some((component) => component.type === 12) || !yo
   throw new Error('Smart YouTube block must render thumbnail media plus a link section by default.');
 }
 
-for (const template of ['announcement_simple', 'announcement_styled', 'guide', 'faq', 'links', 'raid_event', 'recruitment', 'patch_update', 'warning', 'media_gallery', 'youtube', 'merfin_select', 'merfin_open_list']) {
-  const builder = createBuilderTemplate(template, `Template ${template}`);
+const now = Math.floor(Date.now() / 1000);
+const smartBuilder = createBuilderTemplate('blank', 'Smart blocks');
+smartBuilder.blocks.push(
+  { id: 'smart01', type: 'heading', level: 2, emoji: '✨', title: 'Heading', subtitle: 'Subtitle' },
+  { id: 'smart02', type: 'callout', tone: 'success', title: 'Success', content: 'Everything is ready.' },
+  { id: 'smart03', type: 'checklist', title: 'Checklist', items: [{ text: 'Done', checked: true }, { text: 'Pending', checked: false }] },
+  { id: 'smart04', type: 'steps', title: 'Steps', items: [{ title: 'One', content: 'First step' }, { title: 'Two', content: 'Second step' }] },
+  { id: 'smart05', type: 'facts', title: 'Facts', items: [{ label: 'Status', value: 'Ready' }] },
+  { id: 'smart06', type: 'button_row', buttons: [{ label: 'Website', url: 'https://example.com' }, { label: 'Docs', url: 'https://example.com/docs' }] },
+  { id: 'smart07', type: 'event', title: 'Event', description: 'Description', startEpoch: now + 3600, endEpoch: now + 7200, location: '#channel' },
+  { id: 'smart08', type: 'countdown', title: 'Countdown', text: 'Starts soon', targetEpoch: now + 86400 },
+  { id: 'smart09', type: 'code', language: 'lua', caption: 'Example', code: 'print("hello")' },
+  { id: 'smart10', type: 'progress', label: 'Progress', current: 3, total: 5, segments: 10, showNumbers: true, note: 'Three of five complete.' }
+);
+validateBuilder(smartBuilder);
+if (new Set(smartBuilder.blocks.map((block) => block.type)).size !== SMART_BLOCK_TYPES.length) throw new Error('The validation fixture must cover all ten smart block types.');
+const smartPayloads = buildBuilderPayloads(makeEntity('smart', 'Smart blocks', smartBuilder), { kind: 'd', id: 'smart' });
+if (!smartPayloads.length || !smartPayloads[0].components.some((component) => component.type === 1 && component.components?.length === 2)) {
+  throw new Error('Smart Button Row did not render as one Action Row with link buttons.');
+}
+
+for (const template of POST_TEMPLATES) {
+  const builder = createBuilderTemplate(template.value, `Template ${template.value}`);
   validateBuilder(builder);
-  const stats = getBuilderStats(makeEntity(`tpl-${template}`, template, builder), { kind: 'd', id: `tpl-${template}` });
-  if (stats.messageCount !== 1) throw new Error(`${template} template should fit one Discord message by default.`);
+  if (builder.blocks.length) {
+    const stats = getBuilderStats(makeEntity(`tpl-${template.value}`, template.value, builder), { kind: 'd', id: `tpl-${template.value}` });
+    if (stats.messageCount !== 1) throw new Error(`${template.value} template should fit one Discord message by default.`);
+  }
 }
 
 const actionBuilder = createBuilderTemplate('blank', 'Nested actions');
@@ -170,10 +194,11 @@ console.log('Legacy flat builder migration validation passed.');
 console.log(`Compact template: ${compactStats.blockCount} blocks -> ${compactStats.messageCount} message.`);
 console.log(`Legacy profile list: ${legacyStats.blockCount} blocks -> ${legacyStats.messageCount} message.`);
 console.log('Smart YouTube URL + thumbnail validation passed.');
-console.log('Expanded template gallery validation passed.');
+console.log(`All ${POST_TEMPLATES.length} template definitions validate and fit one message by default.`);
+console.log(`All ${SMART_BLOCK_TYPES.length} v1.5 smart block types validate and render.`);
 console.log('Quote escape split validation passed.');
 console.log('Gallery + thumbnail validation passed.');
 console.log('Nested ephemeral action validation passed.');
 console.log('DiscoHook nested container import validation passed.');
 console.log('Safe mention validation passed.');
-console.log('Timewizzard v1.4.0 validation passed.');
+console.log('Timewizzard v1.5.0 validation passed.');
