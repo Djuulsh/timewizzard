@@ -1,31 +1,27 @@
-import { FACTS_LABEL_WIDTH, smartBlockToComponents } from '../src/builder/smartBlocks.js';
+import { smartBlockToComponents } from '../src/builder/smartBlocks.js';
 
-const nbsp = '\u00A0';
 const block = {
   type: 'facts',
   title: 'Quick facts',
   items: [
-    { label: 'Status1222', value: 'Ready' },
-    { label: 'Owner454123', value: 'Team' },
-    { label: 'VeryLongLabelThatWillClip', value: 'Long' }
+    { label: 'Status', value: 'Ready' },
+    { label: 'Owner', value: 'A long value that may wrap naturally in Discord without ever flowing beneath the label.' },
+    { label: 'Updates', value: '<#123456789012345678>' }
   ]
 };
 
 const content = smartBlockToComponents(block)?.[0]?.content || '';
-const statusPadding = nbsp.repeat(FACTS_LABEL_WIDTH - 'Status1222'.length);
-const ownerPadding = nbsp.repeat(FACTS_LABEL_WIDTH - 'Owner454123'.length);
-
-if (!content.includes(`\`Status1222${statusPadding}\` Ready`)) {
-  throw new Error('Facts must render Status1222 as an 18-character inline-code label cell.');
+if (!content.includes('**Status**\nReady')) {
+  throw new Error('Facts must render each label above its value.');
 }
-if (!content.includes(`\`Owner454123${ownerPadding}\` Team`)) {
-  throw new Error('Facts must render Owner454123 with the same fixed label-cell width.');
+if (!content.includes('**Owner**\nA long value')) {
+  throw new Error('Facts values must start on their own line below the label.');
 }
-if (!content.includes('`VeryLongLabelThat…` Long')) {
-  throw new Error('Facts labels longer than the fixed cell must clip with an ellipsis without changing stored data.');
+if (!content.includes('**Updates**\n<#123456789012345678>')) {
+  throw new Error('Facts must preserve normal Discord Markdown/mentions in values.');
 }
-if (content.includes('**Status1222**') || content.includes('\u2003')) {
-  throw new Error('Facts must not use proportional bold labels or EM SPACE alignment anymore.');
+if (content.includes('\u00A0') || content.includes('\u2003') || content.includes('`Status')) {
+  throw new Error('Facts must not use fixed-width spacing or inline-code label cells.');
 }
 
-console.log(`Facts fixed-width inline-code label validation passed (${FACTS_LABEL_WIDTH} characters).`);
+console.log('Facts wrap-safe vertical label/value validation passed.');
