@@ -68,7 +68,10 @@ function stepsContent(block) {
 
 function factsContent(block) {
   const title = asText(block.title);
-  const gap = '\u2003\u2003';
+  // Discord collapses/handles several Unicode spacing characters inconsistently
+  // in proportional text. Three NBSPs are preserved by Discord and provide the
+  // same visual gap after every label without pretending to be a fixed column.
+  const gap = '\u00A0\u00A0\u00A0';
   const rows = (block.items ?? []).map((item) => {
     const label = asText(item?.label);
     const valueLines = asText(item?.value).split(/\r?\n/);
