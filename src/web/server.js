@@ -31,7 +31,7 @@ import {
   updateBotIdentity
 } from './v131.js';
 
-const VERSION = '1.3.1';
+const VERSION = '1.3.2';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(__dirname, '../../web');
 const SESSION_COOKIE = 'sib_session';
@@ -601,7 +601,7 @@ export function createWebServer({ client, store, config }) {
         json(response, client.isReady() ? 200 : 503, {
           ok: client.isReady(), version: VERSION, bot: client.user?.tag ?? null, webBuilder: config.webEnabled,
           oauthLoginPath: '/auth/discord', builderPath: '/builder', supportedDestinations: ['forum', 'text', 'announcement'],
-          features: ['orphan-recreate', 'change-destination', 'markdown-toolbar', 'quote-escape', 'media-gallery', 'thumbnail', 'undo-redo', 'revisions', 'discohook-import', 'nested-ephemeral', 'bot-identity', 'discord-insert-picker', 'emoji-browser', 'safe-mentions', 'timestamp-picker', 'discord-post-links', 'mention-autocomplete'],
+          features: ['orphan-recreate', 'change-destination', 'markdown-toolbar', 'quote-escape', 'media-gallery', 'thumbnail', 'undo-redo', 'revisions', 'discohook-import', 'nested-ephemeral', 'bot-identity', 'discord-insert-picker', 'emoji-browser', 'safe-mentions', 'timestamp-picker', 'discord-post-links', 'mention-autocomplete', 'multi-container-embeds', 'base-templates', 'youtube-template', 'compact-legacy-profile-list'],
           uptimeSeconds: Math.floor(process.uptime())
         });
         return;
