@@ -1,0 +1,38 @@
+/* Timewizzard v1.5.6 — safe universal click/tap movement */
+
+.v156-click-move-enabled .drag-handle.v156-click-move-handle,
+.v156-click-move-enabled .v153-inspector-drag.v156-click-move-handle{
+  cursor:pointer!important;
+  min-width:34px;
+  min-height:34px;
+  border:1px solid var(--line-soft);
+  border-radius:7px;
+  background:#11141a;
+  color:#9ba3af;
+  font-size:16px;
+  letter-spacing:0;
+  display:grid;
+  place-items:center;
+  touch-action:manipulation!important;
+  user-select:none;
+}
+.v156-click-move-enabled .drag-handle.v156-click-move-handle:hover,
+.v156-click-move-enabled .v153-inspector-drag.v156-click-move-handle:hover{
+  border-color:var(--accent);
+  background:rgba(88,101,242,.10);
+  color:#d7dbff;
+}
+.v156-click-move-enabled .drag-handle.v156-click-move-handle:active,
+.v156-click-move-enabled .v153-inspector-drag.v156-click-move-handle:active{
+  background:rgba(88,101,242,.16);
+}
+
+/* Avoid communicating draggable behavior now that movement is deterministic. */
+.v156-click-move-enabled .block-card,
+.v156-click-move-enabled .v140-container-head{cursor:default}
+.v156-click-move-enabled .drag-handle.v156-click-move-handle{cursor:pointer!important}
+
+@media(pointer:fine){
+  .v156-click-move-enabled .v140-container-head{grid-template-columns:36px 24px minmax(0,1fr) auto}
+  .v156-click-move-enabled .block-card{grid-template-columns:36px minmax(0,1fr) auto}
+}
