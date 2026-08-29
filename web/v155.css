@@ -1,0 +1,31 @@
+/* Timewizzard v1.5.5 — touch-friendly tap-to-move blocks */
+
+.v155-move-banner{display:none;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin:0 0 8px;padding:9px 10px;border:1px solid rgba(116,128,255,.45);border-radius:9px;background:rgba(88,101,242,.08)}
+.v155-move-banner.active{display:grid}
+.v155-move-banner-copy{display:grid;gap:2px;min-width:0}
+.v155-move-banner-copy strong{font-size:10px;color:#d9dcff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v155-move-banner-copy span{font-size:8.5px;color:var(--muted);line-height:1.35}
+.v155-move-banner .btn{font-size:9px;padding:5px 8px}
+
+body.v155-tap-moving .v153-root-dropzone{min-height:42px!important;max-height:42px!important;margin:0 0 7px!important;opacity:1!important;pointer-events:auto!important;border-color:rgba(116,128,255,.5)!important;background:rgba(88,101,242,.07)!important;cursor:pointer}
+body.v155-tap-moving .v153-root-dropzone::after{content:'Tap to move here';margin-left:auto;color:#b9c0ff;font-size:8px;font-weight:800}
+body.v155-tap-moving .v155-move-target{cursor:pointer;border-color:rgba(116,128,255,.28)!important}
+body.v155-tap-moving .v155-move-target:hover{border-color:var(--accent)!important;background:rgba(88,101,242,.09)!important}
+body.v155-tap-moving .v140-container-card.v155-move-target>.v140-container-head{background:rgba(88,101,242,.07)}
+body.v155-tap-moving .v155-move-source{opacity:.52!important;border-color:var(--accent)!important;box-shadow:0 0 0 1px rgba(88,101,242,.16)!important}
+body.v155-tap-moving .v155-move-source .drag-handle{color:#c9ceff!important;border-color:rgba(116,128,255,.55)!important;background:rgba(88,101,242,.12)!important}
+
+.v155-tap-move-handle{touch-action:manipulation!important}
+
+@media(pointer:coarse){
+  .drag-handle.v155-tap-move-handle,.v153-inspector-drag.v155-tap-move-handle{cursor:pointer!important;min-width:34px;min-height:34px;border:1px solid var(--line-soft);border-radius:7px;background:#11141a;color:#9ba3af;font-size:16px;letter-spacing:0;display:grid;place-items:center}
+  .drag-handle.v155-tap-move-handle:active,.v153-inspector-drag.v155-tap-move-handle:active{background:rgba(88,101,242,.14);border-color:var(--accent);color:#d7dbff}
+  .v140-container-head{grid-template-columns:36px 24px minmax(0,1fr) auto}
+  .block-card{grid-template-columns:36px minmax(0,1fr) auto}
+}
+
+@media(max-width:760px){
+  .v155-move-banner{position:sticky;top:104px;z-index:18;box-shadow:0 8px 20px rgba(0,0,0,.24)}
+  .v155-move-banner-copy span{font-size:8px}
+  body.v155-tap-moving .v153-root-dropzone::after{display:none}
+}
