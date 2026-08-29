@@ -3,11 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createWebServer as createBaseWebServer } from './server.js';
 
-const VERSION = '1.5.14';
+const VERSION = '1.5.15';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(__dirname, '../../web');
-const EXTRA_JS = ['v151.js', 'v152.js', 'v153.js', 'v154.js', 'v155.js', 'v156.js', 'v157.js', 'v158.js', 'v159.js', 'v1510.js', 'v1511.js', 'v1512.js', 'v1513.js', 'v1514.js'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
-const EXTRA_CSS = ['v151.css', 'v152.css', 'v153.css', 'v154.css', 'v155.css', 'v156.css', 'v157.css', 'v158.css', 'v159.css', 'v1510.css', 'v1511.css', 'v1512.css', 'v1513.css'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
+const EXTRA_JS = ['v151.js', 'v152.js', 'v153.js', 'v154.js', 'v155.js', 'v156.js', 'v157.js', 'v158.js', 'v159.js', 'v1510.js', 'v1511.js', 'v1512.js', 'v1513.js', 'v1514.js', 'v1515.js'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
+const EXTRA_CSS = ['v151.css', 'v152.css', 'v153.css', 'v154.css', 'v155.css', 'v156.css', 'v157.css', 'v158.css', 'v159.css', 'v1510.css', 'v1511.css', 'v1512.css', 'v1513.css', 'v1515.css'].map((fileName) => fs.readFileSync(path.join(WEB_ROOT, fileName), 'utf8')).join('\n\n');
 
 const V15_FEATURES = [
   'template-categories',
@@ -72,7 +72,10 @@ const V15_FEATURES = [
   'facts-row-reorder',
   'facts-responsive-layout',
   'facts-fixed-visual-gap',
-  'facts-proportional-font-safe-spacing'
+  'facts-proportional-font-safe-spacing',
+  'facts-nbsp-fixed-gap',
+  'facts-preview-publish-parity',
+  'facts-no-fake-columns'
 ];
 
 function patchResponse(request, response) {
