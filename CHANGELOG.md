@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.5.2
+
+### Header-first Add Block workflow
+- Moved the primary **+ Add block** action into the sticky `editor-head`, so adding content no longer requires scrolling to the bottom of the block list.
+- Removed the permanent bottom Add Block library from the visible editor to give the block tree more room.
+- Added a reusable Add Block dialog with **Recommended**, **Content**, **Structured**, **Time & Events**, **Layout**, **Interactions**, **Special** and **All** categories.
+- Added block search across names, descriptions and categories.
+- The picker clearly shows whether content will be inserted at **POST root** or inside a selected **Container**, and the target can be changed before insertion.
+- Container `+` buttons open the same picker directly targeted at that Container.
+- Added `Ctrl/Cmd + Shift + A` as a keyboard shortcut for Add Block.
+
+### Cleaner editor header
+- The editor header is now sticky while the Builder scrolls.
+- **Add block**, Undo, Redo, Save and Publish remain directly available.
+- Destination, History, Clone, Export JSON and Delete were moved into a compact **More** menu to reduce visual noise without hiding functionality.
+- The Add Block button shows its current default target (`POST root` or the selected Container).
+
+## 1.5.1
+
+### Heading emoji picker
+- Replaced the free-form Heading emoji/prefix field with a visual emoji control.
+- Reuses the existing Discord Insert emoji browser in emoji-only mode, including Discord emoji, server emoji, search, source filters, categories, favorites and recent emoji.
+- Added an explicit **None** action to publish a Heading without an emoji.
+- Extended Heading emoji validation to support Discord custom emoji syntax safely.
+
 ## 1.5.0
 
 ### Category-first template browser
