@@ -1,4 +1,18 @@
-/* Timewizzard v1.6.3 — compact editing + reliable mobile/tablet navigation. */
+/* Timewizzard v1.6.4 — compact editing + reliable mobile/tablet navigation. */
+
+/* The application menu beside Draft belongs to the top application layer. The
+   topbar must outrank workspace navigation and sticky editor surfaces. */
+.v162-ui-foundation .topbar{
+  position:relative!important;
+  z-index:500!important;
+  overflow:visible!important;
+  isolation:isolate
+}
+.v162-ui-foundation #v162AppMenu{z-index:510!important}
+.v162-ui-foundation #v162AppMenu .v162-app-menu-panel{z-index:520!important}
+
+/* The topbar Posts button is the single Posts entry point on tablet/mobile. */
+.v162-workspace-nav [data-v162-posts-nav]{display:none!important}
 
 /* Give editing the majority of the Builder width on larger screens. */
 .v162-ui-foundation .builder-grid{
