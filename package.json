@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "validate": "node scripts/validate.js && node --check web/app.js && node --check src/index.js && node --check src/controller.js && node --check src/v13Support.js && node --check src/destinationSupport.js && node --check src/destinations.js && node --check src/postService.js && node --check src/storage.js && node --check src/discohook.js && node --check src/web/server.js && node --check src/builder/actions.js && node --check src/builder/blocks.js && node --check src/builder/render.js && node --check src/builder/validate.js",
+    "validate": "node scripts/validate.js && node --check web/app.js && node --check src/index.js && node --check src/controller.js && node --check src/v13Support.js && node --check src/nativeV13Support.js && node --check src/destinationSupport.js && node --check src/destinations.js && node --check src/postService.js && node --check src/storage.js && node --check src/discohook.js && node --check src/web/server.js && node --check src/commands.js && node --check src/builder/ui.js && node --check src/builder/actions.js && node --check src/builder/blocks.js && node --check src/builder/render.js && node --check src/builder/validate.js",
     "test": "npm run validate"
   },
   "dependencies": {
