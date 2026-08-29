@@ -15,6 +15,7 @@ import { SMART_BLOCK_TYPES } from '../src/builder/smartBlocks.js';
 import { createBuilderTemplate, POST_TEMPLATES } from '../src/builder/templates.js';
 import { canonicalYoutubeUrl, youtubeThumbnailUrl, youtubeVideoId } from '../src/builder/youtube.js';
 import { validateBuilder } from '../src/builder/validate.js';
+import { VERSION } from '../src/version.js';
 import { convertDiscohook } from '../src/discohook.js';
 
 function makeEntity(id, title, builder, extra = {}) {
@@ -201,4 +202,5 @@ console.log('Gallery + thumbnail validation passed.');
 console.log('Nested ephemeral action validation passed.');
 console.log('DiscoHook nested container import validation passed.');
 console.log('Safe mention validation passed.');
-console.log('Timewizzard v1.5.0 validation passed.');
+if (VERSION !== '1.6.2') throw new Error('Runtime version is not v1.6.2.');
+console.log(`Timewizzard v${VERSION} validation passed.`);

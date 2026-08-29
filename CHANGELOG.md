@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.6.2
+
+### v1.6.0 — UI foundation consolidation
+- Added one authoritative runtime version source and one Web Builder asset manifest.
+- Removed the obsolete serverV15 response-patching wrapper and legacy inline v1.3 separator observers.
+- Health, bootstrap, Discord status and Web Builder branding now share the same version and current feature registry.
+- Added a server-side canonical Components V2 preview endpoint using the normal publish payload generator.
+
+### v1.6.1 — Cross-platform workspace
+- Added a Posts drawer for laptop, iPad and phone layouts.
+- Added Blocks / Edit / Preview task navigation for iPad portrait and mobile.
+- Added Desktop / Mobile preview widths and eliminated horizontal workspace/header scrolling.
+- Standardized responsive Heading, Facts/Info List and Button Row layouts, touch targets, safe areas and dynamic viewport dialogs.
+
+### v1.6.2 — Safety, accessibility and QA
+- Added a pre-publish review with destination, message count, blocks, components, mention behaviour and payload warnings.
+- Added local crash recovery for unsaved editor work, cleared after successful Save.
+- Added keyboard-accessible blocks, visible focus states, dialog focus restoration, reduced-motion support and live payload status.
+- Added cross-platform UI contract validation and a documented desktop/iPad/phone QA matrix.
+
 ## 1.5.5
 
 ### Touch-friendly block movement

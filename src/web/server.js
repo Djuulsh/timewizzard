@@ -7,7 +7,7 @@ import { ChannelFlags, ChannelType } from 'discord.js';
 import { WOW_CLASSES, RESOLUTIONS, findClass, findResolution } from '../constants.js';
 import { createBuilderTemplate, POST_TEMPLATES } from '../builder/templates.js';
 import { makeShortId } from '../builder/ids.js';
-import { getBuilderStats } from '../builder/render.js';
+import { buildBuilderPayloads, getBuilderStats } from '../builder/render.js';
 import { validateBuilder } from '../builder/validate.js';
 import {
   createManagedPost,
@@ -30,8 +30,9 @@ import {
   normalizeMentionPolicy,
   updateBotIdentity
 } from './v131.js';
-
-const VERSION = '1.4.0';
+import { VERSION } from '../version.js';
+import { WEB_SCRIPT_FILES, WEB_STYLE_FILES } from './assets.js';
+import { WEB_FEATURES } from './features.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(__dirname, '../../web');
 const SESSION_COOKIE = 'sib_session';
@@ -345,6 +346,27 @@ export function createWebServer({ client, store, config }) {
       return;
     }
 
+    if (url.pathname === '/api/preview' && method === 'POST') {
+      const body = await readJsonBody(request);
+      const title = String(body.title ?? 'Preview').trim().slice(0, 100) || 'Preview';
+      const builder = validateBuilder(body.builder);
+      const previewScope = {
+        kind: ['d', 'p'].includes(body.scope?.kind) ? body.scope.kind : 'd',
+        id: String(body.scope?.id || 'preview').slice(0, 100)
+      };
+      const entity = {
+        title,
+        builder,
+        mentionPolicy: normalizeMentionPolicy(body.mentionPolicy)
+      };
+      const payloads = buildBuilderPayloads(entity, previewScope);
+      json(response, 200, {
+        payloads,
+        stats: getBuilderStats(entity, previewScope)
+      });
+      return;
+    }
+
     if (url.pathname === '/api/discord-picker' && method === 'GET') {
       json(response, 200, await buildDiscordPickerData({ client, guildId: config.guildId, store, session }));
       return;
@@ -601,13 +623,13 @@ export function createWebServer({ client, store, config }) {
         json(response, client.isReady() ? 200 : 503, {
           ok: client.isReady(), version: VERSION, bot: client.user?.tag ?? null, webBuilder: config.webEnabled,
           oauthLoginPath: '/auth/discord', builderPath: '/builder', supportedDestinations: ['forum', 'text', 'announcement'],
-          features: ['orphan-recreate', 'change-destination', 'markdown-toolbar', 'quote-escape', 'media-gallery', 'thumbnail', 'undo-redo', 'revisions', 'discohook-import', 'nested-ephemeral', 'bot-identity', 'discord-insert-picker', 'emoji-browser', 'safe-mentions', 'timestamp-picker', 'discord-post-links', 'mention-autocomplete', 'plain-root-posts', 'nested-containers', 'hierarchical-block-tree', 'smart-youtube', 'template-gallery', 'container-drag-drop', 'compact-legacy-profile-list'],
+          features: WEB_FEATURES,
           uptimeSeconds: Math.floor(process.uptime())
         });
         return;
       }
-      if (url.pathname === '/app.css') { await serveCombinedFiles(response, ['app.css', 'v131.css', 'v140.css'], 'text/css; charset=utf-8'); return; }
-      if (url.pathname === '/app.js') { await serveCombinedFiles(response, ['app.js', 'v131.js', 'v140.js'], 'text/javascript; charset=utf-8'); return; }
+      if (url.pathname === '/app.css') { await serveCombinedFiles(response, WEB_STYLE_FILES, 'text/css; charset=utf-8'); return; }
+      if (url.pathname === '/app.js') { await serveCombinedFiles(response, WEB_SCRIPT_FILES, 'text/javascript; charset=utf-8'); return; }
       if (url.pathname === '/auth/discord') { await beginOAuth(response); return; }
       if (url.pathname === '/auth/discord/callback') { await finishOAuth(request, response, url); return; }
       if (url.pathname === '/logout') {

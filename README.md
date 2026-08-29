@@ -1,5 +1,7 @@
 # Timewizzard Info Bot v1.4.0
 
+> Current release: **v1.6.2** — consolidated cross-platform Web Builder, publish review and local crash recovery.
+
 Timewizzard is a Discord Components V2 information-post builder with both a Discord-native builder and a Railway-hosted Web Builder.
 
 ## v1.4.0 highlights
