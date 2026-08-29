@@ -1,0 +1,17 @@
+/* Timewizzard v1.5.15 — Facts fixed visual gap preview */
+
+/* Mirror published Discord more closely: no fake columns. Every row simply
+   uses the same fixed gap after its label, independent of label length. */
+.v1515-facts-preview{display:grid;gap:6px}
+.v1515-facts-preview-title>:last-child{margin-bottom:0}
+.v1515-facts-preview-list{display:grid;gap:3px}
+.v1515-facts-preview-row{display:flex;align-items:flex-start;min-width:0;padding:2px 0}
+.v1515-facts-preview-label{flex:0 0 auto;font-weight:750;color:#f0f1f3;overflow-wrap:anywhere}
+.v1515-facts-preview-gap{display:block;flex:0 0 12px;width:12px;min-width:12px}
+.v1515-facts-preview-value{min-width:0;flex:1 1 auto;overflow-wrap:anywhere}
+.v1515-facts-preview-value>*{margin-top:0;margin-bottom:0}
+
+@media(max-width:760px){
+  .v1515-facts-preview-row{padding:4px 0}
+  .v1515-facts-preview-gap{flex-basis:10px;width:10px;min-width:10px}
+}
