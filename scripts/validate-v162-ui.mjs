@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
-assert(VERSION === '1.6.3', 'The authoritative version must be 1.6.3.');
+assert(VERSION === '1.6.4', 'The authoritative version must be 1.6.4.');
 const pkg = JSON.parse(read('package.json'));
 assert(pkg.version === VERSION, 'package.json must match src/version.js.');
 
@@ -55,7 +55,8 @@ for (const marker of [
   'v163EnsurePreviewBack',
   "v162SetView('edit'",
   'v163EnsureWorkspaceMore',
-  'v163SyncWorkspaceMore'
+  'v163SyncWorkspaceMore',
+  'v163RemoveDuplicatePostsNav'
 ]) assert(js163.includes(marker), `v163.js is missing navigation contract: ${marker}.`);
 
 const css163 = read('web/v163.css');
@@ -64,7 +65,10 @@ for (const marker of [
   '.v163-workspace-more',
   'grid-template-columns:minmax(225px,.62fr) minmax(315px,1.38fr)',
   'body[data-tw-view="edit"]',
-  '#v152MoreMenu{display:none!important}'
+  '#v152MoreMenu{display:none!important}',
+  '#v162AppMenu .v162-app-menu-panel',
+  'z-index:500!important',
+  '[data-v162-posts-nav]{display:none!important}'
 ]) assert(css163.includes(marker), `v163.css is missing compact editor contract: ${marker}.`);
 
 const server = read('src/web/server.js');
