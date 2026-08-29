@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.5
+
+### Touch-friendly block movement
+- Added a mobile/coarse-pointer **tap-to-move** workflow for Blocks so rearranging content no longer depends on HTML5 drag-and-drop.
+- On touch devices, the drag handle becomes a clear **↔ Move** tap target. Tap the source block once, then tap its destination.
+- While move mode is active, the selected source is highlighted and a compact move banner explains the next step with an explicit **Cancel** action.
+- Tapping another content block places the moving block before it. Tapping a Container moves normal content inside that Container. Tapping **POST root** moves the block out of a Container and to the end of the root list.
+- Containers remain root-only; tapping another root block/container reorders a moving Container without allowing invalid nesting.
+- Native browser drag is disabled on coarse-pointer devices to avoid long-press/drag conflicts, while desktop mouse drag-and-drop remains unchanged.
+- The same tap-to-move entry point is available from the Inspector move handle on touch devices.
+
 ## 1.5.4
 
 ### Heading Inspector polish
@@ -158,7 +169,7 @@
 ### Bot identity
 - Added Web Builder controls for the bot's server-specific display name.
 - Added an explicitly confirmed global identity section for changing the Discord bot username and avatar/logo.
-- Global identity changes are kept separate because Discord rate-limits username/avatar updates and they affect every server using the bot.
+- Global identity changes are kept separate because Discord rate-limits global username/avatar updates and they affect every server using the bot.
 - Live Discord preview now reflects the current bot display name and avatar.
 
 ### Discord Insert picker
