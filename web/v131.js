@@ -3,14 +3,22 @@
 // existing Builder state and helpers without duplicating the v1.3 editor.
 
 const V131_UNICODE_EMOJIS = [
-  ['😀','grinning'],['😃','smiley'],['😄','smile'],['😁','grin'],['😂','joy'],['🤣','rofl'],['😊','blush'],['😍','heart eyes'],['🥰','love'],['😘','kiss'],['😎','sunglasses'],['🤩','star struck'],['🥳','party'],['🤔','thinking'],['🫡','salute'],['😴','sleep'],['😭','cry'],['😡','angry'],['🤯','mind blown'],['😈','devil'],
-  ['👍','thumbs up'],['👎','thumbs down'],['👏','clap'],['🙌','raised hands'],['🤝','handshake'],['🙏','pray'],['💪','muscle'],['👌','ok'],['✌️','peace'],['🤞','fingers crossed'],['👀','eyes'],['🫶','heart hands'],
-  ['❤️','red heart'],['🧡','orange heart'],['💛','yellow heart'],['💚','green heart'],['💙','blue heart'],['💜','purple heart'],['🖤','black heart'],['🤍','white heart'],['💔','broken heart'],['🔥','fire'],['✨','sparkles'],['⭐','star'],['💥','boom'],['💯','hundred'],['✅','check'],['❌','cross'],['⚠️','warning'],['❓','question'],['❗','exclamation'],
-  ['🎉','tada'],['🎊','confetti'],['🏆','trophy'],['🥇','gold medal'],['🎯','target'],['🎮','gaming'],['🕹️','joystick'],['⚔️','swords'],['🛡️','shield'],['🏹','bow'],['🪄','magic wand'],['💀','skull'],['👑','crown'],['💎','gem'],['🧙','wizard'],['🐉','dragon'],
-  ['🍭','candy'],['🍬','sweet'],['🍰','cake'],['🍪','cookie'],['☕','coffee'],['🍺','beer'],['🥤','drink'],
-  ['📌','pin'],['📢','announcement'],['📣','megaphone'],['📝','memo'],['📋','clipboard'],['🔗','link'],['🔔','bell'],['🔕','no bell'],['🔒','lock'],['🔓','unlock'],['🔍','search'],['⚙️','settings'],['🛠️','tools'],['🗑️','trash'],['📎','attachment'],['💬','chat'],['📅','calendar'],['⏰','alarm'],['🕒','clock'],
-  ['⬆️','up'],['⬇️','down'],['⬅️','left'],['➡️','right'],['🔼','up triangle'],['🔽','down triangle'],['➕','plus'],['➖','minus'],['▶️','play'],['⏸️','pause']
-].map(([emoji, name]) => ({ id: `u:${emoji}`, emoji, name, insert: emoji, custom: false }));
+  ['😀','grinning','faces'],['😃','smiley','faces'],['😄','smile','faces'],['😁','grin','faces'],['😂','joy','faces'],['🤣','rofl','faces'],['😊','blush','faces'],['😍','heart eyes','faces'],['🥰','love','faces'],['😘','kiss','faces'],['😎','sunglasses','faces'],['🤩','star struck','faces'],['🥳','party','faces'],['🤔','thinking','faces'],['🫡','salute','faces'],['😴','sleep','faces'],['😭','cry','faces'],['😡','angry','faces'],['🤯','mind blown','faces'],['😈','devil','faces'],
+  ['👍','thumbs up','hands'],['👎','thumbs down','hands'],['👏','clap','hands'],['🙌','raised hands','hands'],['🤝','handshake','hands'],['🙏','pray','hands'],['💪','muscle','hands'],['👌','ok','hands'],['✌️','peace','hands'],['🤞','fingers crossed','hands'],['👀','eyes','hands'],['🫶','heart hands','hands'],
+  ['❤️','red heart','hearts'],['🧡','orange heart','hearts'],['💛','yellow heart','hearts'],['💚','green heart','hearts'],['💙','blue heart','hearts'],['💜','purple heart','hearts'],['🖤','black heart','hearts'],['🤍','white heart','hearts'],['💔','broken heart','hearts'],
+  ['🔥','fire','symbols'],['✨','sparkles','symbols'],['⭐','star','symbols'],['💥','boom','symbols'],['💯','hundred','symbols'],['✅','check','symbols'],['❌','cross','symbols'],['⚠️','warning','symbols'],['❓','question','symbols'],['❗','exclamation','symbols'],
+  ['🎉','tada','gaming'],['🎊','confetti','gaming'],['🏆','trophy','gaming'],['🥇','gold medal','gaming'],['🎯','target','gaming'],['🎮','gaming','gaming'],['🕹️','joystick','gaming'],['⚔️','swords','gaming'],['🛡️','shield','gaming'],['🏹','bow','gaming'],['🪄','magic wand','gaming'],['💀','skull','gaming'],['👑','crown','gaming'],['💎','gem','gaming'],['🧙','wizard','gaming'],['🐉','dragon','gaming'],
+  ['🍭','candy','food'],['🍬','sweet','food'],['🍰','cake','food'],['🍪','cookie','food'],['☕','coffee','food'],['🍺','beer','food'],['🥤','drink','food'],
+  ['📌','pin','tools'],['📢','announcement','tools'],['📣','megaphone','tools'],['📝','memo','tools'],['📋','clipboard','tools'],['🔗','link','tools'],['🔔','bell','tools'],['🔕','no bell','tools'],['🔒','lock','tools'],['🔓','unlock','tools'],['🔍','search','tools'],['⚙️','settings','tools'],['🛠️','tools','tools'],['🗑️','trash','tools'],['📎','attachment','tools'],['💬','chat','tools'],['📅','calendar','tools'],['⏰','alarm','tools'],['🕒','clock','tools'],
+  ['⬆️','up','symbols'],['⬇️','down','symbols'],['⬅️','left','symbols'],['➡️','right','symbols'],['🔼','up triangle','symbols'],['🔽','down triangle','symbols'],['➕','plus','symbols'],['➖','minus','symbols'],['▶️','play','symbols'],['⏸️','pause','symbols']
+].map(([emoji, name, category]) => ({ id: `u:${emoji}`, emoji, name, category, insert: emoji, custom: false }));
+
+const V131_EMOJI_SOURCES = [
+  ['all','Alle'],['discord','🙂 Discord'],['server','🟣 Server'],['favorites','★ Favoritter'],['recent','🕘 Seneste']
+];
+const V131_EMOJI_CATEGORIES = [
+  ['all','Alle'],['faces','😀'],['hands','👋'],['hearts','❤️'],['gaming','🎮'],['food','🍭'],['tools','🛠️'],['symbols','🔣']
+];
 
 const v131State = {
   pickerData: null,
@@ -19,7 +27,11 @@ const v131State = {
   pickerTab: 'people',
   pickerSearch: '',
   mentionPolicy: { mode: 'display', users: [], roles: [] },
-  autocomplete: null
+  autocomplete: null,
+  emojiSource: 'all',
+  emojiCategory: 'all',
+  pickerSelectionStart: null,
+  pickerSelectionEnd: null
 };
 
 function v131CurrentScope() {
@@ -60,14 +72,14 @@ async function v131LoadPickerData(force = false) {
   return v131State.pickerData;
 }
 
-function v131InsertAtCursor(target, text, replaceRange = null) {
+function v131InsertAtCursor(target, text, replaceRange = null, { focus = true } = {}) {
   if (!target || !text) return;
-  target.focus();
+  if (focus) target.focus();
   const start = replaceRange?.start ?? target.selectionStart;
   const end = replaceRange?.end ?? target.selectionEnd;
   target.setRangeText(text, start, end, 'end');
   target.dispatchEvent(new Event('input', { bubbles: true }));
-  target.focus();
+  if (focus) target.focus();
 }
 
 function v131EnsureUi() {
@@ -132,7 +144,7 @@ function v131EnsureUi() {
     dialog.className = 'dialog v131-picker-dialog';
     dialog.innerHTML = `
       <div class="v131-picker-shell">
-        <div class="dialog-head"><div><h2>Discord Insert</h2><p>Insert people, roles, channels, Timewizzard posts, emojis or Discord timestamps at the cursor.</p></div><button type="button" class="icon-btn" data-v131-close="v131PickerDialog">×</button></div>
+        <div class="dialog-head"><div><h2>Discord Insert</h2><p>Insert several items while this window stays open. Close with Esc, × or Done.</p></div><button type="button" class="icon-btn" data-v131-close="v131PickerDialog">×</button></div>
         <div class="v131-picker-tabs">
           <button type="button" data-v131-tab="people">👤 People</button><button type="button" data-v131-tab="roles">🛡 Roles</button><button type="button" data-v131-tab="channels"># Channels</button><button type="button" data-v131-tab="posts">💬 Posts</button><button type="button" data-v131-tab="emojis">😀 Emojis</button><button type="button" data-v131-tab="time">🕒 Time</button>
         </div>
@@ -142,13 +154,20 @@ function v131EnsureUi() {
         </div>
         <div id="v131PickerHint" class="v131-picker-hint"></div>
         <div id="v131PickerList" class="v131-picker-list"></div>
-        <div class="dialog-actions"><button type="button" class="btn ghost" data-v131-close="v131PickerDialog">Close</button></div>
+        <div class="dialog-actions"><button type="button" class="btn ghost" data-v131-close="v131PickerDialog">Done</button></div>
       </div>`;
     document.body.append(dialog);
     dialog.querySelectorAll('[data-v131-close]').forEach((node) => node.addEventListener('click', () => dialog.close()));
     dialog.querySelectorAll('[data-v131-tab]').forEach((node) => node.addEventListener('click', () => { v131State.pickerTab = node.dataset.v131Tab; v131RenderPicker(); }));
     dialog.querySelector('#v131PickerSearch').addEventListener('input', (event) => { v131State.pickerSearch = event.target.value; v131RenderPicker(); });
     dialog.querySelector('#v131MentionMode').addEventListener('change', (event) => v131SaveMentionPolicy({ ...v131State.mentionPolicy, mode: event.target.value }).catch((error) => toast(error.message, 'error')));
+    dialog.addEventListener('close', () => {
+      const target = document.getElementById(v131State.pickerTargetId);
+      if (!target) return;
+      const cursor = Number.isInteger(v131State.pickerSelectionStart) ? v131State.pickerSelectionStart : target.selectionStart;
+      target.focus();
+      target.setSelectionRange?.(cursor, cursor);
+    });
   }
 }
 
@@ -212,6 +231,9 @@ async function v131OpenPicker(targetId) {
   v131EnsureUi();
   v131State.pickerTargetId = targetId;
   v131State.pickerSearch = '';
+  const target = document.getElementById(targetId);
+  v131State.pickerSelectionStart = target?.selectionStart ?? 0;
+  v131State.pickerSelectionEnd = target?.selectionEnd ?? v131State.pickerSelectionStart;
   const dialog = document.getElementById('v131PickerDialog');
   dialog.querySelector('#v131PickerSearch').value = '';
   try {
@@ -233,9 +255,15 @@ function v131ItemMatches(item, query) {
   return `${item.name || ''} ${item.title || ''} ${item.id || ''} ${item.kind || ''}`.toLowerCase().includes(query);
 }
 
-function v131InsertAndClose(value, keepOpen = false) {
+function v131InsertAndClose(value, keepOpen = true) {
   const target = document.getElementById(v131State.pickerTargetId);
-  v131InsertAtCursor(target, value);
+  if (!target || !value) return;
+  const start = Number.isInteger(v131State.pickerSelectionStart) ? v131State.pickerSelectionStart : target.selectionStart;
+  const end = Number.isInteger(v131State.pickerSelectionEnd) ? v131State.pickerSelectionEnd : target.selectionEnd;
+  v131InsertAtCursor(target, value, { start, end }, { focus: !keepOpen });
+  const cursor = start + String(value).length;
+  v131State.pickerSelectionStart = cursor;
+  v131State.pickerSelectionEnd = cursor;
   if (!keepOpen) document.getElementById('v131PickerDialog')?.close();
 }
 
@@ -261,6 +289,14 @@ function v131ToggleEmojiFavorite(id) {
   const next = favorites.includes(id) ? favorites.filter((item) => item !== id) : [id, ...favorites];
   localStorage.setItem('timewizzard:emoji-favorites', JSON.stringify(next.slice(0, 60)));
   v131RenderPicker();
+}
+
+function v131EmojiFilterHtml() {
+  const categoryVisible = ['all', 'discord'].includes(v131State.emojiSource);
+  return `<div class="v131-emoji-filterbar">
+    <div class="v131-emoji-source-row">${V131_EMOJI_SOURCES.map(([key, label]) => `<button type="button" data-v131-emoji-source="${key}" class="${v131State.emojiSource === key ? 'active' : ''}">${label}</button>`).join('')}</div>
+    ${categoryVisible ? `<div class="v131-emoji-category-row"><span>Emoji kategori</span>${V131_EMOJI_CATEGORIES.map(([key, label]) => `<button type="button" title="${key}" aria-label="${key}" data-v131-emoji-category="${key}" class="${v131State.emojiCategory === key ? 'active' : ''}">${label}</button>`).join('')}</div>` : ''}
+  </div>`;
 }
 
 function v131TimestampHtml() {
@@ -325,17 +361,36 @@ function v131RenderPicker() {
     hint.textContent = 'Forum posts are inserted as channel/thread mentions. Normal-channel posts are inserted as named Discord message links.';
     list.innerHTML = items.map((item) => `<div class="v131-picker-row"><button type="button" class="v131-picker-main" data-v131-insert="${escapeAttr(item.insert)}"><span class="v131-row-icon">💬</span><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.destinationType)}${item.deleted ? ' · deleted on Discord' : ''}</small></span></button>${item.url ? `<button type="button" class="v131-open-mini" data-v131-open="${escapeAttr(item.url)}">↗</button>` : ''}</div>`).join('');
   } else if (v131State.pickerTab === 'emojis') {
-    const custom = data.emojis.map((item) => ({ ...item, custom: true }));
-    const all = [...custom, ...V131_UNICODE_EMOJIS];
+    const custom = data.emojis.map((item) => ({ ...item, source: 'server', category: 'server', custom: true }));
+    const discord = V131_UNICODE_EMOJIS.map((item) => ({ ...item, source: 'discord' }));
+    const all = [...custom, ...discord];
     const recent = v131EmojiHistory();
     const favorites = v131EmojiFavorites();
-    items = all.filter((item) => v131ItemMatches(item, q)).sort((a, b) => {
+    let sourceItems = all;
+    if (v131State.emojiSource === 'server') sourceItems = custom;
+    else if (v131State.emojiSource === 'discord') sourceItems = discord;
+    else if (v131State.emojiSource === 'favorites') sourceItems = all.filter((item) => favorites.includes(item.id));
+    else if (v131State.emojiSource === 'recent') sourceItems = all.filter((item) => recent.includes(item.id));
+    if (['all', 'discord'].includes(v131State.emojiSource) && v131State.emojiCategory !== 'all') {
+      sourceItems = sourceItems.filter((item) => item.category === v131State.emojiCategory);
+    }
+    items = sourceItems.filter((item) => v131ItemMatches(item, q)).sort((a, b) => {
+      if (v131State.emojiSource === 'recent') return recent.indexOf(a.id) - recent.indexOf(b.id);
       const af = favorites.includes(a.id) ? 1 : 0; const bf = favorites.includes(b.id) ? 1 : 0; if (af !== bf) return bf - af;
       const ar = recent.indexOf(a.id); const br = recent.indexOf(b.id); if (ar >= 0 || br >= 0) return (ar < 0 ? 999 : ar) - (br < 0 ? 999 : br);
       return String(a.name).localeCompare(String(b.name));
     });
-    hint.textContent = `${custom.length} server emojis + common Unicode emojis. Favorites and recent emojis stay in this browser.`;
-    list.innerHTML = `<div class="v131-emoji-grid">${items.map((item) => `<div class="v131-emoji-cell"><button type="button" class="v131-emoji-main" data-v131-emoji-id="${escapeAttr(item.id)}" data-v131-insert="${escapeAttr(item.insert)}" title="${escapeAttr(item.name)}">${item.custom ? `<img src="${escapeAttr(item.url)}" alt="${escapeAttr(item.name)}">` : `<span>${item.emoji}</span>`}<small>:${escapeHtml(item.name)}:</small></button><button type="button" class="v131-star${favorites.includes(item.id) ? ' active' : ''}" data-v131-favorite="${escapeAttr(item.id)}">${favorites.includes(item.id) ? '★' : '☆'}</button></div>`).join('')}</div>`;
+    hint.textContent = `${custom.length} server emojis · ${discord.length} Discord emojis. Click as many as you want; the picker stays open.`;
+    list.innerHTML = `${v131EmojiFilterHtml()}${items.length ? `<div class="v131-emoji-grid">${items.map((item) => `<div class="v131-emoji-cell"><button type="button" class="v131-emoji-main" data-v131-emoji-id="${escapeAttr(item.id)}" data-v131-insert="${escapeAttr(item.insert)}" title="${escapeAttr(item.name)}">${item.custom ? `<img src="${escapeAttr(item.url)}" alt="${escapeAttr(item.name)}">` : `<span>${item.emoji}</span>`}<small>:${escapeHtml(item.name)}:</small></button><button type="button" class="v131-star${favorites.includes(item.id) ? ' active' : ''}" data-v131-favorite="${escapeAttr(item.id)}">${favorites.includes(item.id) ? '★' : '☆'}</button></div>`).join('')}</div>` : '<div class="v131-empty-filter">No emojis match this filter.</div>'}`;
+    list.querySelectorAll('[data-v131-emoji-source]').forEach((node) => node.addEventListener('click', () => {
+      v131State.emojiSource = node.dataset.v131EmojiSource;
+      if (!['all', 'discord'].includes(v131State.emojiSource)) v131State.emojiCategory = 'all';
+      v131RenderPicker();
+    }));
+    list.querySelectorAll('[data-v131-emoji-category]').forEach((node) => node.addEventListener('click', () => {
+      v131State.emojiCategory = node.dataset.v131EmojiCategory;
+      v131RenderPicker();
+    }));
   }
 
   list.querySelectorAll('[data-v131-insert]').forEach((node) => node.addEventListener('click', () => {
