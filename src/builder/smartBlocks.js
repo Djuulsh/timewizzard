@@ -13,8 +13,6 @@ export const SMART_BLOCK_TYPES = Object.freeze([
   'progress'
 ]);
 
-export const FACTS_LABEL_WIDTH = 18;
-
 const SMART_BLOCK_SET = new Set(SMART_BLOCK_TYPES);
 const CALLOUT_TONES = new Set(['info', 'success', 'warning', 'danger', 'neutral']);
 const TONE_ICON = {
@@ -68,24 +66,12 @@ function stepsContent(block) {
   return [title ? `## ${title}` : null, ...rows].filter((value, index, values) => value !== null && !(value === '' && values[index + 1] === '')).join('\n').trim();
 }
 
-function factsLabelCell(value) {
-  const source = Array.from(asText(value).replaceAll('`', 'ˋ'));
-  const clipped = source.length > FACTS_LABEL_WIDTH
-    ? [...source.slice(0, FACTS_LABEL_WIDTH - 1), '…']
-    : source;
-  const padding = '\u00A0'.repeat(Math.max(0, FACTS_LABEL_WIDTH - clipped.length));
-  return `\`${clipped.join('')}${padding}\``;
-}
-
 function factsContent(block) {
   const title = asText(block.title);
   const rows = (block.items ?? []).map((item) => {
-    const labelCell = factsLabelCell(item?.label);
-    const valueLines = asText(item?.value).split(/\r?\n/);
-    return [
-      `${labelCell} ${valueLines[0] ?? ''}`,
-      ...valueLines.slice(1).map((line) => `${'\u00A0'.repeat(FACTS_LABEL_WIDTH + 2)}${line}`)
-    ].join('\n');
+    const label = asText(item?.label);
+    const value = asText(item?.value);
+    return `**${label}**\n${value}`;
   });
   return [title ? `### ${title}` : null, ...rows].filter(Boolean).join('\n');
 }
