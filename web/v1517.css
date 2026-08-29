@@ -1,0 +1,53 @@
+/* Timewizzard v1.5.17 — structured Button Row editor + Separator preview parity */
+
+/* Button Row editor: Label and URL are independent grid columns so the URL text
+   can never flow underneath the Label cell on desktop/tablet layouts. */
+.v1517-button-editor{display:grid;gap:8px;margin-top:2px}
+.v1517-button-columns{display:grid;grid-template-columns:minmax(110px,.7fr) minmax(0,1.3fr) 92px;gap:8px;padding:0 2px;color:var(--muted);font-size:8px;font-weight:850;letter-spacing:.07em;text-transform:uppercase}
+.v1517-button-list{display:grid;gap:7px}
+.v1517-button-item{display:grid;grid-template-columns:minmax(110px,.7fr) minmax(0,1.3fr) 92px;gap:8px;align-items:start;padding:8px;border:1px solid var(--line-soft);border-radius:9px;background:#11141a}
+.v1517-button-item label{margin:0!important;min-width:0}
+.v1517-button-item label>span{display:none}
+.v1517-button-label-cell input,.v1517-button-url-cell input{width:100%;min-width:0;min-height:38px}
+.v1517-button-url-cell{display:grid;gap:4px;min-width:0}
+.v1517-button-feedback{display:block;color:#ffb3b5;font-size:8px;line-height:1.35;padding:0 2px}
+.v1517-button-feedback.hidden{display:none}
+.v1517-button-item input.v1517-invalid{border-color:rgba(237,66,69,.65)!important;box-shadow:0 0 0 1px rgba(237,66,69,.08)!important}
+.v1517-button-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding-top:1px}
+.v1517-button-actions .mini-btn{min-width:0;min-height:34px;padding:5px 4px;font-size:11px}
+.v1517-button-actions .mini-btn:disabled{opacity:.32;cursor:not-allowed}
+.v1517-delete-button:not(:disabled){color:#ff9a9c;border-color:rgba(237,66,69,.35)}
+.v1517-button-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:1px}
+.v1517-button-footer .v1517-add-button{padding:6px 9px;font-size:10px}
+.v1517-button-footer small{color:var(--muted);font-size:8.5px}
+
+/* Separator Inspector model: Small and Large are shown with their actual relative
+   visual heights. Selecting either model updates the real spacing select. */
+.v1517-separator-demo{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 4px}
+.v1517-separator-demo button{display:grid;grid-template-rows:auto 1fr;gap:5px;min-height:64px;padding:8px;border:1px solid var(--line-soft);border-radius:8px;background:#11141a;color:var(--muted);cursor:pointer;text-align:left}
+.v1517-separator-demo button:hover,.v1517-separator-demo button.active{border-color:var(--accent);background:rgba(88,101,242,.08);color:var(--text)}
+.v1517-separator-demo button span{font-size:9px;font-weight:800}
+.v1517-separator-demo button i{position:relative;display:grid;align-items:center;width:100%;border-radius:5px;background:rgba(255,255,255,.025);overflow:hidden}
+.v1517-separator-demo button[data-v1517-separator-size="1"] i{min-height:14px;padding:3px 0}
+.v1517-separator-demo button[data-v1517-separator-size="2"] i{min-height:34px;padding:12px 0}
+.v1517-separator-demo button i::after{content:"";display:block;width:100%;height:1px;background:#4e5058}
+.v1517-separator-demo button.no-divider i::after{opacity:0}
+.v1517-separator-demo button.no-divider i{outline:1px dashed rgba(255,255,255,.05);outline-offset:-1px}
+
+/* Live Discord preview: the old preview ignored block.spacing entirely. Keep the
+   divider itself Discord-like, but make Small and Large spacing visibly distinct. */
+.v1517-separator-preview{display:grid;align-items:center;width:100%;box-sizing:border-box;margin:0!important}
+.v1517-separator-preview.v1517-separator-small{min-height:14px;padding:3px 0}
+.v1517-separator-preview.v1517-separator-large{min-height:34px;padding:12px 0}
+.v1517-separator-preview hr{display:block;width:100%;height:1px;margin:0;border:0;background:#4e5058}
+.v1517-separator-preview.no-divider{background:transparent}
+
+@media(max-width:760px){
+  .v1517-button-columns{display:none}
+  .v1517-button-item{grid-template-columns:minmax(0,1fr) auto;gap:7px}
+  .v1517-button-label-cell,.v1517-button-url-cell{grid-column:1}
+  .v1517-button-actions{grid-column:2;grid-row:1 / span 2;grid-template-columns:1fr;align-content:start;width:36px}
+  .v1517-button-item label>span{display:block;margin-bottom:4px;color:var(--muted);font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+  .v1517-button-footer{align-items:flex-end}
+  .v1517-separator-demo{grid-template-columns:1fr}
+}
