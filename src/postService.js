@@ -63,6 +63,10 @@ function liveState() {
   return { status: 'live', reason: null, checkedAt: new Date().toISOString() };
 }
 
+function mentionPolicySnapshot(source) {
+  return structuredClone(source?.mentionPolicy ?? { mode: 'display', users: [], roles: [] });
+}
+
 function buildBasePost(source, destination, builderId, discordId) {
   const destinationType = destinationTypeForChannel(destination);
   return {
@@ -71,6 +75,7 @@ function buildBasePost(source, destination, builderId, discordId) {
     builderId,
     builder: structuredClone(source.builder),
     publishedBuilder: structuredClone(source.builder),
+    publishedMentionPolicy: mentionPolicySnapshot(source),
     publishedTitle: source.title,
     publishedAt: new Date().toISOString(),
     appliedTagIds: destinationType === 'forum' ? [...(source.appliedTagIds ?? [])] : [],
@@ -201,6 +206,7 @@ async function updateForumPost({ client, post, store }) {
     starterMessageId: starterMessage.id,
     continuationMessageIds,
     publishedBuilder: structuredClone(post.builder),
+    publishedMentionPolicy: mentionPolicySnapshot(post),
     publishedTitle: post.title,
     publishedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -245,6 +251,7 @@ async function updateChannelPost({ client, post, store }) {
     builderId,
     continuationMessageIds,
     publishedBuilder: structuredClone(post.builder),
+    publishedMentionPolicy: mentionPolicySnapshot(post),
     publishedTitle: post.title,
     publishedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
