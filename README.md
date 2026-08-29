@@ -20,6 +20,43 @@ Timewizzard is a Discord Components V2 information-post builder with both a Disc
 - Nested ephemeral button/select flows.
 - MerfinUI FHD/QHD profile management and compact class/resolution select remain supported.
 
+## Local testing without Railway
+
+Timewizzard v1.3.0 can run as a complete local Discord bot + Web Builder. Railway is not required for development or testing.
+
+1. Install Node.js 24.17+ and clone the repository.
+2. Run `npm install`.
+3. Copy `.env.local.example` to `.env.local` and insert the Discord bot/application values.
+4. In Discord Developer Portal → OAuth2 → Redirects, add exactly:
+
+```text
+http://127.0.0.1:3000/auth/discord/callback
+```
+
+5. Start Timewizzard locally:
+
+```bash
+npm run local
+```
+
+For automatic restart while editing source files:
+
+```bash
+npm run local:watch
+```
+
+Then test:
+
+```text
+http://127.0.0.1:3000/health
+http://127.0.0.1:3000/auth/discord
+http://127.0.0.1:3000/builder
+```
+
+Local data is intentionally stored separately in `./data-local`, so local tests do not touch the Railway `/data/store.json` volume. The local process still connects directly to Discord, so a working internet connection and valid Discord credentials are required.
+
+If Railway comes back online while the same bot token is running locally, stop one of the two instances before testing interactions to avoid two bot processes handling the same guild. A separate Discord development bot is the safest long-term option.
+
 ## Persistent storage
 
 Railway uses:
