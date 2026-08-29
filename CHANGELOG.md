@@ -20,11 +20,20 @@
 - Added DiscoHook JSON import.
 - Added nested ephemeral buttons/select menus.
 
+### Discord-native Builder
+- Updated native Builder branding/status to Timewizzard v1.3.0.
+- Native Builder now detects deleted Discord targets when opening/listing posts and exposes **Genskab** when the original destination still exists.
+- Added native Media Gallery create/edit support using `URL | description | ja/nej` rows.
+- Added native Thumbnail create/edit support including spoiler state.
+- Editing a Select in the native Builder now preserves existing nested ephemeral next-steps instead of silently removing them.
+- Native help and `/webbuilder` descriptions now document the v1.3 feature set.
+
 ### Data and validation
 - Storage schema upgraded to v4 with revisions, stable Builder IDs and Discord target state.
 - Existing `/data/store.json` data migrates in place.
-- Validation now covers v1.3.0 quote escape, media blocks, nested actions and DiscoHook conversion.
-- Removed runtime Web Builder patching from the startup path; v1.3.0 Web assets are now committed directly to the repository.
+- Validation covers v1.3.0 quote escape, media blocks, nested actions and DiscoHook conversion.
+- Removed runtime Web Builder patching from the startup path; v1.3.0 Web assets are committed directly to the repository.
+- CI now syntax-checks the native v1.3 support layer and Builder UI.
 
 ## 1.2.2
 
