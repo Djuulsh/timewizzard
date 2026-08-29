@@ -47,5 +47,7 @@ export const WEB_FEATURES = Object.freeze([
   'preview-return-navigation',
   'workspace-post-actions-menu',
   'compact-edit-header',
-  'inspector-priority-width'
+  'inspector-priority-width',
+  'single-posts-entry-point',
+  'top-layer-app-menu'
 ]);
