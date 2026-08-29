@@ -4,8 +4,7 @@ import {
   ButtonStyle,
   MessageFlags
 } from 'discord.js';
-
-const VERSION = '1.5.19';
+import { VERSION } from './version.js';
 
 export function installV158Support(ControllerClass) {
   ControllerClass.prototype.showWebBuilder = async function showWebBuilderV158(interaction) {
@@ -35,7 +34,8 @@ export function installV158Support(ControllerClass) {
         '**Markdown:** Én fælles toolbar følger nu det aktive Markdown-felt og Discord Insert arbejder på samme aktive felt.',
         '**Responsive UX:** Heading, Facts, Button Row og øvrige Inspector-felter tilpasser sig Inspectorens faktiske bredde på computer, iPad og mobil.',
         '**Header:** Add block, Save, Publish, Undo og Redo forbliver direkte tilgængelige; sekundære handlinger flyttes til More på smallere skærme uden horisontal scroll.',
-        '**Search:** Block- og template-søgning søger globalt på tværs af alle kategorier.'
+        '**Search:** Block- og template-søgning søger globalt på tværs af alle kategorier.',
+        '**Preview & safety:** Publish Review, canonical Discord payload validation og local crash recovery er en del af v1.6.2.'
       ].join('\n'),
       components: [row],
       flags: MessageFlags.Ephemeral,
