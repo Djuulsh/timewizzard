@@ -1,0 +1,59 @@
+name: Finalize v1.6.2
+
+on:
+  push:
+    branches: ['feature/v1.6.2-ui-foundation']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/v1.6.2-ui-foundation
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.17.0
+
+      - name: Complete pending foundation migration
+        run: |
+          if [ -f scripts/apply-v162-upgrade.mjs ]; then
+            node scripts/apply-v162-upgrade.mjs
+          fi
+
+      - name: Keep CI compatible with the lockfile-free repository
+        run: sed -i '/^[[:space:]]*cache: npm[[:space:]]*$/d' .github/workflows/validate.yml
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Validate complete v1.6.2 release
+        run: npm run validate
+
+      - name: Create clean release commit
+        run: |
+          rm -f package-lock.json
+          rm -f .github/workflows/apply-v162-upgrade.yml
+          rm -f .github/workflows/promote-v162.yml
+          rm -f .github/workflows/finalize-v162.yml
+          rm -f scripts/apply-v162-upgrade.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Release Timewizzard v1.6.2"
+          fi
+
+      - name: Fast-forward feature branch and main
+        run: |
+          git push origin HEAD:feature/v1.6.2-ui-foundation
+          git push origin HEAD:main
