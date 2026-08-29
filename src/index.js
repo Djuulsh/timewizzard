@@ -14,14 +14,14 @@ import { installV13Support } from './v13Support.js';
 import { installNativeV13Support } from './nativeV13Support.js';
 import { installNativeV14Support } from './nativeV14Support.js';
 import { JsonStore } from './storage.js';
-import { createWebServer } from './web/server.js';
+import { createWebServer } from './web/serverV15.js';
 
 installDestinationSupport(BotController);
 installV13Support(BotController);
 installNativeV13Support(BotController);
 installNativeV14Support(BotController);
 
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 const store = new JsonStore(path.join(config.dataDir, 'store.json'));
 await store.init();
 
