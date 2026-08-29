@@ -43,5 +43,9 @@ export const WEB_FEATURES = Object.freeze([
   'accessible-keyboard-controls',
   'safe-area-dialogs',
   'reduced-motion-support',
-  'cross-platform-ui-contracts'
+  'cross-platform-ui-contracts',
+  'preview-return-navigation',
+  'workspace-post-actions-menu',
+  'compact-edit-header',
+  'inspector-priority-width'
 ]);
