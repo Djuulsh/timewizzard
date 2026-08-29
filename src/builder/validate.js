@@ -1,7 +1,7 @@
 import { isPublicHttpUrl } from '../utils.js';
 
 const ALLOWED_TYPES = new Set([
-  'text', 'image', 'gallery', 'thumbnail', 'separator', 'open', 'link', 'select', 'profile_select', 'profile_open_list'
+  'container', 'text', 'image', 'gallery', 'thumbnail', 'separator', 'open', 'link', 'select', 'profile_select', 'profile_open_list'
 ]);
 
 export function parseStrictHexColor(value) {
@@ -46,6 +46,11 @@ export function validateBuilder(builder) {
     if (!block || typeof block !== 'object' || !ALLOWED_TYPES.has(block.type)) throw new Error('Builderen indeholder en ukendt block-type.');
     if (!block.id || typeof block.id !== 'string' || block.id.length > 24 || ids.has(block.id)) throw new Error('Alle blocks skal have et unikt ID på maksimalt 24 tegn.');
     ids.add(block.id);
+
+    if (block.type === 'container') {
+      if (!Number.isInteger(block.accentColor) || block.accentColor < 0 || block.accentColor > 0xFFFFFF) throw new Error('Embed/container accentColor er ugyldig.');
+      if (String(block.label ?? '').length > 80) throw new Error('Embed/container-navnet er over 80 tegn.');
+    }
 
     if (block.type === 'text') {
       if (!String(block.content ?? '').trim() || String(block.content).length > 4_000) throw new Error('Text-blocks skal indeholde 1-4000 tegn.');
