@@ -202,5 +202,5 @@ console.log('Gallery + thumbnail validation passed.');
 console.log('Nested ephemeral action validation passed.');
 console.log('DiscoHook nested container import validation passed.');
 console.log('Safe mention validation passed.');
-if (VERSION !== '1.6.3') throw new Error('Runtime version is not v1.6.3.');
+if (VERSION !== '1.6.4') throw new Error('Runtime version is not v1.6.4.');
 console.log(`Timewizzard v${VERSION} validation passed.`);
