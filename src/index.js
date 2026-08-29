@@ -19,7 +19,7 @@ installDestinationSupport(BotController);
 installV13Support(BotController);
 installNativeV13Support(BotController);
 
-const VERSION = '1.3.2';
+const VERSION = '1.4.0';
 const store = new JsonStore(path.join(config.dataDir, 'store.json'));
 await store.init();
 
