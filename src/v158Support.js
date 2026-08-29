@@ -5,7 +5,7 @@ import {
   MessageFlags
 } from 'discord.js';
 
-const VERSION = '1.5.10';
+const VERSION = '1.5.11';
 
 export function installV158Support(ControllerClass) {
   ControllerClass.prototype.showWebBuilder = async function showWebBuilderV158(interaction) {
