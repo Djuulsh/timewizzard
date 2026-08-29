@@ -1,28 +1,55 @@
-# Timewizzard Info Bot v1.3.0
+# Timewizzard Info Bot v1.4.0
 
 Timewizzard is a Discord Components V2 information-post builder with both a Discord-native builder and a Railway-hosted Web Builder.
 
-## v1.3.0 highlights
+## v1.4.0 highlights
 
-- Publish to forum, text and announcement channels.
-- Stable Builder IDs separated from Discord message/thread IDs.
-- Detect posts deleted directly in Discord and mark them **Deleted on Discord** without losing builder data.
-- **Re-create** deleted Discord posts in the same destination, or choose a new destination if the original channel no longer exists.
-- Change destination / repair / relink published posts while preserving builder history.
-- Local Undo / Redo in Web Builder.
-- Persistent revision history with restore.
-- Markdown toolbar for headings, bold, italic, underline, strike, subtext, quotes, lists, code, links and spoilers.
-- Markdown reference showing both raw syntax and rendered result.
-- Timewizzard multi-line quote escape marker `\>>>` on its own line. At publish time it splits the Text Display so following text is no longer part of a Discord `>>>` quote.
-- Discord mention preview resolves known channel, role and user names.
-- Media Gallery and Thumbnail Components V2 blocks.
-- DiscoHook JSON import with warnings for unsupported interactive fields.
-- Nested ephemeral button/select flows.
-- MerfinUI FHD/QHD profile management and compact class/resolution select remain supported.
+- **Plain posts are truly plain.** A new post no longer receives an invisible/implicit colored container.
+- **Containers are explicit.** Add a Container only when you want an embed-style colored section.
+- **Hierarchical Web Builder:** `POST → optional Containers → content blocks`.
+- Drag content between the POST root and containers, reorder blocks, collapse containers and duplicate an entire container with its contents.
+- Each Container owns its own accent color. The old post-level accent picker is hidden from the Web Builder.
+- Simplified Container Inspector: internal name, one color control and explicit keep/delete actions.
+- Structured **Add Block** menu grouped into Content, Layout, Interactions and Special.
+- Smart **YouTube block**: paste a normal YouTube, youtu.be, Shorts or Live URL and Timewizzard derives the video ID, thumbnail and canonical Watch link.
+- Expanded template gallery with Blank, Simple Announcement, Styled Announcement, Guide, FAQ, Links, Raid/Event, Recruitment, Patch/Update, Warning, Media/Gallery, YouTube and MerfinUI starters.
+- New Draft uses visual template cards instead of relying only on a long dropdown.
+- Legacy MerfinUI Profile List remains compact and has no 18 individual Open buttons.
+- Existing v1.3.x builders migrate to schema v2 while preserving their old colored-container appearance.
+- DiscoHook imports preserve separate embeds as separate v1.4 Containers.
+
+All v1.3 features remain available: deleted-post Re-create, destination repair, revision history, Discord Insert, emoji browser, safe mentions, timestamps, Bot Identity, nested ephemeral actions, media gallery and thumbnail blocks.
+
+## Builder structure
+
+A plain post can contain content directly:
+
+```text
+POST
+├─ Text
+├─ Image
+├─ Separator
+└─ Link
+```
+
+A styled post explicitly contains one or more Containers:
+
+```text
+POST
+├─ Text
+├─ Container: Raid Information
+│  ├─ Text
+│  ├─ Image
+│  └─ Link
+└─ Container: Important
+   └─ Text
+```
+
+Root content and multiple Containers can still be published in the same Discord message when Discord's component/text limits allow it.
 
 ## Local testing without Railway
 
-Timewizzard v1.3.0 can run as a complete local Discord bot + Web Builder. Railway is not required for development or testing.
+Timewizzard can run as a complete local Discord bot + Web Builder. Railway is not required for development or testing.
 
 1. Install Node.js 24.17+ and clone the repository.
 2. Run `npm install`.
@@ -66,7 +93,7 @@ Railway uses:
 /data/store.json.bak
 ```
 
-v1.3.0 migrates the existing store in place. The storage schema adds stable `builderId`, Discord target state and revision history while preserving existing profiles, drafts and published posts.
+v1.4.0 uses storage schema **v5**. Existing v1.3.x data migrates in place to Builder schema v2. Old flat container-marker layouts are converted to explicit hierarchical Containers so their public appearance is preserved.
 
 ## Railway variables
 
@@ -108,7 +135,7 @@ Expected version:
 ```json
 {
   "ok": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "webBuilder": true,
   "oauthLoginPath": "/auth/discord",
   "builderPath": "/builder"
@@ -172,4 +199,4 @@ See `DISCORD_MARKDOWN.md` for the complete Markdown reference.
 
 ## Validation
 
-GitHub Actions runs `npm run validate` on every push to `main`. The v1.3.0 validation covers the compact MerfinUI template, quote escape splitting, Media Gallery/Thumbnail rendering, nested ephemeral actions and DiscoHook conversion.
+GitHub Actions runs `npm run validate` on every push to `main`. v1.4 validates plain root posts, explicit Containers, legacy migration, smart YouTube parsing/rendering, all starter templates, quote escape, media blocks, nested ephemeral actions, safe mentions and multi-embed DiscoHook import.
