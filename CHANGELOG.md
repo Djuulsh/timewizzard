@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.3.2
+
+### Multi-embed Components V2 layouts
+- Added **Embed / Container** markers to the Web Builder so one Discord message can contain several independently accented Components V2 containers.
+- Each container can have its own accent color and an editor-only label.
+- Live preview groups blocks by container and shows how many embeds are still fitting inside one Discord message.
+- DiscoHook import now preserves multiple embeds / Components V2 containers instead of flattening everything into one container.
+
+### Compact legacy profile list
+- Removed all Open buttons from the legacy MerfinUI profile list.
+- The legacy list now renders as one compact Text Display showing each class with FHD / QHD availability labels.
+- The compact list is validated to remain inside one Discord message under the default layout.
+
+### Templates
+- Added ready-made **Announcement**, **Guide / information**, **FAQ**, **Links / resources** and **YouTube video** templates.
+- The YouTube template includes introduction text, a YouTube thumbnail URL placeholder, a second red container and a Watch on YouTube link button.
+- All new base templates are validated to fit one Discord message by default.
+
 ## 1.3.1
 
 ### Bot identity
