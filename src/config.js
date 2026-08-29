@@ -1,8 +1,9 @@
 import { loadEnvFile } from 'node:process';
 import path from 'node:path';
 
+const envFile = String(process.env.TIMEWIZZARD_ENV_FILE || '.env').trim();
 try {
-  loadEnvFile();
+  loadEnvFile(envFile);
 } catch (error) {
   if (error?.code !== 'ENOENT') throw error;
 }
@@ -36,5 +37,6 @@ export const config = Object.freeze({
   publicBaseUrl,
   clientSecret,
   webEnabled: Boolean(publicBaseUrl && clientSecret),
-  nodeEnv: String(process.env.NODE_ENV || 'development')
+  nodeEnv: String(process.env.NODE_ENV || 'development'),
+  envFile
 });
