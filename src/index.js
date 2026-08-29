@@ -21,7 +21,7 @@ installV13Support(BotController);
 installNativeV13Support(BotController);
 installNativeV14Support(BotController);
 
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 const store = new JsonStore(path.join(config.dataDir, 'store.json'));
 await store.init();
 
