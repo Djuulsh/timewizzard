@@ -1,0 +1,248 @@
+/* Timewizzard v1.6.2 — cross-platform workspace, dialogs and accessibility. */
+
+:root{
+  --tw-topbar-height:64px;
+  --tw-safe-top:env(safe-area-inset-top,0px);
+  --tw-safe-right:env(safe-area-inset-right,0px);
+  --tw-safe-bottom:env(safe-area-inset-bottom,0px);
+  --tw-safe-left:env(safe-area-inset-left,0px)
+}
+html{overflow-x:hidden}
+body.v162-ui-foundation{min-width:0;overflow-x:hidden}
+body.v162-ui-foundation *{min-inline-size:0}
+body.v162-ui-foundation button,
+body.v162-ui-foundation summary,
+body.v162-ui-foundation [role="button"]{touch-action:manipulation}
+
+/* Accessible focus is deliberately stronger than hover. */
+body.v162-ui-foundation :focus-visible{
+  outline:2px solid #98a1ff!important;
+  outline-offset:2px!important;
+  box-shadow:0 0 0 4px rgba(88,101,242,.18)!important
+}
+body.v162-ui-foundation :focus:not(:focus-visible){outline:none}
+
+/* Global application bar: one primary action and one predictable menu. */
+.v162-ui-foundation .topbar{
+  min-height:var(--tw-topbar-height);
+  height:auto;
+  padding-left:max(16px,var(--tw-safe-left));
+  padding-right:max(16px,var(--tw-safe-right));
+  overflow:visible
+}
+.v162-ui-foundation .top-actions{flex-wrap:nowrap;min-width:0}
+.v162-ui-foundation .identity{min-width:0;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v162-posts-toggle{display:none!important;white-space:nowrap}
+.v162-app-menu{position:relative;flex:0 0 auto}
+.v162-app-menu>summary{list-style:none;display:inline-flex;align-items:center;justify-content:center;min-width:42px;user-select:none}
+.v162-app-menu>summary::-webkit-details-marker{display:none}
+.v162-app-menu[open]>summary{border-color:#596273;background:var(--panel-3)}
+.v162-app-menu-panel{
+  position:absolute;right:0;top:calc(100% + 8px);z-index:130;
+  width:min(260px,calc(100vw - 20px));padding:9px;
+  border:1px solid var(--line);border-radius:11px;background:#15181e;
+  box-shadow:0 20px 60px rgba(0,0,0,.48)
+}
+.v162-app-menu-panel>strong{display:block;padding:4px 7px 8px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.v162-app-menu-actions{display:grid;gap:4px}
+.v162-app-menu-actions .v162-menu-action{display:flex!important;width:100%;min-height:38px;align-items:center;justify-content:flex-start;text-align:left;background:transparent!important}
+.v162-app-menu-actions a.v162-menu-action{text-decoration:none;border:1px solid transparent;border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;font-weight:650}
+.v162-app-menu-actions a.v162-menu-action:hover{border-color:var(--line);background:var(--panel-2)!important}
+
+/* Desktop workspace remains three-pane, but has safer minimums. */
+.v162-ui-foundation .workspace{
+  height:calc(100dvh - var(--tw-topbar-height));
+  grid-template-columns:minmax(220px,250px) minmax(560px,1fr) minmax(340px,460px)
+}
+.v162-ui-foundation .sidebar,
+.v162-ui-foundation .builder,
+.v162-ui-foundation .preview{overscroll-behavior:contain}
+.v162-ui-foundation .preview{scrollbar-gutter:stable}
+.v162-ui-foundation .builder-grid{grid-template-columns:minmax(280px,.88fr) minmax(330px,1.12fr)}
+
+/* Mobile/tablet panel navigation is created once and stays outside individual editors. */
+.v162-workspace-nav{display:none;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line);background:#12151b}
+.v162-workspace-nav>div{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;flex:1}
+.v162-workspace-nav [data-v162-view]{border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:transparent;color:var(--muted);font-size:11px;font-weight:750;cursor:pointer}
+.v162-workspace-nav [data-v162-view].active{border-color:var(--accent);background:rgba(88,101,242,.15);color:var(--text)}
+.v162-workspace-nav [data-v162-posts-nav]{flex:0 0 auto}
+
+/* Preview width selector and canonical payload state. */
+.v162-ui-foundation .preview-heading{align-items:flex-start;flex-wrap:wrap}
+.v162-preview-controls{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin-left:auto}
+.v162-canonical-state{display:inline-flex;align-items:center;min-height:26px;padding:4px 7px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:#15181e;font-size:8.5px;font-weight:720;white-space:nowrap}
+.v162-canonical-state.valid{border-color:rgba(59,165,93,.48);color:#8de0a6;background:rgba(59,165,93,.09)}
+.v162-canonical-state.warning{border-color:rgba(240,178,50,.48);color:#ffd46d;background:rgba(240,178,50,.09)}
+.v162-canonical-state.error{max-width:100%;border-color:rgba(237,66,69,.5);color:#ff9ea0;background:rgba(237,66,69,.09);white-space:normal}
+.v162-preview-segment{display:grid;grid-template-columns:1fr 1fr;padding:2px;border:1px solid var(--line);border-radius:8px;background:#0f1217}
+.v162-preview-segment button{border:0;border-radius:6px;padding:5px 7px;background:transparent;color:var(--muted);font-size:8px;font-weight:780;cursor:pointer}
+.v162-preview-segment button.active{background:var(--panel-3);color:var(--text)}
+.v162-ui-foundation .discord-surface{width:100%;max-width:650px;margin-inline:auto;transition:max-width .16s ease}
+body[data-tw-preview-width="mobile"] .discord-surface{max-width:390px}
+
+/* Drawer shared by laptop, iPad and phone. */
+.v162-drawer-backdrop{position:fixed;inset:var(--tw-topbar-height) 0 0;z-index:87;border:0;background:rgba(0,0,0,.58);backdrop-filter:blur(2px);cursor:pointer}
+.v162-drawer-backdrop.hidden{display:none}
+
+/* Context toolbar wraps instead of creating a horizontal scroll strip. */
+.v162-ui-foundation #inspector .v1519-context-toolbar{overflow:visible!important}
+.v162-ui-foundation .v1519-toolbar-caption{flex-basis:100%;font-size:9px;color:#b6bdc8;text-transform:none;letter-spacing:0}
+.v162-ui-foundation .v1519-toolbar-actions{display:flex;flex-wrap:wrap;gap:5px}
+.v162-ui-foundation .v1519-context-toolbar .toolbar-btn{min-height:32px}
+
+/* Structured Inspector fields: predictable priorities before container-query stacking. */
+.v162-ui-foundation .v154-heading-primary-grid{grid-template-columns:minmax(260px,1fr) 230px!important}
+.v162-ui-foundation .v154-heading-controls{grid-template-columns:76px minmax(125px,154px)!important;justify-content:end}
+.v162-ui-foundation .v154-heading-controls .v151-heading-emoji-button{max-width:154px}
+.v162-ui-foundation .v154-heading-controls .v151-heading-emoji-button small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v162-ui-foundation .v1513-fact-row,
+.v162-ui-foundation .v1517-button-item{overflow:hidden}
+.v162-ui-foundation .v1513-fact-value-cell,
+.v162-ui-foundation .v1517-button-url-cell{min-width:0;overflow:hidden}
+
+/* Shared dialog contract: visible header/footer, scrollable body, dynamic viewport and safe areas. */
+.v162-ui-foundation dialog.dialog{
+  max-width:calc(100vw - max(20px,var(--tw-safe-left) + var(--tw-safe-right)));
+  max-height:calc(100dvh - max(20px,var(--tw-safe-top) + var(--tw-safe-bottom)));
+  overscroll-behavior:contain
+}
+.v162-ui-foundation dialog.dialog>form{
+  max-height:calc(100dvh - max(20px,var(--tw-safe-top) + var(--tw-safe-bottom)));
+  overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable
+}
+.v162-ui-foundation dialog.dialog .dialog-head{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line-soft)}
+.v162-ui-foundation dialog.dialog .dialog-actions{position:sticky;bottom:0;z-index:21;background:var(--panel);border-top:1px solid var(--line-soft);padding-bottom:max(10px,var(--tw-safe-bottom))}
+.v162-ui-foundation .v131-picker-shell,
+.v162-ui-foundation .v152-add-shell{max-height:calc(100dvh - max(12px,var(--tw-safe-top) + var(--tw-safe-bottom)))}
+
+/* Publish review and local recovery use one compact dialog shell. */
+.v162-review-dialog{width:min(660px,calc(100vw - 20px));padding:0!important;overflow:hidden}
+.v162-dialog-shell{display:flex!important;flex-direction:column!important;max-height:calc(100dvh - 20px);overflow:hidden!important;background:var(--panel)}
+.v162-dialog-shell>.dialog-head{flex:0 0 auto;padding:15px 16px 12px}
+.v162-dialog-body{flex:1 1 auto;overflow:auto;padding:14px 16px;overscroll-behavior:contain}
+.v162-dialog-shell>.dialog-actions{flex:0 0 auto;display:flex;justify-content:flex-end;gap:8px;padding:11px 16px}
+.v162-review-loading{padding:30px 12px;text-align:center;color:var(--muted)}
+.v162-review-error{display:grid;gap:5px;padding:12px;border:1px solid rgba(237,66,69,.48);border-radius:9px;background:rgba(237,66,69,.08);color:#ffb0b2}
+.v162-review-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}
+.v162-review-grid>div{display:grid;gap:3px;padding:9px 10px;border:1px solid var(--line-soft);border-radius:8px;background:#11141a}
+.v162-review-grid dt{color:var(--muted);font-size:8px;font-weight:850;text-transform:uppercase;letter-spacing:.07em}
+.v162-review-grid dd{margin:0;color:var(--text);font-size:11px;overflow-wrap:anywhere}
+.v162-review-warnings{margin-top:11px;padding:11px 12px;border:1px solid rgba(240,178,50,.42);border-radius:9px;background:rgba(240,178,50,.07)}
+.v162-review-warnings.clear{border-color:rgba(59,165,93,.42);background:rgba(59,165,93,.07)}
+.v162-review-warnings strong{font-size:11px}
+.v162-review-warnings ul{margin:7px 0 0;padding-left:18px;color:#d8dce3;font-size:10px;line-height:1.5}
+.v162-review-warnings p{margin:6px 0 0;color:var(--muted);font-size:10px}
+.v162-recovery-summary{display:grid;gap:4px;padding:12px;border:1px solid var(--line);border-radius:9px;background:#11141a}
+.v162-recovery-summary strong{font-size:12px}
+.v162-recovery-summary span,.v162-dialog-note{color:var(--muted);font-size:10px;line-height:1.45}
+
+/* Medium desktop/laptop: Posts becomes a drawer and editor + preview remain visible. */
+@media(max-width:1279px){
+  .v162-posts-toggle{display:inline-flex!important}
+  .v162-ui-foundation .workspace{grid-template-columns:minmax(0,1fr) minmax(340px,410px)}
+  .v162-ui-foundation .builder{grid-column:1}
+  .v162-ui-foundation .preview{grid-column:2}
+  .v162-ui-foundation .sidebar{
+    display:block!important;position:fixed;left:0;top:var(--tw-topbar-height);bottom:0;z-index:90;
+    width:min(330px,88vw);max-width:none;min-height:0;padding-bottom:max(16px,var(--tw-safe-bottom));
+    transform:translateX(-105%);transition:transform .18s ease;box-shadow:18px 0 54px rgba(0,0,0,.46)
+  }
+  body.v162-posts-open .sidebar{transform:translateX(0)}
+  .v162-ui-foundation .identity{display:none}
+}
+
+/* iPad portrait and phones: one task panel at a time, no three-panel vertical scroll. */
+@media(max-width:960px){
+  :root{--tw-topbar-height:62px}
+  body.v162-ui-foundation{overflow:hidden!important}
+  .v162-ui-foundation .topbar{height:var(--tw-topbar-height);min-height:var(--tw-topbar-height);flex-wrap:nowrap;padding-top:max(8px,var(--tw-safe-top));padding-bottom:8px}
+  .v162-ui-foundation .brand{min-width:0}
+  .v162-ui-foundation .brand>div:last-child{min-width:0}
+  .v162-ui-foundation .brand strong,.v162-ui-foundation .brand small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .v162-ui-foundation .top-actions{margin-left:auto}
+  .v162-ui-foundation .workspace{display:block;height:calc(100dvh - var(--tw-topbar-height));overflow:hidden}
+  .v162-ui-foundation .builder,
+  .v162-ui-foundation .preview{display:block;height:100%;min-height:0;max-height:none;overflow:auto}
+  .v162-ui-foundation .preview{padding:12px}
+  body:not([data-tw-view="preview"]) .preview{display:none}
+  body[data-tw-view="preview"] .builder{display:none}
+
+  .v162-ui-foundation .editor:not(.hidden){display:flex;flex-direction:column;height:100%;min-height:0;padding:0}
+  .v162-ui-foundation .v152-editor-head{position:relative!important;top:auto!important;z-index:24;flex:0 0 auto;margin:0!important;padding:10px 12px!important;border-bottom:1px solid var(--line)!important}
+  .v162-ui-foundation #orphanBanner{flex:0 0 auto;margin:8px 12px}
+  .v162-workspace-nav{display:flex;flex:0 0 auto}
+  .v162-ui-foundation .builder-grid{display:block;flex:1 1 auto;min-height:0;overflow:auto;padding:12px}
+  body[data-tw-view="blocks"] .inspector-column{display:none}
+  body[data-tw-view="edit"] .block-column{display:none}
+  body[data-tw-view="blocks"] .block-column,
+  body[data-tw-view="edit"] .inspector-column{display:block}
+  .v162-ui-foundation .block-column,
+  .v162-ui-foundation .inspector-column{width:100%;max-width:760px;margin-inline:auto}
+  .v162-ui-foundation #inspector{margin-top:8px}
+  .v162-ui-foundation .sidebar{top:var(--tw-topbar-height)}
+  .v162-drawer-backdrop{inset:var(--tw-topbar-height) 0 0}
+
+  .v162-ui-foundation .v154-heading-primary-grid{grid-template-columns:1fr!important}
+  .v162-ui-foundation .v154-heading-controls{grid-template-columns:88px minmax(0,154px)!important;justify-content:start}
+  .v162-ui-foundation .v1513-facts-column-head,
+  .v162-ui-foundation .v1517-button-columns{display:none!important}
+  .v162-ui-foundation .v1513-fact-row,
+  .v162-ui-foundation .v1517-button-item{grid-template-columns:minmax(0,1fr) 44px!important}
+  .v162-ui-foundation .v1513-fact-label-cell,
+  .v162-ui-foundation .v1513-fact-value-cell,
+  .v162-ui-foundation .v1517-button-label-cell,
+  .v162-ui-foundation .v1517-button-url-cell{grid-column:1!important}
+  .v162-ui-foundation .v1513-fact-row-actions,
+  .v162-ui-foundation .v1517-button-actions{grid-column:2!important;grid-row:1 / span 2!important;grid-template-columns:1fr!important;width:44px!important}
+  .v162-ui-foundation .v1513-fact-row label>span,
+  .v162-ui-foundation .v1517-button-item label>span{display:block!important}
+
+  .v162-ui-foundation input,
+  .v162-ui-foundation select,
+  .v162-ui-foundation textarea{font-size:16px}
+  .v162-ui-foundation .inspector-form label,
+  .v162-ui-foundation .dialog label{font-size:12px}
+  .v162-ui-foundation .v162-preview-controls{width:100%;justify-content:space-between;margin-left:0}
+}
+
+@media(max-width:600px){
+  .v162-ui-foundation .brand small{display:none}
+  .v162-ui-foundation .brand strong{font-size:13px}
+  .v162-ui-foundation .brand-mark{width:32px;height:32px}
+  .v162-ui-foundation #newDraftBtn{font-size:0;padding-inline:10px}
+  .v162-ui-foundation #newDraftBtn::before{content:'＋ Draft';font-size:12px}
+  .v162-ui-foundation .v162-posts-toggle{font-size:0;min-width:42px;padding-inline:9px}
+  .v162-ui-foundation .v162-posts-toggle::before{content:'☰';font-size:16px}
+  .v162-workspace-nav{padding:7px 8px}
+  .v162-workspace-nav [data-v162-posts-nav]{font-size:0;min-width:42px;padding-inline:8px}
+  .v162-workspace-nav [data-v162-posts-nav]::before{content:'☰';font-size:16px}
+  .v162-ui-foundation .builder-grid{padding:9px}
+  .v162-ui-foundation .v154-heading-controls{grid-template-columns:1fr!important}
+  .v162-ui-foundation .v154-heading-controls .v151-heading-emoji-button{max-width:none}
+  .v162-ui-foundation .v1513-fact-row,
+  .v162-ui-foundation .v1517-button-item{grid-template-columns:1fr!important}
+  .v162-ui-foundation .v1513-fact-row-actions,
+  .v162-ui-foundation .v1517-button-actions{grid-column:1!important;grid-row:auto!important;grid-template-columns:repeat(3,1fr)!important;width:100%!important}
+  .v162-review-grid{grid-template-columns:1fr}
+  .v162-dialog-shell>.dialog-head,.v162-dialog-body,.v162-dialog-shell>.dialog-actions{padding-left:12px;padding-right:12px}
+  .v162-dialog-shell>.dialog-actions{display:grid;grid-template-columns:1fr 1fr}
+  .v162-dialog-shell>.dialog-actions .btn{width:100%}
+  .v162-ui-foundation .markdown-example{grid-template-columns:1fr}
+}
+
+/* Coarse-pointer targets follow common 44px touch guidance without inflating desktop. */
+@media(pointer:coarse){
+  .v162-ui-foundation button,
+  .v162-ui-foundation .btn,
+  .v162-ui-foundation .mini-btn,
+  .v162-ui-foundation [role="button"],
+  .v162-ui-foundation summary{min-height:44px}
+  .v162-ui-foundation .drag-handle{min-width:44px;min-height:44px}
+  .v162-ui-foundation .entity-card{padding-block:12px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .v162-ui-foundation *,
+  .v162-ui-foundation *::before,
+  .v162-ui-foundation *::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
