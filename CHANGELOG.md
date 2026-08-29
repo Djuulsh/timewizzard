@@ -19,6 +19,8 @@
 - Added Media Gallery and Thumbnail blocks.
 - Added DiscoHook JSON import.
 - Added nested ephemeral buttons/select menus.
+- Compact boolean controls keep Thumbnail spoiler and Separator divider toggles from consuming a full Inspector row.
+- Separator preview now makes **Small** and **Large** spacing visibly distinct, including a live spacing sample in the Inspector.
 
 ### Discord-native Builder
 - Updated native Builder branding/status to Timewizzard v1.3.0.
