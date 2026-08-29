@@ -1,65 +1,39 @@
-# Timewizzard Info Bot — restored v1.2.1 feature set
+# Timewizzard Info Bot v1.3.0
 
-This repository contains the full feature set from before the failed upload/deployment cycle, restored on top of the clean Railway baseline.
+Timewizzard is a Discord Components V2 information-post builder with both a Discord-native builder and a Railway-hosted Web Builder.
 
-## Included now
+## v1.3.0 highlights
 
-- Discord-native Post Builder
-- Generic Components V2 blocks: text, image/banner, separator, Open + ephemeral, URL button and select + ephemeral
-- MerfinUI class/resolution compact select
-- Legacy MerfinUI Open list
-- Direct management of all 18 FHD/QHD profile strings
-- Move block to position, duplicate block and edit block
-- Draft / Modified / Synced post state
-- Clone, import and export posts
-- Railway-hosted Web Builder
-- Real browser drag-and-drop plus touch/pointer support
-- Side-by-side Discord-style live preview
-- Discord OAuth login restricted to the configured guild and Manage Server/Admin/owner users
-- `/webbuilder`
-- `/status` compatibility command
-- `/health` deployment diagnostic endpoint
-- Expanded Discord Markdown-aware Web Builder preview and built-in Markdown reference
-
-## Discord Markdown
-
-Text blocks are published through Discord Components V2 `Text Display`, so Discord's normal Markdown rules apply to the final Discord message. The Web Builder preview now mirrors the common syntax more closely, including:
-
-```text
-# Heading
-## Heading
-### Heading
--# Subtext
-**bold**
-*italic*
-__underline__
-~~strikethrough~~
-||spoiler||
-> quote
->>> multi-line quote
-- bullet
-1. ordered item
-[text](https://example.com)
-```
-
-It also previews custom/animated emoji, Discord mention-like tokens and timestamps such as `<t:UNIX:R>`.
-
-See [DISCORD_MARKDOWN.md](DISCORD_MARKDOWN.md) for the complete reference.
+- Publish to forum, text and announcement channels.
+- Stable Builder IDs separated from Discord message/thread IDs.
+- Detect posts deleted directly in Discord and mark them **Deleted on Discord** without losing builder data.
+- **Re-create** deleted Discord posts in the same destination, or choose a new destination if the original channel no longer exists.
+- Change destination / repair / relink published posts while preserving builder history.
+- Local Undo / Redo in Web Builder.
+- Persistent revision history with restore.
+- Markdown toolbar for headings, bold, italic, underline, strike, subtext, quotes, lists, code, links and spoilers.
+- Markdown reference showing both raw syntax and rendered result.
+- Timewizzard multi-line quote escape marker `\>>>` on its own line. At publish time it splits the Text Display so following text is no longer part of a Discord `>>>` quote.
+- Discord mention preview resolves known channel, role and user names.
+- Media Gallery and Thumbnail Components V2 blocks.
+- DiscoHook JSON import with warnings for unsupported interactive fields.
+- Nested ephemeral button/select flows.
+- MerfinUI FHD/QHD profile management and compact class/resolution select remain supported.
 
 ## Persistent storage
 
-The clean baseline already used:
+Railway uses:
 
 ```text
 /data/store.json
 /data/store.json.bak
 ```
 
-The restored builder continues to use the same file. On first startup it migrates the clean-baseline profile/post schema in-place to the builder schema, so a second database file is not created.
+v1.3.0 migrates the existing store in place. The storage schema adds stable `builderId`, Discord target state and revision history while preserving existing profiles, drafts and published posts.
 
 ## Railway variables
 
-Required for the Discord bot:
+Required:
 
 ```env
 CLIENT_ID=...
@@ -69,45 +43,35 @@ DATA_DIR=/data
 NODE_ENV=production
 ```
 
-Required to enable the Web Builder:
+Required for Web Builder:
 
 ```env
 DISCORD_CLIENT_SECRET=...
 PUBLIC_BASE_URL=https://YOUR-SERVICE.up.railway.app
 ```
 
-`PUBLIC_BASE_URL` must not include a trailing slash.
+`PUBLIC_BASE_URL` must not have a trailing slash.
 
-If the two Web Builder variables are omitted, Discord still runs normally and `/status` reports the Web Builder as disabled.
-
-## Discord OAuth redirect
-
-In Discord Developer Portal → OAuth2 → Redirects, add exactly:
+Discord OAuth redirect:
 
 ```text
 https://YOUR-SERVICE.up.railway.app/auth/discord/callback
 ```
 
-The hostname must be identical to `PUBLIC_BASE_URL`.
+## Health check
 
-## Railway public domain
-
-The Discord bot itself does not need a domain, but the Web Builder does. Generate a public Railway domain for the bot service and point it at the same service/PORT that serves `/health`.
-
-Test in this order after deployment:
+Open:
 
 ```text
 https://YOUR-SERVICE.up.railway.app/health
-https://YOUR-SERVICE.up.railway.app/auth/discord
-https://YOUR-SERVICE.up.railway.app/builder
 ```
 
-Expected `/health` fields include:
+Expected version:
 
 ```json
 {
   "ok": true,
-  "version": "1.2.1",
+  "version": "1.3.0",
   "webBuilder": true,
   "oauthLoginPath": "/auth/discord",
   "builderPath": "/builder"
@@ -135,23 +99,40 @@ Expected `/health` fields include:
 /webbuilder
 ```
 
-`/post opret` supports these templates:
+## Deleted / missing Discord targets
+
+A published Builder record is not deleted just because its Discord message or forum thread disappears.
 
 ```text
-Tom builder
-MerfinUI — compact select
-MerfinUI — Open list (legacy)
+Published + live
+      ↓
+Discord message/thread deleted externally
+      ↓
+🔴 Deleted on Discord
+      ↓
+Edit / Preview still available
+      ↓
+Re-create in original destination
+or choose a new destination
 ```
 
-## Recommended first test
+Only the explicit Builder **Delete** action removes the persistent Builder record.
 
-1. Wait for Railway to deploy the newest `main` commit.
-2. Run `/status` in Discord.
-3. Confirm `/profil liste` still shows your profile data.
-4. Open `/health` in the browser.
-5. Confirm `webBuilder: true` if the two Web Builder variables are configured.
-6. Open `/webbuilder` and create or edit a Text block.
-7. Test `-# Subtext`, headings, emphasis, lists, quotes, links and spoilers in the live preview.
-8. Publish a test post and compare the final rendering in Discord.
+## Markdown multi-line quote escape
 
-The Web Builder and the Discord-native builder use the same persistent storage and publishing engine.
+Discord `>>>` normally quotes the rest of the same Text Display. Timewizzard adds this builder-only marker:
+
+```text
+>>> This is quoted
+Still quoted
+\>>>
+This is normal text again
+```
+
+The `\>>>` line is not sent as visible text. It becomes a boundary between two Text Display components.
+
+See `DISCORD_MARKDOWN.md` for the complete Markdown reference.
+
+## Validation
+
+GitHub Actions runs `npm run validate` on every push to `main`. The v1.3.0 validation covers the compact MerfinUI template, quote escape splitting, Media Gallery/Thumbnail rendering, nested ephemeral actions and DiscoHook conversion.
