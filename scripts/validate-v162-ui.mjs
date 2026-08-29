@@ -9,14 +9,14 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
-assert(VERSION === '1.6.2', 'The authoritative version must be 1.6.2.');
+assert(VERSION === '1.6.3', 'The authoritative version must be 1.6.3.');
 const pkg = JSON.parse(read('package.json'));
 assert(pkg.version === VERSION, 'package.json must match src/version.js.');
 
 for (const file of WEB_SCRIPT_FILES) assert(fs.existsSync(path.join(root, 'web', file)), `Missing Web Builder script: ${file}`);
 for (const file of WEB_STYLE_FILES) assert(fs.existsSync(path.join(root, 'web', file)), `Missing Web Builder stylesheet: ${file}`);
-assert(WEB_SCRIPT_FILES.at(-1) === 'v162.js', 'v162.js must be the final Web Builder script.');
-assert(WEB_STYLE_FILES.at(-1) === 'v162.css', 'v162.css must be the final Web Builder stylesheet.');
+assert(WEB_SCRIPT_FILES.at(-1) === 'v163.js', 'v163.js must be the final Web Builder script.');
+assert(WEB_STYLE_FILES.at(-1) === 'v163.css', 'v163.css must be the final Web Builder stylesheet.');
 assert(new Set(WEB_FEATURES).size === WEB_FEATURES.length, 'Web feature registry contains duplicates.');
 
 const html = read('web/index.html');
@@ -26,7 +26,7 @@ assert(!/<style>[\s\S]*separator-size-demo/.test(html), 'Legacy inline separator
 assert(html.includes('viewport-fit=cover'), 'The HTML viewport must support device safe areas.');
 assert(html.includes('aria-live="polite"'), 'The UI must expose a polite live region.');
 
-const js = read('web/v162.js');
+const js162 = read('web/v162.js');
 for (const marker of [
   'v162OpenPublishReview',
   'v162OfferRecovery',
@@ -35,9 +35,9 @@ for (const marker of [
   "api('/api/preview'",
   'v162EnhanceAccessibility',
   'v162PatchDialogFocus'
-]) assert(js.includes(marker), `v162.js is missing ${marker}.`);
+]) assert(js162.includes(marker), `v162.js is missing ${marker}.`);
 
-const css = read('web/v162.css');
+const css162 = read('web/v162.css');
 for (const marker of [
   '100dvh',
   'safe-area-inset-bottom',
@@ -48,13 +48,34 @@ for (const marker of [
   '@media(prefers-reduced-motion:reduce)',
   'body[data-tw-view="preview"]',
   'body[data-tw-preview-width="mobile"]'
-]) assert(css.includes(marker), `v162.css is missing responsive contract: ${marker}.`);
+]) assert(css162.includes(marker), `v162.css is missing responsive contract: ${marker}.`);
+
+const js163 = read('web/v163.js');
+for (const marker of [
+  'v163EnsurePreviewBack',
+  "v162SetView('edit'",
+  'v163EnsureWorkspaceMore',
+  'v163SyncWorkspaceMore'
+]) assert(js163.includes(marker), `v163.js is missing navigation contract: ${marker}.`);
+
+const css163 = read('web/v163.css');
+for (const marker of [
+  '.v163-preview-back',
+  '.v163-workspace-more',
+  'grid-template-columns:minmax(225px,.62fr) minmax(315px,1.38fr)',
+  'body[data-tw-view="edit"]',
+  '#v152MoreMenu{display:none!important}'
+]) assert(css163.includes(marker), `v163.css is missing compact editor contract: ${marker}.`);
 
 const server = read('src/web/server.js');
 assert(server.includes("url.pathname === '/api/preview'"), 'Server must expose canonical preview validation.');
 assert(server.includes('WEB_SCRIPT_FILES') && server.includes('WEB_STYLE_FILES'), 'Server must use the consolidated asset manifest.');
 assert(server.includes('WEB_FEATURES'), 'Server must use the current feature registry.');
 assert(!fs.existsSync(path.join(root, 'src/web/serverV15.js')), 'The obsolete serverV15 wrapper must be removed.');
+
+const index = read('src/index.js');
+assert(index.includes("from './web/server.js'"), 'Runtime must import the consolidated Web server.');
+assert(!index.includes('serverV15.js'), 'Runtime must never import the deleted serverV15 wrapper.');
 
 const workflow = read('.github/workflows/validate.yml');
 assert(workflow.includes("'feature/**'"), 'CI must validate feature branches.');
