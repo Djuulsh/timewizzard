@@ -1,5 +1,10 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from 'discord.js';
 
+const WEB_ONLY_BLOCKS = new Set([
+  'container', 'youtube',
+  'heading', 'callout', 'checklist', 'steps', 'facts', 'button_row', 'event', 'countdown', 'code', 'progress'
+]);
+
 function webButton(config, label = 'Åbn Web Builder') {
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder().setLabel(label).setStyle(ButtonStyle.Link).setURL(`${config.publicBaseUrl}/auth/discord`)
@@ -8,17 +13,25 @@ function webButton(config, label = 'Åbn Web Builder') {
 
 export function installNativeV14Support(BotController) {
   const previousBuilderButton = BotController.prototype.handleBuilderButton;
-  BotController.prototype.handleBuilderButton = async function handleBuilderButtonV14(interaction, parts) {
+  BotController.prototype.handleBuilderButton = async function handleBuilderButtonV15(interaction, parts) {
     const [action, kind, id, blockId] = parts;
     if (action === 'builder_block_edit' && blockId) {
       const resolved = this.getScopedEntity(kind, id);
-      const block = resolved?.entity?.builder?.blocks?.find((item) => item.id === blockId);
-      if (block?.type === 'container' || block?.type === 'youtube') {
+      const roots = resolved?.entity?.builder?.blocks || [];
+      let block = roots.find((item) => item.id === blockId) || null;
+      if (!block) {
+        for (const root of roots) {
+          if (root?.type !== 'container') continue;
+          block = (root.children || []).find((item) => item.id === blockId) || null;
+          if (block) break;
+        }
+      }
+      if (WEB_ONLY_BLOCKS.has(block?.type)) {
         await interaction.update({
           content: [
-            `## ${block.type === 'container' ? '🧱 Container' : '▶️ YouTube'} · Web Builder`,
-            'Timewizzard v1.4 bruger et hierarkisk layout med POST-root og blocks inde i Containers.',
-            'Redigering af Container-farve/children og Smart YouTube foregår i Web Builder, så hierarkiet ikke bliver fladet ud af Discord-modalbegrænsningerne.'
+            `## ${block?.type === 'container' ? '🧱 Container' : '🧩 Smart Block'} · Web Builder`,
+            'Timewizzard v1.5 bruger et hierarkisk POST → Container → Blocks layout og flere avancerede smart blocks.',
+            'Denne block-type redigeres i Web Builder, så struktur, timestamps, knaprækker og specialfelter ikke bliver fladet ud af Discord-modalbegrænsningerne.'
           ].join('\n'),
           components: this.config.webEnabled ? [webButton(this.config)] : [],
           allowedMentions: { parse: [] }
@@ -29,7 +42,7 @@ export function installNativeV14Support(BotController) {
     return previousBuilderButton.call(this, interaction, parts);
   };
 
-  BotController.prototype.showWebBuilder = async function showWebBuilderV14(interaction) {
+  BotController.prototype.showWebBuilder = async function showWebBuilderV15(interaction) {
     if (!this.config.webEnabled) {
       await interaction.reply({
         content: 'Web Builder er ikke aktiveret endnu. Tilføj `DISCORD_CLIENT_SECRET` og `PUBLIC_BASE_URL` og genstart botten.',
@@ -39,24 +52,24 @@ export function installNativeV14Support(BotController) {
       return;
     }
     await interaction.reply({
-      content: '## Timewizzard Web Builder v1.4.0\nHierarkisk POST → Container → Blocks editor, plain root posts, Smart YouTube, template gallery, Discord Insert, revisionshistorik og Repair/Re-create.',
+      content: '## Timewizzard Web Builder v1.5.0\nHierarkisk POST → Container → Blocks editor, kategoriserede templates, 10 smart blocks, Smart YouTube, Discord Insert, revisionshistorik og Repair/Re-create.',
       components: [webButton(this.config)],
       flags: MessageFlags.Ephemeral,
       allowedMentions: { parse: [] }
     });
   };
 
-  BotController.prototype.showHelp = async function showHelpV14(interaction) {
+  BotController.prototype.showHelp = async function showHelpV15(interaction) {
     const content = [
-      '## Timewizzard Info Bot v1.4.0',
+      '## Timewizzard Info Bot v1.5.0',
       '',
-      '**Web Builder v1.4**',
-      'Nye posts starter som almindelige Components V2 posts. Tilføj kun en **Container**, når du ønsker en farvet embed-lignende sektion.',
-      'Containers kan have egne blocks og egen accentfarve. Smart YouTube kræver kun en YouTube-URL.',
+      '**Web Builder v1.5**',
+      'Nye posts kan være almindelige root posts eller bruge farvede **Containers**. Template-browseren kan filtreres efter kategori og søges.',
+      'Smart blocks inkluderer Heading, Callout, Checklist, Steps, Facts, Button Row, Event, Countdown, Code Snippet og Progress.',
       '',
       '**Post Builder**',
       '`/post opret` — lav en kladde til forum-, tekst- eller announcement-kanal.',
-      '`/post rediger` — åbn Discord-builderen. Hierarkiske Container/YouTube detaljer redigeres bedst i Web Builder.',
+      '`/post rediger` — åbn Discord-builderen. Containers og smart blocks redigeres bedst i Web Builder.',
       '`/post opdater` — publicer ændringer eller genskab et slettet Discord-target.',
       '`/post klon` / `eksporter` / `importer` / `slet` / `liste` — administrér Builder-data.',
       '',
