@@ -1,8 +1,13 @@
 import { makeShortId } from './builder/ids.js';
+import { BUILDER_SCHEMA_VERSION } from './builder/schema.js';
 import { validateBuilder } from './builder/validate.js';
 
 function block(type, values = {}) {
   return { id: makeShortId(3), type, ...values };
+}
+
+function container(label, accentColor, children = []) {
+  return block('container', { label, accentColor, collapsed: false, children });
 }
 
 function textFromEmbed(embed) {
@@ -17,23 +22,23 @@ function textFromEmbed(embed) {
   return parts.filter(Boolean).join('\n');
 }
 
-function walkV2(components, builder, warnings, context = { containerCount: 0 }) {
+function walkV2Content(components, builder, warnings, target) {
   for (const component of components ?? []) {
     if (!component || typeof component !== 'object') continue;
     if (component.type === 17) {
-      const accentColor = Number.isInteger(component.accent_color) ? component.accent_color : builder.accentColor;
-      if (context.containerCount === 0 && builder.blocks.length === 0) builder.accentColor = accentColor;
-      else builder.blocks.push(block('container', { label: `Imported container ${context.containerCount + 1}`, accentColor }));
-      context.containerCount += 1;
-      walkV2(component.components, builder, warnings, context);
+      const children = [];
+      walkV2Content(component.components, builder, warnings, children);
+      if (children.length) {
+        target.push(container('Imported container', Number.isInteger(component.accent_color) ? component.accent_color : builder.accentColor, children));
+      }
       continue;
     }
     if (component.type === 10 && component.content) {
-      builder.blocks.push(block('text', { content: String(component.content).slice(0, 4000) }));
+      target.push(block('text', { content: String(component.content).slice(0, 4000) }));
       continue;
     }
     if (component.type === 14) {
-      builder.blocks.push(block('separator', { divider: component.divider !== false, spacing: component.spacing === 1 ? 1 : 2 }));
+      target.push(block('separator', { divider: component.divider !== false, spacing: component.spacing === 1 ? 1 : 2 }));
       continue;
     }
     if (component.type === 12 && Array.isArray(component.items)) {
@@ -42,24 +47,24 @@ function walkV2(components, builder, warnings, context = { containerCount: 0 }) 
         description: item?.description || '',
         spoiler: Boolean(item?.spoiler)
       })).filter((item) => /^https?:\/\//i.test(item.url));
-      if (items.length === 1) builder.blocks.push(block('image', items[0]));
-      else if (items.length > 1) builder.blocks.push(block('gallery', { items: items.slice(0, 10) }));
+      if (items.length === 1) target.push(block('image', items[0]));
+      else if (items.length > 1) target.push(block('gallery', { items: items.slice(0, 10) }));
       continue;
     }
     if (component.type === 9) {
       const text = (component.components ?? []).filter((child) => child.type === 10).map((child) => child.content).join('\n');
       const accessory = component.accessory;
       if (accessory?.type === 11 && accessory.media?.url) {
-        builder.blocks.push(block('thumbnail', {
+        target.push(block('thumbnail', {
           text: text || '-# Thumbnail',
           url: accessory.media.url,
           description: accessory.description || '',
           spoiler: Boolean(accessory.spoiler)
         }));
       } else if (accessory?.type === 2 && accessory.style === 5 && accessory.url) {
-        builder.blocks.push(block('link', { text: text || `🔗 **${accessory.label || 'Link'}**`, label: accessory.label || 'Open', url: accessory.url }));
+        target.push(block('link', { text: text || `🔗 **${accessory.label || 'Link'}**`, label: accessory.label || 'Open', url: accessory.url }));
       } else {
-        if (text) builder.blocks.push(block('text', { content: text }));
+        if (text) target.push(block('text', { content: text }));
         if (accessory) warnings.push('A non-link Section accessory could not be converted automatically.');
       }
       continue;
@@ -67,7 +72,7 @@ function walkV2(components, builder, warnings, context = { containerCount: 0 }) 
     if (component.type === 1) {
       for (const child of component.components ?? []) {
         if (child.type === 2 && child.style === 5 && child.url) {
-          builder.blocks.push(block('link', { text: `🔗 **${child.label || 'Link'}**`, label: child.label || 'Open', url: child.url }));
+          target.push(block('link', { text: `🔗 **${child.label || 'Link'}**`, label: child.label || 'Open', url: child.url }));
         } else {
           warnings.push('An interactive Action Row component was skipped because DiscoHook does not contain a Timewizzard response action.');
         }
@@ -84,7 +89,7 @@ export function convertDiscohook(input, titleOverride = null) {
   const message = Array.isArray(source.messages) ? source.messages[0] ?? {} : source;
   const warnings = [];
   const builder = {
-    schemaVersion: 1,
+    schemaVersion: BUILDER_SCHEMA_VERSION,
     mode: 'components_v2',
     accentColor: 0xF1C40F,
     blocks: [],
@@ -93,19 +98,24 @@ export function convertDiscohook(input, titleOverride = null) {
 
   if (message.content) builder.blocks.push(block('text', { content: String(message.content).slice(0, 4000) }));
 
-  let embedIndex = 0;
-  for (const embed of message.embeds ?? []) {
-    const accentColor = Number.isInteger(embed.color) ? embed.color : builder.accentColor;
-    if (embedIndex === 0 && builder.blocks.length === 0) builder.accentColor = accentColor;
-    else builder.blocks.push(block('container', { label: embed.title || `Imported embed ${embedIndex + 1}`, accentColor }));
+  for (const [index, embed] of (message.embeds ?? []).entries()) {
+    const children = [];
     const text = textFromEmbed(embed);
-    if (text) builder.blocks.push(block('text', { content: text.slice(0, 4000) }));
-    const imageUrl = embed.image?.url || embed.thumbnail?.url;
-    if (imageUrl) builder.blocks.push(block('image', { url: imageUrl, description: embed.title || '' }));
-    embedIndex += 1;
+    if (text) children.push(block('text', { content: text.slice(0, 4000) }));
+    const imageUrl = embed.image?.url;
+    if (imageUrl) children.push(block('image', { url: imageUrl, description: embed.title || '' }));
+    if (embed.thumbnail?.url) {
+      children.push(block('thumbnail', {
+        text: embed.description ? String(embed.description).slice(0, 4000) : '-# Imported thumbnail',
+        url: embed.thumbnail.url,
+        description: embed.title || '',
+        spoiler: false
+      }));
+    }
+    if (children.length) builder.blocks.push(container(embed.title || `Imported embed ${index + 1}`, Number.isInteger(embed.color) ? embed.color : builder.accentColor, children));
   }
 
-  walkV2(message.components, builder, warnings);
+  walkV2Content(message.components, builder, warnings, builder.blocks);
   if (!builder.blocks.length) throw new Error('Ingen understøttet tekst, embeds eller Components V2-indhold blev fundet i DiscoHook JSON.');
 
   const title = String(titleOverride || message.thread_name || message.title || message.embeds?.[0]?.title || 'Imported DiscoHook').slice(0, 100);
