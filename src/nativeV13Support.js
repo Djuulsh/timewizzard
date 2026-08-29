@@ -10,7 +10,9 @@ import {
   parseSelectOptions
 } from './builder/blocks.js';
 import { makeShortId } from './builder/ids.js';
+import { getDestinationChannelId, getDestinationType } from './destinations.js';
 import { refreshManagedPostState } from './postService.js';
+import { truncate } from './utils.js';
 
 function parseBoolean(value) {
   return /^(1|true|yes|y|ja|j|on|spoiler)$/i.test(String(value ?? '').trim());
@@ -48,7 +50,32 @@ function deleteActionTree(builder, actionId, seen = new Set()) {
   delete builder.actions[actionId];
 }
 
+function stablePostId(post) {
+  return String(post?.builderId || post?.postId || post?.threadId || post?.starterMessageId || '');
+}
+
 export function installNativeV13Support(BotController) {
+  const originalResolveEntityInput = BotController.prototype.resolveEntityInput;
+  BotController.prototype.resolveEntityInput = function resolveEntityInputV13(input) {
+    const normalized = String(input ?? '').trim();
+    if (!normalized) return null;
+
+    const draft = this.store.getDraft(normalized);
+    if (draft) return { scope: { kind: 'd', id: draft.id }, entity: draft };
+
+    const directPost = this.store.getPost(normalized);
+    if (directPost) {
+      const id = stablePostId(directPost);
+      return { scope: { kind: 'p', id }, entity: directPost };
+    }
+
+    const resolved = originalResolveEntityInput.call(this, input);
+    if (resolved?.scope?.kind === 'p') {
+      return { ...resolved, scope: { kind: 'p', id: stablePostId(resolved.entity) } };
+    }
+    return resolved;
+  };
+
   const originalAddBlockFromModal = BotController.prototype.addBlockFromModal;
   BotController.prototype.addBlockFromModal = function addBlockFromModalV13(entity, type, interaction) {
     if (type === 'gallery') {
@@ -113,20 +140,50 @@ export function installNativeV13Support(BotController) {
   const originalHandlePostCommand = BotController.prototype.handlePostCommand;
   BotController.prototype.handlePostCommand = async function handlePostCommandNativeV13(interaction) {
     const subcommand = interaction.options.getSubcommand();
-    if (subcommand === 'rediger' || subcommand === 'liste') {
-      const posts = subcommand === 'liste'
-        ? this.store.listPosts()
-        : (() => {
-            const input = interaction.options.getString('post', true);
-            const resolved = this.resolveEntityInput(input);
-            return resolved?.scope?.kind === 'p' ? [resolved.entity] : [];
-          })();
 
+    if (subcommand === 'liste') {
+      const posts = this.store.listPosts();
       await Promise.all(posts.map((post) =>
         refreshManagedPostState({ client: this.client, post, store: this.store })
           .catch((error) => console.warn(`Could not refresh native Builder state: ${error.message}`))
       ));
+
+      const drafts = this.store.listDrafts();
+      const refreshedPosts = this.store.listPosts();
+      const draftLines = drafts.map((draft) => {
+        const type = draft.destinationType === 'channel' ? 'Kanal' : 'Forum';
+        return `• 🟡 **${draft.title}** — ${type} <#${getDestinationChannelId(draft)}> — ID: \`${draft.id}\``;
+      });
+      const postLines = refreshedPosts.map((post) => {
+        const deleted = post.discordState?.status === 'deleted';
+        const status = deleted ? '🔴 Deleted on Discord' : '🟢 Live';
+        const type = getDestinationType(post) === 'forum' ? 'Forum' : 'Kanal';
+        return `• ${status} — **${post.title}** — ${type} <#${getDestinationChannelId(post)}> — Builder-ID: \`${stablePostId(post)}\``;
+      });
+
+      await interaction.reply({
+        content: truncate([
+          '## Kladder',
+          draftLines.length ? draftLines.join('\n') : 'Ingen kladder.',
+          '',
+          '## Publicerede posts',
+          postLines.length ? postLines.join('\n') : 'Ingen publicerede posts.'
+        ].join('\n'), 1_950),
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: { parse: [] }
+      });
+      return;
     }
+
+    if (subcommand === 'rediger') {
+      const input = interaction.options.getString('post', true);
+      const resolved = this.resolveEntityInput(input);
+      if (resolved?.scope?.kind === 'p') {
+        await refreshManagedPostState({ client: this.client, post: resolved.entity, store: this.store })
+          .catch((error) => console.warn(`Could not refresh native Builder state: ${error.message}`));
+      }
+    }
+
     return originalHandlePostCommand.call(this, interaction);
   };
 
