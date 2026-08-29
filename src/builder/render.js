@@ -52,18 +52,12 @@ function splitTextDisplays(content) {
 }
 
 function profileOpenSections() {
-  return WOW_CLASSES.flatMap((wowClass) =>
-    RESOLUTIONS.map((resolution) => ({
-      type: 9,
-      components: [{ type: 10, content: `🔗 • ${customEmoji(wowClass)} **${wowClass.name} — ${resolution.name}**` }],
-      accessory: {
-        type: 2,
-        style: 2,
-        label: 'Open',
-        custom_id: `profile:${wowClass.key}:${resolution.key}`
-      }
-    }))
-  );
+  const resolutions = RESOLUTIONS.map((resolution) => `**${resolution.name}**`).join(' · ');
+  const content = [
+    '### MerfinUI profiles',
+    ...WOW_CLASSES.map((wowClass) => `${customEmoji(wowClass)} **${wowClass.name}** — ${resolutions}`)
+  ].join('\n');
+  return [{ type: 10, content }];
 }
 
 function profileSelect(block, scope) {
@@ -115,6 +109,9 @@ function mediaItem(item) {
 
 function blockToComponents(block, scope) {
   switch (block.type) {
+    case 'container':
+      return [];
+
     case 'text':
       return splitTextDisplays(block.content).map((content) => ({ type: 10, content }));
 
@@ -170,6 +167,83 @@ function blockToComponents(block, scope) {
   }
 }
 
+function logicalContainers(entity, scope) {
+  const containers = [];
+  let current = { accentColor: entity.builder.accentColor, components: [] };
+
+  for (const block of entity.builder.blocks) {
+    if (block.type === 'container') {
+      if (current.components.length) containers.push(current);
+      current = {
+        accentColor: Number.isInteger(block.accentColor) ? block.accentColor : entity.builder.accentColor,
+        components: []
+      };
+      continue;
+    }
+    current.components.push(...blockToComponents(block, scope));
+  }
+
+  if (current.components.length) containers.push(current);
+  return containers;
+}
+
+function splitLogicalContainer(container) {
+  const chunks = [];
+  let current = [];
+  let currentComponents = 1;
+  let currentText = 0;
+
+  const flush = () => {
+    if (!current.length) return;
+    chunks.push({ type: 17, accent_color: container.accentColor, components: current });
+    current = [];
+    currentComponents = 1;
+    currentText = 0;
+  };
+
+  for (const component of container.components) {
+    const componentCount = countComponents(component);
+    const textCount = countText(component);
+    if (componentCount + 1 > MAX_COMPONENTS || textCount > MAX_TEXT) {
+      throw new Error('Et enkelt builder-block overskrider Discord-grænserne.');
+    }
+    if (current.length && (currentComponents + componentCount > MAX_COMPONENTS || currentText + textCount > MAX_TEXT)) flush();
+    current.push(component);
+    currentComponents += componentCount;
+    currentText += textCount;
+  }
+  flush();
+  return chunks;
+}
+
+function containerComponents(entity, scope) {
+  return logicalContainers(entity, scope).flatMap(splitLogicalContainer);
+}
+
+function packMessages(containers) {
+  const groups = [];
+  let current = [];
+  let currentComponents = 0;
+  let currentText = 0;
+
+  for (const container of containers) {
+    const componentCount = countComponents(container);
+    const textCount = countText(container);
+    if (componentCount > MAX_COMPONENTS || textCount > MAX_TEXT) throw new Error('Et enkelt embed/container overskrider Discord-grænserne.');
+    if (current.length && (currentComponents + componentCount > MAX_COMPONENTS || currentText + textCount > MAX_TEXT)) {
+      groups.push(current);
+      current = [];
+      currentComponents = 0;
+      currentText = 0;
+    }
+    current.push(container);
+    currentComponents += componentCount;
+    currentText += textCount;
+  }
+  if (current.length) groups.push(current);
+  return groups;
+}
+
 export function allowedMentionsFor(entity) {
   const policy = entity?.mentionPolicy;
   if (policy?.mode !== 'selected') return { parse: [], replied_user: false };
@@ -180,62 +254,30 @@ export function allowedMentionsFor(entity) {
 }
 
 export function getBuilderStats(entity, scope = { kind: 'd', id: 'preview' }) {
-  const components = entity.builder.blocks.flatMap((block) => blockToComponents(block, scope));
-  if (components.length === 0) return { blockCount: 0, componentCount: 0, textLength: 0, messageCount: 0 };
-
-  let messageCount = 1;
-  let messageComponents = 1;
-  let messageText = 0;
-  let totalComponents = 0;
-  let totalText = 0;
-
-  for (const component of components) {
-    const componentCount = countComponents(component);
-    const textCount = countText(component);
-    if (componentCount + 1 > MAX_COMPONENTS || textCount > MAX_TEXT) throw new Error('Et enkelt builder-block overskrider Discord-grænserne.');
-    if (messageComponents + componentCount > MAX_COMPONENTS || messageText + textCount > MAX_TEXT) {
-      messageCount += 1;
-      messageComponents = 1;
-      messageText = 0;
-    }
-    messageComponents += componentCount;
-    messageText += textCount;
-    totalComponents += componentCount;
-    totalText += textCount;
-  }
-
-  return { blockCount: entity.builder.blocks.length, componentCount: totalComponents, textLength: totalText, messageCount };
+  const containers = containerComponents(entity, scope);
+  if (!containers.length) return { blockCount: entity.builder?.blocks?.length ?? 0, componentCount: 0, textLength: 0, messageCount: 0, containerCount: 0 };
+  const groups = packMessages(containers);
+  const componentCount = containers.reduce((sum, component) => sum + countComponents(component), 0);
+  const textLength = containers.reduce((sum, component) => sum + countText(component), 0);
+  return {
+    blockCount: entity.builder.blocks.length,
+    componentCount,
+    textLength,
+    messageCount: groups.length,
+    containerCount: containers.length
+  };
 }
 
 export function buildBuilderPayloads(entity, scope) {
   if (!entity?.builder?.blocks?.length) throw new Error('Opslaget har ingen blocks. Tilføj mindst ét block før Preview eller Publish.');
+  const containers = containerComponents(entity, scope);
+  if (!containers.length) throw new Error('Opslaget har ingen publicerbart indhold. Tilføj mindst ét indholds-block efter et embed/container.');
 
-  const components = entity.builder.blocks.flatMap((block) => blockToComponents(block, scope));
-  const groups = [];
-  let current = [];
-  let currentComponentCount = 1;
-  let currentText = 0;
-
-  for (const component of components) {
-    const componentCount = countComponents(component);
-    const textCount = countText(component);
-    if (componentCount + 1 > MAX_COMPONENTS || textCount > MAX_TEXT) throw new Error('Et enkelt builder-block overskrider Discord-grænserne.');
-    if (current.length > 0 && (currentComponentCount + componentCount > MAX_COMPONENTS || currentText + textCount > MAX_TEXT)) {
-      groups.push(current);
-      current = [];
-      currentComponentCount = 1;
-      currentText = 0;
-    }
-    current.push(component);
-    currentComponentCount += componentCount;
-    currentText += textCount;
-  }
-  if (current.length > 0) groups.push(current);
-
+  const groups = packMessages(containers);
   const allowedMentions = allowedMentionsFor(entity);
   return groups.map((group) => ({
     flags: MessageFlags.IsComponentsV2,
     allowedMentions,
-    components: [{ type: 17, accent_color: entity.builder.accentColor, components: group }]
+    components: group
   }));
 }
