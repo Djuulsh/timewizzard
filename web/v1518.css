@@ -1,0 +1,18 @@
+/* Timewizzard v1.5.18 — global search + wrap-safe Facts preview */
+
+/* Facts now mirror the robust Discord layout: label above value. This removes
+   any dependence on fake columns, fixed-width padding or hanging indents. */
+.v1518-facts-preview{display:grid;gap:6px}
+.v1518-facts-preview-title>:last-child{margin-bottom:0}
+.v1518-facts-preview-list{display:grid;gap:8px}
+.v1518-facts-preview-row{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;min-width:0;padding:2px 0}
+.v1518-facts-preview-label{font-weight:750;color:#f0f1f3;overflow-wrap:anywhere}
+.v1518-facts-preview-value{min-width:0;overflow-wrap:anywhere}
+.v1518-facts-preview-value>*{margin-top:0;margin-bottom:0}
+
+/* During a global search, categories remain visible as browse shortcuts but are
+   visually de-emphasized because the result set is intentionally cross-category. */
+.v1518-searching-all [data-v152-category].active,
+.v1518-template-searching [data-v150-category].active{box-shadow:none;opacity:.72}
+.v1518-searching-all::after{content:'Searching all block categories';display:block;flex-basis:100%;margin-top:2px;color:var(--muted);font-size:8px}
+.v1518-template-searching .v150-template-count{font-weight:700}
