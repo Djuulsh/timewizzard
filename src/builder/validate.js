@@ -1,9 +1,11 @@
 import { isPublicHttpUrl } from '../utils.js';
 import { normalizeBuilderStructure, totalBuilderBlocks, walkBuilderBlocks } from './schema.js';
+import { SMART_BLOCK_TYPES, isSmartBlockType, validateSmartBlock } from './smartBlocks.js';
 import { youtubeVideoId } from './youtube.js';
 
 const ALLOWED_CONTENT_TYPES = new Set([
-  'text', 'image', 'gallery', 'thumbnail', 'separator', 'youtube', 'open', 'link', 'select', 'profile_select', 'profile_open_list'
+  'text', 'image', 'gallery', 'thumbnail', 'separator', 'youtube', 'open', 'link', 'select', 'profile_select', 'profile_open_list',
+  ...SMART_BLOCK_TYPES
 ]);
 
 export function parseStrictHexColor(value) {
@@ -38,6 +40,11 @@ function validateActionGraph(actions) {
 
 function validateContentBlock(block, actions) {
   if (!ALLOWED_CONTENT_TYPES.has(block.type)) throw new Error(`Ukendt content block-type: ${block.type}`);
+
+  if (isSmartBlockType(block.type)) {
+    validateSmartBlock(block);
+    return;
+  }
 
   if (block.type === 'text') {
     if (!String(block.content ?? '').trim() || String(block.content).length > 4_000) throw new Error('Text-blocks skal indeholde 1-4000 tegn.');
@@ -146,8 +153,6 @@ export function validateBuilder(input) {
     }
   }
 
-  // Defensive walk ensures every future content type is still covered by the
-  // same unique-ID model even if validation is extended later.
   walkBuilderBlocks(builder, () => undefined);
   validateActionGraph(builder.actions);
   return structuredClone(builder);
