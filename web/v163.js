@@ -1,8 +1,8 @@
-// Timewizzard v1.6.3 — compact editing + reliable workspace navigation.
-// Fixes the mobile/tablet Preview dead-end, keeps post actions available while
-// editing, and gives the Inspector substantially more room than the Block tree.
+// Timewizzard v1.6.4 — compact editing + reliable workspace navigation.
+// Keeps one Posts entry point, fixes top-layer menu behaviour, preserves the
+// Preview return path and keeps the Inspector larger than the Block tree.
 
-const V163_VERSION = '1.6.3';
+const V163_VERSION = '1.6.4';
 const V163_MORE_ACTIONS = [
   ['v131OpenDiscordBtn', '↗ Open in Discord'],
   ['v131CopyDiscordBtn', '⧉ Copy post link'],
@@ -24,6 +24,10 @@ function v163EnsurePreviewBack() {
   button.setAttribute('aria-label', 'Return to editor');
   button.addEventListener('click', () => v162SetView('edit', { focus: true }));
   controls.prepend(button);
+}
+
+function v163RemoveDuplicatePostsNav() {
+  document.querySelector('#v162WorkspaceNav [data-v162-posts-nav]')?.remove();
 }
 
 function v163MoreProxyId(targetId) {
@@ -85,6 +89,7 @@ function v163EnsureWorkspaceMore() {
 
 function v163EnsureNavigation() {
   v162EnsureAppShell();
+  v163RemoveDuplicatePostsNav();
   v163EnsurePreviewBack();
   v163EnsureWorkspaceMore();
 }
