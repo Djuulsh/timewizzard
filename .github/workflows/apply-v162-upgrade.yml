@@ -1,0 +1,46 @@
+name: Apply v1.6.2 foundation
+
+on:
+  push:
+    branches: ['feature/v1.6.2-ui-foundation']
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-and-validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/v1.6.2-ui-foundation
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.17.0
+
+      - name: Apply v1.6.2 migration
+        run: node scripts/apply-v162-upgrade.mjs
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Validate complete upgrade
+        run: npm run validate
+
+      - name: Commit validated upgrade
+        run: |
+          rm -f package-lock.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No upgrade changes to commit."
+            exit 0
+          fi
+          git commit -m "Complete Timewizzard v1.6.2 UI foundation"
+          git push origin HEAD:feature/v1.6.2-ui-foundation
