@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.5.4
+
+### Heading Inspector polish
+- Moved Heading **Level** and **Emoji** controls up beside **Title** in the primary Content row so the most-used Heading controls are visible together.
+- Removed the separate Heading Appearance section when it no longer contains unique controls.
+- Removed the permanent Heading **None** button and the old `v150-help` explanation from Inspector.
+- Added **None** as a first-class choice inside the **Choose heading emoji** picker instead.
+- Corrected the emoji picker **Done** button sizing so it behaves like a normal compact dialog action.
+
+### Blocks drag-and-drop
+- Dragging now works consistently from the **Blocks** panel as well as from the Inspector drag handle.
+- While dragging a block, the existing **POST root** escape drop-zone becomes visible so child blocks can be pulled directly out of a Container.
+- Container bodies receive a clear visual drop state while a Blocks-panel drag is active; existing reorder and cross-Container movement logic is preserved.
+- Drag-handle hints now explicitly describe reorder, move-into-Container and move-to-root behavior.
+
+### Create Draft actions
+- The Create Draft header and **Cancel / Create draft** action footer are sticky while the template library scrolls.
+- The primary Create action therefore remains visible even with a long template list or on shorter screens.
+
 ## 1.5.3
 
 ### Inspector & Editor UX pass
