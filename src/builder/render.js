@@ -1,6 +1,7 @@
 import { MessageFlags } from 'discord.js';
 import { RESOLUTIONS, WOW_CLASSES } from '../constants.js';
 import { normalizeBuilderStructure, totalBuilderBlocks } from './schema.js';
+import { isSmartBlockType, smartBlockToComponents } from './smartBlocks.js';
 import { canonicalYoutubeUrl, youtubeThumbnailUrl } from './youtube.js';
 
 const MAX_COMPONENTS = 40;
@@ -186,7 +187,10 @@ function contentBlockToComponents(block, scope) {
     case 'select': return [genericSelect(block, scope)];
     case 'profile_select': return [profileSelect(block, scope)];
     case 'profile_open_list': return profileOpenSections();
-    default: throw new Error(`Ukendt builder block-type: ${block.type}`);
+    default: {
+      if (isSmartBlockType(block.type)) return smartBlockToComponents(block);
+      throw new Error(`Ukendt builder block-type: ${block.type}`);
+    }
   }
 }
 
@@ -195,7 +199,7 @@ function splitContainer(container, scope) {
   if (!components.length) return [];
   const chunks = [];
   let current = [];
-  let currentCount = 1; // the Container component itself
+  let currentCount = 1;
   let currentText = 0;
 
   const flush = () => {
