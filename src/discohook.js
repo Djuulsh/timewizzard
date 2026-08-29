@@ -17,12 +17,15 @@ function textFromEmbed(embed) {
   return parts.filter(Boolean).join('\n');
 }
 
-function walkV2(components, builder, warnings) {
+function walkV2(components, builder, warnings, context = { containerCount: 0 }) {
   for (const component of components ?? []) {
     if (!component || typeof component !== 'object') continue;
     if (component.type === 17) {
-      if (Number.isInteger(component.accent_color)) builder.accentColor = component.accent_color;
-      walkV2(component.components, builder, warnings);
+      const accentColor = Number.isInteger(component.accent_color) ? component.accent_color : builder.accentColor;
+      if (context.containerCount === 0 && builder.blocks.length === 0) builder.accentColor = accentColor;
+      else builder.blocks.push(block('container', { label: `Imported container ${context.containerCount + 1}`, accentColor }));
+      context.containerCount += 1;
+      walkV2(component.components, builder, warnings, context);
       continue;
     }
     if (component.type === 10 && component.content) {
@@ -90,12 +93,16 @@ export function convertDiscohook(input, titleOverride = null) {
 
   if (message.content) builder.blocks.push(block('text', { content: String(message.content).slice(0, 4000) }));
 
+  let embedIndex = 0;
   for (const embed of message.embeds ?? []) {
-    if (Number.isInteger(embed.color)) builder.accentColor = embed.color;
+    const accentColor = Number.isInteger(embed.color) ? embed.color : builder.accentColor;
+    if (embedIndex === 0 && builder.blocks.length === 0) builder.accentColor = accentColor;
+    else builder.blocks.push(block('container', { label: embed.title || `Imported embed ${embedIndex + 1}`, accentColor }));
     const text = textFromEmbed(embed);
     if (text) builder.blocks.push(block('text', { content: text.slice(0, 4000) }));
     const imageUrl = embed.image?.url || embed.thumbnail?.url;
     if (imageUrl) builder.blocks.push(block('image', { url: imageUrl, description: embed.title || '' }));
+    embedIndex += 1;
   }
 
   walkV2(message.components, builder, warnings);
