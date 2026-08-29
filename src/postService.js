@@ -108,7 +108,7 @@ async function publishForum({ forum, source, store, builderId, removeDraftId = n
       embeds: [],
       components: payloads[0].components,
       flags: MessageFlags.IsComponentsV2,
-      allowedMentions: { parse: [] }
+      allowedMentions: payloads[0].allowedMentions
     });
 
     post.starterMessageId = starterMessage.id;
@@ -136,7 +136,7 @@ async function publishChannel({ channel, source, store, builderId, removeDraftId
       embeds: [],
       components: payloads[0].components,
       flags: MessageFlags.IsComponentsV2,
-      allowedMentions: { parse: [] }
+      allowedMentions: payloads[0].allowedMentions
     });
 
     post.starterMessageId = starterMessage.id;
@@ -191,7 +191,7 @@ async function updateForumPost({ client, post, store }) {
     embeds: [],
     components: payloads[0].components,
     flags: MessageFlags.IsComponentsV2,
-    allowedMentions: { parse: [] }
+    allowedMentions: payloads[0].allowedMentions
   });
 
   const continuationMessageIds = await replaceContinuationMessages(thread, post.continuationMessageIds, payloads.slice(1));
@@ -236,7 +236,7 @@ async function updateChannelPost({ client, post, store }) {
     embeds: [],
     components: payloads[0].components,
     flags: MessageFlags.IsComponentsV2,
-    allowedMentions: { parse: [] }
+    allowedMentions: payloads[0].allowedMentions
   });
 
   const continuationMessageIds = await replaceContinuationMessages(channel, post.continuationMessageIds, payloads.slice(1));
