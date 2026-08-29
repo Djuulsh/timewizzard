@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Timewizzard Web Builder v1.3</title>
+  <title>Timewizzard Web Builder v1.3.1</title>
   <link rel="stylesheet" href="/app.css">
   <style>
     /* v1.3 UI polish: keep boolean controls compact and make separator spacing obvious. */
@@ -76,7 +76,7 @@
   <header class="topbar">
     <div class="brand">
       <div class="brand-mark">T</div>
-      <div><strong>Timewizzard Web Builder</strong><small>v1.3 · Railway + Discord OAuth</small></div>
+      <div><strong>Timewizzard Web Builder</strong><small>v1.3.1 · Discord-native content editor</small></div>
     </div>
     <div class="top-actions">
       <span id="identity" class="identity">Indlæser…</span>
@@ -281,7 +281,8 @@
       const large = spacing.value !== '1';
       demo.className = `separator-size-demo ${large ? 'large' : 'small'}`;
       const title = demo.querySelector('strong');
-      if (title) title.textContent = large ? 'Large' : 'Small';
+      const nextTitle = large ? 'Large' : 'Small';
+      if (title && title.textContent !== nextTitle) title.textContent = nextTitle;
     }
 
     function syncUiPolish() {
@@ -289,11 +290,21 @@
       syncSeparatorPreview();
     }
 
-    new MutationObserver(syncUiPolish).observe(blockList, { childList: true, subtree: true });
-    new MutationObserver(syncUiPolish).observe(previewContent, { childList: true, subtree: true });
-    new MutationObserver(syncUiPolish).observe(inspector, { childList: true, subtree: true });
+    let polishScheduled = false;
+    function scheduleUiPolish() {
+      if (polishScheduled) return;
+      polishScheduled = true;
+      requestAnimationFrame(() => {
+        polishScheduled = false;
+        syncUiPolish();
+      });
+    }
+
+    new MutationObserver(scheduleUiPolish).observe(blockList, { childList: true, subtree: true });
+    new MutationObserver(scheduleUiPolish).observe(previewContent, { childList: true, subtree: true });
+    new MutationObserver(scheduleUiPolish).observe(inspector, { childList: true, subtree: true });
     inspector.addEventListener('change', (event) => {
-      if (event.target?.id === 'iSpacing') requestAnimationFrame(syncUiPolish);
+      if (event.target?.id === 'iSpacing') scheduleUiPolish();
     });
     syncUiPolish();
   </script>
