@@ -5,7 +5,7 @@ import {
   MessageFlags
 } from 'discord.js';
 
-const VERSION = '1.5.14';
+const VERSION = '1.5.15';
 
 export function installV158Support(ControllerClass) {
   ControllerClass.prototype.showWebBuilder = async function showWebBuilderV158(interaction) {
@@ -32,7 +32,7 @@ export function installV158Support(ControllerClass) {
         '',
         '**Flyt blocks:** Træk hele block-rækken på computer, eller klik/tap `::` og vælg destination.',
         '**Redigér blocks:** Et almindeligt klik på blockets indhold åbner det i Inspector.',
-        '**Facts / Key Values:** Brug strukturerede Label/Value-rækker med Discord Insert i Value-felter og ens visuelt mellemrum ved publicering.'
+        '**Facts / Key Values:** Label/Value-rækker bruger nu samme faste visuelle mellemrum i preview og publiceret Discord.'
       ].join('\n'),
       components: [row],
       flags: MessageFlags.Ephemeral,
