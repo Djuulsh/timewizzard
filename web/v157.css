@@ -1,0 +1,156 @@
+/* Timewizzard v1.5.7 — Pointer Events drag + resilient dialog footers */
+
+/* Desktop/fine-pointer drag is custom Pointer Events only; native HTML5 drag
+   remains disabled by v1.5.6. The same handle can still be clicked. */
+@media(pointer:fine){
+  .v157-hybrid-move-enabled .drag-handle.v156-click-move-handle,
+  .v157-hybrid-move-enabled .v153-inspector-drag.v156-click-move-handle{
+    cursor:grab!important;
+    touch-action:none!important;
+  }
+  .v157-hybrid-move-enabled .drag-handle.v156-click-move-handle:active,
+  .v157-hybrid-move-enabled .v153-inspector-drag.v156-click-move-handle:active{
+    cursor:grabbing!important;
+  }
+}
+
+body.v157-pointer-dragging{cursor:grabbing!important;user-select:none!important}
+body.v157-pointer-dragging *{cursor:grabbing!important}
+body.v157-pointer-dragging .v153-root-dropzone{
+  min-height:42px!important;
+  max-height:42px!important;
+  margin:0 0 7px!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  border-color:rgba(116,128,255,.45)!important;
+  background:rgba(88,101,242,.05)!important;
+}
+body.v157-pointer-dragging .v153-root-dropzone.v157-root-active{
+  border-color:var(--accent)!important;
+  background:rgba(88,101,242,.15)!important;
+  box-shadow:0 0 0 1px rgba(88,101,242,.12)!important;
+}
+
+.v157-pointer-source{opacity:.42!important;outline:1px solid rgba(116,128,255,.45);outline-offset:2px}
+.v157-pointer-ghost{
+  position:fixed;
+  z-index:10050;
+  pointer-events:none;
+  max-width:220px;
+  padding:7px 10px;
+  border:1px solid rgba(116,128,255,.65);
+  border-radius:8px;
+  background:rgba(20,23,30,.96);
+  color:#eef0ff;
+  box-shadow:0 12px 34px rgba(0,0,0,.38);
+  font-size:10px;
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  transform:translateZ(0);
+}
+
+.v157-drop-before,.v157-drop-after,.v157-drop-inside{position:relative!important}
+.v157-drop-before::before,.v157-drop-after::after{
+  content:"";
+  position:absolute;
+  z-index:40;
+  left:4px;
+  right:4px;
+  height:2px;
+  border-radius:999px;
+  background:var(--accent-2);
+  box-shadow:0 0 0 2px rgba(88,101,242,.14);
+  pointer-events:none;
+}
+.v157-drop-before::before{top:-5px}
+.v157-drop-after::after{bottom:-5px}
+.v157-drop-inside{
+  border-color:var(--accent)!important;
+  box-shadow:inset 0 0 0 1px rgba(88,101,242,.35),0 0 0 2px rgba(88,101,242,.08)!important;
+  background-color:rgba(88,101,242,.08)!important;
+}
+.v157-drop-inside>.v140-container-head{background:rgba(88,101,242,.08)!important}
+
+/* Keep action rows reachable on short screens. The scrolling row is the dialog
+   body/list; the footer itself always owns a final visible grid row. */
+.v131-picker-dialog{
+  max-height:calc(100dvh - 12px)!important;
+}
+.v131-picker-shell{
+  height:min(760px,calc(100dvh - 16px))!important;
+  max-height:calc(100dvh - 16px)!important;
+  min-height:0!important;
+  grid-template-rows:auto auto auto auto minmax(0,1fr) auto!important;
+  overflow:hidden!important;
+}
+.v131-picker-list{
+  min-height:0!important;
+  max-height:none!important;
+  overflow:auto!important;
+}
+.v131-picker-shell>.dialog-actions{
+  position:relative!important;
+  z-index:20!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  flex:0 0 auto!important;
+  min-height:46px!important;
+  margin:0!important;
+  padding:9px 2px 0!important;
+  border-top:1px solid var(--line-soft)!important;
+  background:#171a20!important;
+}
+.v131-picker-shell>.dialog-actions [data-v131-close="v131PickerDialog"]{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:auto!important;
+  min-width:88px!important;
+  min-height:34px!important;
+  flex:0 0 auto!important;
+}
+
+/* Add Block uses the same principle: never sacrifice its action/footer row to
+   the scrollable content when viewport height is restricted. */
+.v152-add-dialog{
+  max-height:calc(100dvh - 12px)!important;
+}
+.v152-add-shell{
+  height:min(760px,calc(100dvh - 16px))!important;
+  max-height:calc(100dvh - 16px)!important;
+  grid-template-rows:auto auto auto auto minmax(0,1fr) auto!important;
+  overflow:hidden!important;
+}
+.v152-add-grid{min-height:0!important}
+.v152-add-shell>.dialog-actions{
+  position:relative!important;
+  z-index:20!important;
+  flex:0 0 auto!important;
+  min-height:46px!important;
+  background:#12151b!important;
+}
+
+@media(max-height:620px){
+  .v131-picker-shell{padding:9px!important}
+  .v131-picker-shell>.dialog-head{padding-bottom:7px!important}
+  .v131-picker-hint{min-height:0!important;padding:5px 2px 4px!important}
+  .v131-picker-tabs{margin-bottom:6px!important}
+  .v131-picker-tabs button{padding-top:5px!important;padding-bottom:5px!important}
+  .v154-emoji-none-row{padding-bottom:5px!important}
+  .v131-picker-shell>.dialog-actions{min-height:40px!important;padding-top:6px!important}
+}
+
+@media(max-width:560px){
+  .v131-picker-dialog,.v152-add-dialog{width:calc(100vw - 8px)!important}
+  .v131-picker-shell,.v152-add-shell{
+    height:calc(100dvh - 8px)!important;
+    max-height:calc(100dvh - 8px)!important;
+  }
+  .v131-picker-shell>.dialog-actions,.v152-add-shell>.dialog-actions{
+    padding-left:4px!important;
+    padding-right:4px!important;
+  }
+}
