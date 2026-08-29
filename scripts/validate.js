@@ -5,11 +5,14 @@ import {
   makeImageBlock,
   makeOpenBlock,
   makeSelectBlock,
-  makeThumbnailBlock
+  makeThumbnailBlock,
+  makeYoutubeBlock
 } from '../src/builder/blocks.js';
 import { buildGenericActionReply } from '../src/builder/actions.js';
 import { allowedMentionsFor, buildBuilderPayloads, getBuilderStats, MULTILINE_QUOTE_ESCAPE } from '../src/builder/render.js';
+import { normalizeBuilderStructure } from '../src/builder/schema.js';
 import { createBuilderTemplate } from '../src/builder/templates.js';
+import { canonicalYoutubeUrl, youtubeThumbnailUrl, youtubeVideoId } from '../src/builder/youtube.js';
 import { validateBuilder } from '../src/builder/validate.js';
 import { convertDiscohook } from '../src/discohook.js';
 
@@ -17,11 +20,21 @@ function makeEntity(id, title, builder, extra = {}) {
   return { id, title, builder, ...extra };
 }
 
-function addActionResult(builder, result) {
-  builder.blocks.push(result.block);
+function addActionResult(builder, result, target = builder.blocks) {
+  target.push(result.block);
   for (const action of result.actions ?? []) builder.actions[action.id] = action;
   return result;
 }
+
+const plainBuilder = createBuilderTemplate('announcement_simple', 'Plain announcement');
+validateBuilder(plainBuilder);
+const plainPayload = buildBuilderPayloads(makeEntity('plain', 'Plain', plainBuilder), { kind: 'd', id: 'plain' })[0];
+if (plainPayload.components.some((component) => component.type === 17)) throw new Error('A plain root post must not gain an implicit container.');
+
+const styledBuilder = createBuilderTemplate('announcement_styled', 'Styled announcement');
+validateBuilder(styledBuilder);
+const styledPayload = buildBuilderPayloads(makeEntity('styled', 'Styled', styledBuilder), { kind: 'd', id: 'styled' })[0];
+if (styledPayload.components.length !== 1 || styledPayload.components[0].type !== 17) throw new Error('Styled announcement must publish as an explicit container.');
 
 const compactBuilder = createBuilderTemplate('merfin_select', 'MerfinUI Class Profiles');
 compactBuilder.blocks.unshift(makeImageBlock('https://example.com/banner.png', 'Header banner'));
@@ -32,7 +45,22 @@ if (compactStats.messageCount !== 1) throw new Error('Compact MerfinUI template 
 const legacyBuilder = createBuilderTemplate('merfin_open_list', 'Legacy Profiles');
 validateBuilder(legacyBuilder);
 const legacyStats = getBuilderStats(makeEntity('legacy', 'Legacy Profiles', legacyBuilder), { kind: 'd', id: 'legacy' });
-if (legacyStats.messageCount !== 1) throw new Error('Legacy profile list must fit one message after removing Open buttons.');
+if (legacyStats.messageCount !== 1) throw new Error('Legacy profile list must fit one message without Open buttons.');
+
+const migratedFlat = normalizeBuilderStructure({
+  schemaVersion: 1,
+  mode: 'components_v2',
+  accentColor: 0xF1C40F,
+  actions: {},
+  blocks: [
+    { id: 'oldtext', type: 'text', content: 'Old styled post' },
+    { id: 'marker', type: 'container', label: 'Second', accentColor: 0xFF0000 },
+    { id: 'oldtext2', type: 'text', content: 'Second old container' }
+  ]
+});
+if (migratedFlat.schemaVersion !== 2 || migratedFlat.blocks.length !== 2 || migratedFlat.blocks.some((block) => block.type !== 'container' || !Array.isArray(block.children))) {
+  throw new Error('Legacy flat builder migration did not preserve old styled containers.');
+}
 
 const quoteBuilder = createBuilderTemplate('blank', 'Quote escape');
 quoteBuilder.blocks.push({
@@ -42,8 +70,8 @@ quoteBuilder.blocks.push({
 });
 validateBuilder(quoteBuilder);
 const quotePayload = buildBuilderPayloads(makeEntity('quote', 'Quote escape', quoteBuilder), { kind: 'd', id: 'quote' })[0];
-const quoteDisplays = quotePayload.components[0].components.filter((component) => component.type === 10);
-if (quoteDisplays.length !== 2) throw new Error('Multi-line quote escape must split into two Text Display components.');
+const quoteDisplays = quotePayload.components.filter((component) => component.type === 10);
+if (quoteDisplays.length !== 2) throw new Error('Multi-line quote escape must split a plain root text block into two Text Displays.');
 
 const mediaBuilder = createBuilderTemplate('blank', 'Media');
 mediaBuilder.blocks.push(
@@ -57,17 +85,34 @@ validateBuilder(mediaBuilder);
 const mediaPayloads = buildBuilderPayloads(makeEntity('media', 'Media', mediaBuilder), { kind: 'd', id: 'media' });
 if (!mediaPayloads.length) throw new Error('Gallery/thumbnail rendering produced no payload.');
 
-const multiContainerBuilder = createBuilderTemplate('blank', 'Multiple embeds');
+const multiContainerBuilder = createBuilderTemplate('blank', 'Multiple containers');
 multiContainerBuilder.blocks.push(
-  { id: 'maintext', type: 'text', content: '# First embed\nPrimary content.' },
-  makeContainerBlock({ label: 'Second embed', accentColor: 0xFF0000 }),
-  { id: 'secondtext', type: 'text', content: '## Second embed\nSecondary content.' }
+  { id: 'roottext', type: 'text', content: '# Plain root\nThis stays outside containers.' },
+  makeContainerBlock({ label: 'Blue', accentColor: 0x5865F2, children: [{ id: 'blue1', type: 'text', content: 'Blue container' }] }),
+  makeContainerBlock({ label: 'Red', accentColor: 0xFF0000, children: [{ id: 'red1', type: 'text', content: 'Red container' }] })
 );
 validateBuilder(multiContainerBuilder);
-const multiPayloads = buildBuilderPayloads(makeEntity('multi', 'Multiple embeds', multiContainerBuilder), { kind: 'd', id: 'multi' });
-if (multiPayloads.length !== 1 || multiPayloads[0].components.length !== 2) throw new Error('Two Components V2 containers should remain inside one Discord message when limits allow it.');
+const multiPayloads = buildBuilderPayloads(makeEntity('multi', 'Multiple containers', multiContainerBuilder), { kind: 'd', id: 'multi' });
+if (multiPayloads.length !== 1 || multiPayloads[0].components.filter((component) => component.type === 17).length !== 2) {
+  throw new Error('Plain root content plus two explicit containers should remain one Discord message when limits allow.');
+}
 
-for (const template of ['announcement', 'guide', 'faq', 'links', 'youtube']) {
+const youtubeBuilder = createBuilderTemplate('blank', 'YouTube');
+youtubeBuilder.blocks.push(makeYoutubeBlock({
+  url: 'https://youtu.be/dQw4w9WgXcQ',
+  title: 'Smart video',
+  description: 'Automatically derived thumbnail.'
+}));
+validateBuilder(youtubeBuilder);
+if (youtubeVideoId('https://youtube.com/shorts/dQw4w9WgXcQ') !== 'dQw4w9WgXcQ') throw new Error('YouTube Shorts URL parsing failed.');
+if (canonicalYoutubeUrl('https://youtu.be/dQw4w9WgXcQ') !== 'https://www.youtube.com/watch?v=dQw4w9WgXcQ') throw new Error('YouTube canonical URL failed.');
+if (!youtubeThumbnailUrl('https://youtu.be/dQw4w9WgXcQ')?.includes('dQw4w9WgXcQ')) throw new Error('YouTube thumbnail derivation failed.');
+const youtubePayload = buildBuilderPayloads(makeEntity('yt', 'YouTube', youtubeBuilder), { kind: 'd', id: 'yt' })[0];
+if (!youtubePayload.components.some((component) => component.type === 12) || !youtubePayload.components.some((component) => component.type === 9)) {
+  throw new Error('Smart YouTube block must render thumbnail media plus a link section by default.');
+}
+
+for (const template of ['announcement_simple', 'announcement_styled', 'guide', 'faq', 'links', 'raid_event', 'recruitment', 'patch_update', 'warning', 'media_gallery', 'youtube', 'merfin_select', 'merfin_open_list']) {
   const builder = createBuilderTemplate(template, `Template ${template}`);
   validateBuilder(builder);
   const stats = getBuilderStats(makeEntity(`tpl-${template}`, template, builder), { kind: 'd', id: `tpl-${template}` });
@@ -75,12 +120,14 @@ for (const template of ['announcement', 'guide', 'faq', 'links', 'youtube']) {
 }
 
 const actionBuilder = createBuilderTemplate('blank', 'Nested actions');
+const actionContainer = makeContainerBlock({ label: 'Interactions', accentColor: 0x5865F2, children: [] });
+actionBuilder.blocks.push(actionContainer);
 const open = addActionResult(actionBuilder, makeOpenBlock({
   text: 'Open details',
   label: 'Open',
   title: 'Details',
   response: 'Choose the next step.'
-}));
+}), actionContainer.children);
 addNestedAction(actionBuilder, open.block.actionId, {
   label: 'More',
   title: 'More information',
@@ -99,11 +146,14 @@ addActionResult(selectBuilder, makeSelectBlock({
 validateBuilder(selectBuilder);
 
 const imported = convertDiscohook({
-  content: '# Imported',
-  embeds: [{ title: 'Guide', description: 'Imported from DiscoHook', color: 0x5865f2 }]
+  content: '# Imported plain root',
+  embeds: [
+    { title: 'Blue Guide', description: 'Imported first embed', color: 0x5865F2 },
+    { title: 'Red Warning', description: 'Imported second embed', color: 0xFF0000 }
+  ]
 });
-if (!imported.builder.blocks.length) throw new Error('DiscoHook converter returned no blocks.');
 validateBuilder(imported.builder);
+if (imported.builder.blocks.filter((block) => block.type === 'container').length !== 2) throw new Error('DiscoHook multi-embed import must preserve separate containers.');
 
 const safeDefault = allowedMentionsFor(makeEntity('safe', 'Safe', compactBuilder));
 if (safeDefault.parse.length !== 0 || safeDefault.users || safeDefault.roles) throw new Error('Default mention policy must not notify anyone.');
@@ -114,13 +164,16 @@ if (selectedMentions.parse.length !== 0 || selectedMentions.users?.[0] !== '1234
   throw new Error('Selected mention policy did not preserve explicit user/role whitelist.');
 }
 
+console.log('Plain root posts publish without implicit containers.');
+console.log('Explicit nested container rendering validation passed.');
+console.log('Legacy flat builder migration validation passed.');
 console.log(`Compact template: ${compactStats.blockCount} blocks -> ${compactStats.messageCount} message.`);
 console.log(`Legacy profile list: ${legacyStats.blockCount} blocks -> ${legacyStats.messageCount} message.`);
-console.log('Multiple Components V2 containers in one message validation passed.');
-console.log('Base + YouTube template validation passed.');
+console.log('Smart YouTube URL + thumbnail validation passed.');
+console.log('Expanded template gallery validation passed.');
 console.log('Quote escape split validation passed.');
 console.log('Gallery + thumbnail validation passed.');
 console.log('Nested ephemeral action validation passed.');
-console.log('DiscoHook import validation passed.');
+console.log('DiscoHook nested container import validation passed.');
 console.log('Safe mention validation passed.');
-console.log('Timewizzard v1.3.2 validation passed.');
+console.log('Timewizzard v1.4.0 validation passed.');
