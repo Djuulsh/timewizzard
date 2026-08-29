@@ -5,7 +5,7 @@ import {
   MessageFlags
 } from 'discord.js';
 
-const VERSION = '1.5.8';
+const VERSION = '1.5.9';
 
 export function installV158Support(ControllerClass) {
   ControllerClass.prototype.showWebBuilder = async function showWebBuilderV158(interaction) {
@@ -30,7 +30,8 @@ export function installV158Support(ControllerClass) {
         `## Timewizzard Web Builder v${VERSION}`,
         'Åbn den sikre Discord OAuth-beskyttede builder.',
         '',
-        '**Flyt blocks:** Træk hele block-rækken på computer, eller klik/tap `::` og vælg destination.'
+        '**Flyt blocks:** Træk hele block-rækken på computer, eller klik/tap `::` og vælg destination.',
+        '**Redigér blocks:** Et almindeligt klik på blockets indhold åbner det i Inspector.'
       ].join('\n'),
       components: [row],
       flags: MessageFlags.Ephemeral,
