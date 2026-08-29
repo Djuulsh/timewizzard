@@ -28,17 +28,22 @@
 - Editing a Select in the native Builder now preserves existing nested ephemeral next-steps instead of silently removing them.
 - Native help and `/webbuilder` descriptions now document the v1.3 feature set.
 
+### Local development
+- Added `npm run local` and `npm run local:watch` for full local bot + Web Builder testing without Railway.
+- Added `.env.local.example` with a localhost OAuth callback and isolated `./data-local` storage.
+- Local and production environment files are loaded explicitly, so development credentials/data can stay separate from Railway.
+
 ### Data and validation
 - Storage schema upgraded to v4 with revisions, stable Builder IDs and Discord target state.
 - Existing `/data/store.json` data migrates in place.
 - Validation covers v1.3.0 quote escape, media blocks, nested actions and DiscoHook conversion.
 - Removed runtime Web Builder patching from the startup path; v1.3.0 Web assets are committed directly to the repository.
-- CI now syntax-checks the native v1.3 support layer and Builder UI.
+- CI now syntax-checks the native v1.3 support layer, local startup wrapper and Builder UI.
 
 ## 1.2.2
 
 ### Builder destinations
-- Web Builder can publish to Discord forum channels, normal text channels and announcement channels.
+- Web Builder can now publish to Discord forum channels, normal text channels and announcement channels.
 - Discord-native `/post opret` and `/post importer` accept the same destination types.
 - Forum tags remain available only for forum destinations.
 - Normal-channel posts use the same Components V2 blocks, interactions, ephemeral replies and update flow as forum posts.
