@@ -1,0 +1,24 @@
+/* Timewizzard v1.5.12 — definitive :: grip rendering */
+
+/* v1.5.11 hid the DOM text behind a pseudo-element. Return ownership to the
+   actual handle text now that the JS refresh source is fixed, so no stale
+   pseudo/arrow state can survive an Inspector render. */
+body.v1512-grip-root-fix #blockList .drag-handle{
+  position:relative!important;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace!important;
+  font-size:15px!important;
+  font-weight:900!important;
+  letter-spacing:-1px!important;
+  line-height:1!important;
+  color:#9ba3af!important;
+  overflow:visible!important;
+  text-align:center!important;
+}
+body.v1512-grip-root-fix #blockList .drag-handle::before{
+  content:none!important;
+  display:none!important;
+}
+body.v1512-grip-root-fix #blockList .drag-handle:hover,
+body.v1512-grip-root-fix #blockList .drag-handle:focus-visible{
+  color:#d7dbff!important;
+}
