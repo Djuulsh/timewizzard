@@ -6,6 +6,10 @@ import {
 import { RESOLUTIONS, WOW_CLASSES } from './constants.js';
 import { POST_TEMPLATES } from './builder/templates.js';
 
+const SLASH_TEMPLATE_CHOICES = POST_TEMPLATES
+  .slice(0, 25)
+  .map(({ name, value }) => ({ name, value }));
+
 function addClassOption(subcommand) {
   return subcommand.addStringOption((option) =>
     option
@@ -80,7 +84,7 @@ const postCommand = new SlashCommandBuilder()
         .setName('template')
         .setDescription('Start med en tom builder eller en færdig skabelon')
         .setRequired(false)
-        .addChoices(...POST_TEMPLATES)
+        .addChoices(...SLASH_TEMPLATE_CHOICES)
     );
     addTagOption(subcommand);
     return subcommand;
