@@ -24,8 +24,14 @@ import {
 } from '../destinations.js';
 import { convertDiscohook } from '../discohook.js';
 import { normalizeGeneratedString } from '../utils.js';
+import {
+  buildDiscordPickerData,
+  getBotIdentity,
+  normalizeMentionPolicy,
+  updateBotIdentity
+} from './v131.js';
 
-const VERSION = '1.3.0';
+const VERSION = '1.3.1';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(__dirname, '../../web');
 const SESSION_COOKIE = 'sib_session';
@@ -118,6 +124,7 @@ async function saveEntity(store, kind, entity, reason = 'save') {
   const copy = structuredClone(entity);
   copy.updatedAt = new Date().toISOString();
   copy.builder = validateBuilder(copy.builder);
+  copy.mentionPolicy = normalizeMentionPolicy(copy.mentionPolicy);
   if (kind === 'd') return store.saveDraft(copy, { revision: true, reason });
   if (kind === 'p') return store.savePost(copy, { revision: true, reason });
   throw new Error('Unknown entity kind.');
@@ -166,6 +173,7 @@ async function cloneEntityToDraft(store, source, kind, userId, titleOverride = n
     destinationType: source.destinationType || getDestinationType(source),
     destinationChannelId,
     appliedTagIds: [...(source.appliedTagIds ?? [])],
+    mentionPolicy: normalizeMentionPolicy(source.mentionPolicy),
     createdBy: userId,
     createdAt: now,
     updatedAt: now,
@@ -181,6 +189,16 @@ async function serveFile(response, fileName, contentType) {
     const data = await fs.readFile(path.join(WEB_ROOT, fileName));
     response.writeHead(200, { 'content-type': contentType, 'cache-control': 'no-cache' });
     response.end(data);
+  } catch {
+    text(response, 404, 'Not found');
+  }
+}
+
+async function serveCombinedFiles(response, fileNames, contentType) {
+  try {
+    const files = await Promise.all(fileNames.map((fileName) => fs.readFile(path.join(WEB_ROOT, fileName), 'utf8')));
+    response.writeHead(200, { 'content-type': contentType, 'cache-control': 'no-cache' });
+    response.end(files.join('\n\n'));
   } catch {
     text(response, 404, 'Not found');
   }
@@ -301,12 +319,17 @@ export function createWebServer({ client, store, config }) {
     }
 
     if (url.pathname === '/api/bootstrap' && method === 'GET') {
-      const [posts, entities] = await Promise.all([refreshAllPosts(), previewEntities(client, config.guildId, session)]);
+      const [posts, entities, botIdentity] = await Promise.all([
+        refreshAllPosts(),
+        previewEntities(client, config.guildId, session),
+        getBotIdentity(client, config.guildId)
+      ]);
       const guild = client.guilds.cache.get(config.guildId);
       json(response, 200, {
         version: VERSION,
         user: session.user,
         bot: client.user?.tag ?? null,
+        botIdentity,
         guild: guild ? { id: guild.id, name: guild.name } : { id: config.guildId, name: null },
         templates: POST_TEMPLATES,
         classes: WOW_CLASSES.map((item) => ({ key: item.key, name: item.name, emojiName: item.emojiName, emojiId: item.emojiId })),
@@ -320,6 +343,23 @@ export function createWebServer({ client, store, config }) {
         posts: posts.map((item) => entitySummary(item, 'p', store))
       });
       return;
+    }
+
+    if (url.pathname === '/api/discord-picker' && method === 'GET') {
+      json(response, 200, await buildDiscordPickerData({ client, guildId: config.guildId, store, session }));
+      return;
+    }
+
+    if (url.pathname === '/api/bot-identity') {
+      if (method === 'GET') {
+        json(response, 200, await getBotIdentity(client, config.guildId));
+        return;
+      }
+      if (method === 'PUT') {
+        const body = await readJsonBody(request, 4_000_000);
+        json(response, 200, await updateBotIdentity(client, config.guildId, body));
+        return;
+      }
     }
 
     if ((url.pathname === '/api/destinations' || url.pathname === '/api/forums') && method === 'GET') {
@@ -346,6 +386,7 @@ export function createWebServer({ client, store, config }) {
         destinationType: type,
         destinationChannelId: destination.id,
         appliedTagIds: type === 'forum' && tagId ? [tagId] : [],
+        mentionPolicy: normalizeMentionPolicy(null),
         createdBy: session.user.id,
         createdAt: now,
         updatedAt: now,
@@ -373,6 +414,7 @@ export function createWebServer({ client, store, config }) {
         destinationType: type,
         destinationChannelId: destination.id,
         appliedTagIds: type === 'forum' && tagId ? [tagId] : [],
+        mentionPolicy: normalizeMentionPolicy(null),
         createdBy: session.user.id,
         createdAt: now,
         updatedAt: now,
@@ -381,6 +423,24 @@ export function createWebServer({ client, store, config }) {
       await store.saveDraft(draft, { revision: false });
       json(response, 201, { scope: { kind: 'd', id: draft.id }, entity: draft, warnings: converted.warnings, stats: getBuilderStats(draft, { kind: 'd', id: draft.id }) });
       return;
+    }
+
+    const mentionPolicyMatch = url.pathname.match(/^\/api\/entities\/([dp])\/([^/]+)\/mention-policy$/);
+    if (mentionPolicyMatch) {
+      const [, kind, rawId] = mentionPolicyMatch;
+      const resolved = resolveEntity(store, kind, decodeURIComponent(rawId));
+      if (!resolved) { json(response, 404, { error: 'Opslaget blev ikke fundet.' }); return; }
+      if (method === 'GET') {
+        json(response, 200, { mentionPolicy: normalizeMentionPolicy(resolved.entity.mentionPolicy) });
+        return;
+      }
+      if (method === 'PUT') {
+        const body = await readJsonBody(request);
+        const mentionPolicy = normalizeMentionPolicy(body);
+        const saved = await saveEntity(store, kind, { ...resolved.entity, mentionPolicy }, 'mention-policy');
+        json(response, 200, { mentionPolicy: saved.mentionPolicy });
+        return;
+      }
     }
 
     const entityMatch = url.pathname.match(/^\/api\/entities\/([dp])\/([^/]+)$/);
@@ -541,13 +601,13 @@ export function createWebServer({ client, store, config }) {
         json(response, client.isReady() ? 200 : 503, {
           ok: client.isReady(), version: VERSION, bot: client.user?.tag ?? null, webBuilder: config.webEnabled,
           oauthLoginPath: '/auth/discord', builderPath: '/builder', supportedDestinations: ['forum', 'text', 'announcement'],
-          features: ['orphan-recreate', 'change-destination', 'markdown-toolbar', 'quote-escape', 'media-gallery', 'thumbnail', 'undo-redo', 'revisions', 'discohook-import', 'nested-ephemeral'],
+          features: ['orphan-recreate', 'change-destination', 'markdown-toolbar', 'quote-escape', 'media-gallery', 'thumbnail', 'undo-redo', 'revisions', 'discohook-import', 'nested-ephemeral', 'bot-identity', 'discord-insert-picker', 'emoji-browser', 'safe-mentions', 'timestamp-picker', 'discord-post-links', 'mention-autocomplete'],
           uptimeSeconds: Math.floor(process.uptime())
         });
         return;
       }
-      if (url.pathname === '/app.css') { await serveFile(response, 'app.css', 'text/css; charset=utf-8'); return; }
-      if (url.pathname === '/app.js') { await serveFile(response, 'app.js', 'text/javascript; charset=utf-8'); return; }
+      if (url.pathname === '/app.css') { await serveCombinedFiles(response, ['app.css', 'v131.css'], 'text/css; charset=utf-8'); return; }
+      if (url.pathname === '/app.js') { await serveCombinedFiles(response, ['app.js', 'v131.js'], 'text/javascript; charset=utf-8'); return; }
       if (url.pathname === '/auth/discord') { await beginOAuth(response); return; }
       if (url.pathname === '/auth/discord/callback') { await finishOAuth(request, response, url); return; }
       if (url.pathname === '/logout') {
