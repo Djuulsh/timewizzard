@@ -1,0 +1,43 @@
+/* Timewizzard v1.5.4 — Heading + draft + Blocks drag UX polish */
+
+/* Heading: Title, Level and Emoji share the primary row. */
+.v154-heading-primary-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(250px,.95fr);gap:10px;align-items:end}
+.v154-heading-primary-grid>label{min-width:0;margin:0!important}
+.v154-heading-controls{display:grid!important;grid-template-columns:82px minmax(150px,1fr)!important;gap:7px!important;align-items:end!important;min-width:0}
+.v154-heading-controls>label{min-width:0;margin:0!important}
+.v154-heading-controls .v151-heading-emoji-control{grid-template-columns:1fr!important;min-width:0}
+.v154-heading-controls .v151-heading-emoji-button{width:100%;min-width:0}
+.v154-heading-controls .v151-heading-emoji-button small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* None is part of the heading emoji picker instead of a permanent Inspector button. */
+.v154-emoji-none-row{padding:0 12px 8px}
+.v154-emoji-none-choice{width:100%;display:grid;grid-template-columns:38px minmax(0,1fr);gap:9px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#11141a;color:var(--text);text-align:left;cursor:pointer}
+.v154-emoji-none-choice:hover{border-color:var(--accent);background:rgba(88,101,242,.08)}
+.v154-emoji-none-icon{display:grid;place-items:center;width:34px;height:34px;border:1px dashed #4a515d;border-radius:8px;color:#aab1bc;font-size:20px}
+.v154-emoji-none-choice strong{display:block;font-size:10px}
+.v154-emoji-none-choice small{display:block;margin-top:2px;color:var(--muted);font-size:8.5px}
+.v131-picker-dialog.v151-emoji-only .dialog-actions{display:flex!important;justify-content:flex-end!important;align-items:center!important}
+.v131-picker-dialog.v151-emoji-only .dialog-actions [data-v131-close="v131PickerDialog"]{width:auto!important;min-width:88px!important;max-width:max-content!important;flex:0 0 auto!important;padding:7px 14px!important;text-align:center!important}
+
+/* Create Draft keeps its primary actions visible while the long template body scrolls. */
+#newDraftForm>.dialog-head{position:sticky;top:-1px;z-index:15;padding-bottom:10px;background:var(--panel);border-bottom:1px solid var(--line-soft)}
+#newDraftForm>.dialog-actions{position:sticky;bottom:-1px;z-index:16;grid-column:1/-1!important;margin-top:2px;padding:11px 0 2px;border-top:1px solid var(--line-soft);background:linear-gradient(to bottom,rgba(21,24,30,.94),var(--panel) 28%);box-shadow:0 -10px 24px rgba(0,0,0,.14)}
+#newDraftForm>.dialog-actions button[type="submit"]{min-width:118px}
+
+/* A Blocks-panel drag now exposes the same root escape route as Inspector drag. */
+body.v154-tree-dragging .v140-container-card{transition:border-color .12s ease,box-shadow .12s ease,opacity .12s ease}
+body.v154-tree-dragging .v140-container-children{outline:1px dashed rgba(116,128,255,.28);outline-offset:-4px;border-radius:0 0 9px 9px;transition:outline-color .12s ease,background .12s ease}
+body.v154-tree-dragging .v140-container-children.v154-tree-drop-active{outline-color:rgba(116,128,255,.9);background:rgba(88,101,242,.07)}
+body.v154-tree-dragging .v153-root-dropzone{border-color:rgba(116,128,255,.5)!important;background:rgba(88,101,242,.06)!important}
+body.v154-tree-dragging .v153-root-dropzone.active{border-color:var(--accent)!important;background:rgba(88,101,242,.14)!important}
+.v154-tree-source{opacity:.52!important}
+
+@media(max-width:900px){
+  .v154-heading-primary-grid{grid-template-columns:1fr}
+  .v154-heading-controls{grid-template-columns:90px minmax(0,1fr)!important}
+}
+@media(max-width:560px){
+  .v154-heading-controls{grid-template-columns:1fr!important}
+  #newDraftForm>.dialog-head{padding-top:2px}
+  #newDraftForm>.dialog-actions{padding-bottom:4px}
+}
