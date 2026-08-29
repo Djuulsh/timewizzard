@@ -94,7 +94,10 @@ export async function buildDiscordPickerData({ client, guildId, store, session }
     if (!id) return;
     users.set(String(id), { id: String(id), name: String(name || id), avatarUrl, bot: Boolean(bot) });
   };
-  addUser(session?.user?.id, session?.user?.username, session?.user?.avatar || null, false);
+  const sessionAvatarUrl = session?.user?.avatar && session?.user?.id
+    ? `https://cdn.discordapp.com/avatars/${session.user.id}/${session.user.avatar}.png?size=64`
+    : null;
+  addUser(session?.user?.id, session?.user?.username, sessionAvatarUrl, false);
   if (client.user) addUser(client.user.id, identity.serverDisplayName || client.user.username, identity.avatarUrl, true);
   for (const member of guild.members.cache.values()) {
     addUser(member.id, member.displayName || member.user?.username || member.id, member.user?.displayAvatarURL?.({ extension: 'png', size: 64 }) || null, member.user?.bot);
