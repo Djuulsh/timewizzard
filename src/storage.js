@@ -2,8 +2,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { RESOLUTIONS, WOW_CLASSES } from './constants.js';
 import { migrateLegacyPostToBuilder } from './builder/templates.js';
+import { BUILDER_SCHEMA_VERSION, normalizeBuilderStructure } from './builder/schema.js';
 
-const CURRENT_VERSION = 4;
+const CURRENT_VERSION = 5;
 const MAX_REVISIONS = 30;
 
 function createDefaultProfiles() {
@@ -80,13 +81,24 @@ function defaultDiscordState() {
   return { status: 'unknown', reason: null, checkedAt: null };
 }
 
+function normalizeStoredEntity(entity) {
+  const next = structuredClone(entity);
+  if (next?.builder?.blocks && next?.builder?.actions) {
+    next.builder = normalizeBuilderStructure(next.builder, { preserveLegacyAppearance: true });
+  }
+  if (next?.publishedBuilder?.blocks && next?.publishedBuilder?.actions) {
+    next.publishedBuilder = normalizeBuilderStructure(next.publishedBuilder, { preserveLegacyAppearance: true });
+  }
+  return next;
+}
+
 function migratePublishedState(post, builder, builderId) {
   const publishedBuilder = post?.publishedBuilder?.blocks && post?.publishedBuilder?.actions
-    ? post.publishedBuilder
+    ? normalizeBuilderStructure(post.publishedBuilder, { preserveLegacyAppearance: true })
     : structuredClone(builder);
   const currentDiscordId = post?.postId || post?.threadId || post?.starterMessageId || null;
 
-  return {
+  return normalizeStoredEntity({
     ...post,
     builderId,
     postId: currentDiscordId,
@@ -101,7 +113,21 @@ function migratePublishedState(post, builder, builderId) {
     },
     continuationMessageIds: Array.isArray(post?.continuationMessageIds) ? post.continuationMessageIds : [],
     appliedTagIds: Array.isArray(post?.appliedTagIds) ? post.appliedTagIds : []
-  };
+  });
+}
+
+function normalizeRevisions(revisions) {
+  const next = {};
+  for (const [key, list] of Object.entries(revisions && typeof revisions === 'object' ? revisions : {})) {
+    next[key] = (Array.isArray(list) ? list : []).map((revision) => {
+      const copy = structuredClone(revision);
+      if (copy?.snapshot?.builder?.blocks && copy?.snapshot?.builder?.actions) {
+        copy.snapshot.builder = normalizeBuilderStructure(copy.snapshot.builder, { preserveLegacyAppearance: true });
+      }
+      return copy;
+    }).slice(0, MAX_REVISIONS);
+  }
+  return next;
 }
 
 function mergeDefaults(data) {
@@ -114,7 +140,7 @@ function mergeDefaults(data) {
     profiles: { ...defaults.profiles, ...(source.profiles ?? {}) },
     posts: {},
     drafts: source.drafts && typeof source.drafts === 'object' ? source.drafts : {},
-    revisions: source.revisions && typeof source.revisions === 'object' ? source.revisions : {}
+    revisions: normalizeRevisions(source.revisions)
   };
 
   for (const wowClass of WOW_CLASSES) {
@@ -133,8 +159,10 @@ function mergeDefaults(data) {
 
   for (const [draftId, draft] of Object.entries(merged.drafts)) {
     if (!draft || typeof draft !== 'object') continue;
-    draft.id = draft.id || draftId;
-    draft.appliedTagIds = Array.isArray(draft.appliedTagIds) ? draft.appliedTagIds : [];
+    const normalized = normalizeStoredEntity(draft);
+    normalized.id = normalized.id || draftId;
+    normalized.appliedTagIds = Array.isArray(normalized.appliedTagIds) ? normalized.appliedTagIds : [];
+    merged.drafts[draftId] = normalized;
   }
 
   return merged;
@@ -210,9 +238,11 @@ export class JsonStore {
   }
 
   #needsPersistence(parsed) {
-    if (!parsed?.revisions) return true;
+    if (!parsed?.revisions || Number(parsed?.version ?? 1) < CURRENT_VERSION) return true;
+    if (Object.values(parsed?.drafts ?? {}).some((draft) => Number(draft?.builder?.schemaVersion ?? 1) < BUILDER_SCHEMA_VERSION)) return true;
     return Object.entries(parsed?.posts ?? {}).some(([key, post]) =>
-      !post?.builder || !post?.publishedBuilder || !post?.publishedTitle || !post?.builderId || post.builderId !== key
+      !post?.builder || !post?.publishedBuilder || !post?.publishedTitle || !post?.builderId || post.builderId !== key ||
+      Number(post?.builder?.schemaVersion ?? 1) < BUILDER_SCHEMA_VERSION || Number(post?.publishedBuilder?.schemaVersion ?? 1) < BUILDER_SCHEMA_VERSION
     );
   }
 
@@ -288,7 +318,7 @@ export class JsonStore {
     const builderId = String(post?.builderId || existingKey || post?.threadId || post?.postId || '');
     if (!builderId) throw new Error('Published posts require a stable builderId.');
     const previous = existingKey ? this.data.posts[existingKey] : null;
-    const next = { ...structuredClone(post), builderId };
+    const next = normalizeStoredEntity({ ...structuredClone(post), builderId });
     if (revision) this.#recordRevision('p', builderId, previous, next, reason);
     if (existingKey && existingKey !== builderId) delete this.data.posts[existingKey];
     this.data.posts[builderId] = next;
@@ -324,7 +354,7 @@ export class JsonStore {
   async saveDraft(draft, { revision = true, reason = 'save' } = {}) {
     if (!draft?.id) throw new Error('Drafts require an id.');
     const previous = this.data.drafts[draft.id] ?? null;
-    const next = structuredClone(draft);
+    const next = normalizeStoredEntity(draft);
     if (revision) this.#recordRevision('d', draft.id, previous, next, reason);
     this.data.drafts[draft.id] = next;
     await this.save();
@@ -349,11 +379,11 @@ export class JsonStore {
     if (!revision) throw new Error('Revisionen blev ikke fundet.');
     const current = kind === 'p' ? this.getPost(stableId) : this.getDraft(stableId);
     if (!current) throw new Error('Opslaget findes ikke længere.');
-    const restored = {
+    const restored = normalizeStoredEntity({
       ...structuredClone(current),
       ...structuredClone(revision.snapshot),
       updatedAt: new Date().toISOString()
-    };
+    });
     if (kind === 'p') return this.savePost(restored, { revision: true, reason: `restore:${revisionId}` });
     return this.saveDraft(restored, { revision: true, reason: `restore:${revisionId}` });
   }
