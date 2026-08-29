@@ -21,7 +21,8 @@ export const WEB_SCRIPT_FILES = Object.freeze([
   'v1517.js',
   'v1518.js',
   'v1519.js',
-  'v162.js'
+  'v162.js',
+  'v163.js'
 ]);
 
 export const WEB_STYLE_FILES = Object.freeze([
@@ -46,5 +47,6 @@ export const WEB_STYLE_FILES = Object.freeze([
   'v1517.css',
   'v1518.css',
   'v1519.css',
-  'v162.css'
+  'v162.css',
+  'v163.css'
 ]);
