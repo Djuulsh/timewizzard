@@ -1,57 +1,80 @@
 import { DEFAULT_ACCENT_COLOR } from '../constants.js';
 import { makeShortId } from './ids.js';
+import { BUILDER_SCHEMA_VERSION, normalizeBuilderStructure } from './schema.js';
 
 function block(type, values = {}) {
+  return { id: makeShortId(3), type, ...values };
+}
+
+function container(label, accentColor, children = []) {
+  return block('container', {
+    label,
+    accentColor,
+    collapsed: false,
+    children
+  });
+}
+
+function baseBuilder() {
   return {
-    id: makeShortId(3),
-    type,
-    ...values
-  };
-}
-
-function action(builder, { title, content }) {
-  const id = makeShortId(4);
-  builder.actions[id] = { id, type: 'ephemeral_text', title, content, children: [], presentation: 'buttons' };
-  return id;
-}
-
-export const POST_TEMPLATES = [
-  { name: 'Blank builder', value: 'blank' },
-  { name: 'Announcement', value: 'announcement' },
-  { name: 'Guide / information', value: 'guide' },
-  { name: 'FAQ', value: 'faq' },
-  { name: 'Links / resources', value: 'links' },
-  { name: 'YouTube video', value: 'youtube' },
-  { name: 'MerfinUI — compact select', value: 'merfin_select' },
-  { name: 'MerfinUI — profile list (legacy)', value: 'merfin_open_list' }
-];
-
-export function createBuilderTemplate(templateKey = 'blank', title = 'Informationsopslag') {
-  const builder = {
-    schemaVersion: 1,
+    schemaVersion: BUILDER_SCHEMA_VERSION,
     mode: 'components_v2',
+    // Kept as a backwards-compatible default for native tools and migrations.
+    // Root-level content has no accent in v1.4; containers own their colors.
     accentColor: DEFAULT_ACCENT_COLOR,
     blocks: [],
     actions: {}
   };
+}
 
+export const POST_TEMPLATES = [
+  { name: 'Blank post', value: 'blank', category: 'Basic', description: 'A completely plain Discord post with no container.' },
+  { name: 'Simple announcement', value: 'announcement_simple', category: 'Basic', description: 'Heading, text and separator without an embed/container.' },
+  { name: 'Styled announcement', value: 'announcement_styled', category: 'Basic', description: 'Announcement inside a colored container.' },
+  { name: 'Guide / information', value: 'guide', category: 'Basic', description: 'Structured guide inside a clean information container.' },
+  { name: 'FAQ', value: 'faq', category: 'Basic', description: 'Questions and answers in a plain, easy-to-scan post.' },
+  { name: 'Links / resources', value: 'links', category: 'Basic', description: 'Useful resources with link buttons.' },
+  { name: 'Raid / event', value: 'raid_event', category: 'Community', description: 'Event information prepared for timestamps, roles and channels.' },
+  { name: 'Recruitment', value: 'recruitment', category: 'Community', description: 'Guild/team recruitment structure with requirements and contact.' },
+  { name: 'Patch / update notes', value: 'patch_update', category: 'Community', description: 'Compact changelog/update layout.' },
+  { name: 'Important / warning', value: 'warning', category: 'Community', description: 'High-visibility warning container.' },
+  { name: 'Media / gallery', value: 'media_gallery', category: 'Media', description: 'Title, gallery and supporting description.' },
+  { name: 'YouTube video', value: 'youtube', category: 'Media', description: 'Smart YouTube block: paste the video URL and Timewizzard builds the presentation.' },
+  { name: 'MerfinUI — compact select', value: 'merfin_select', category: 'Special', description: 'Class/resolution profile dropdown.' },
+  { name: 'MerfinUI — profile list', value: 'merfin_open_list', category: 'Special', description: 'Compact profile overview without legacy Open buttons.' }
+];
+
+export function createBuilderTemplate(templateKey = 'blank', title = 'Informationsopslag') {
+  // Accept the v1.3 template key for old bookmarks/API callers.
+  if (templateKey === 'announcement') templateKey = 'announcement_styled';
+
+  const builder = baseBuilder();
   if (templateKey === 'blank') return builder;
 
-  if (templateKey === 'announcement') {
+  if (templateKey === 'announcement_simple') {
     builder.blocks.push(
       block('text', { content: `# 📢 ${title}\nWrite the important announcement here.` }),
       block('separator', { divider: true, spacing: 2 }),
-      block('text', { content: '## What you need to know\n- First important point\n- Second important point\n- Third important point\n\n-# Edit or remove any placeholder text before publishing.' })
+      block('text', { content: '## What you need to know\n- First important point\n- Second important point\n- Third important point\n\n-# Edit or remove placeholder text before publishing.' })
     );
     return builder;
   }
 
+  if (templateKey === 'announcement_styled') {
+    builder.blocks.push(container('Announcement', 0x5865F2, [
+      block('text', { content: `# 📢 ${title}\nWrite the important announcement here.` }),
+      block('separator', { divider: true, spacing: 2 }),
+      block('text', { content: '## What you need to know\n- First important point\n- Second important point\n- Third important point' })
+    ]));
+    return builder;
+  }
+
   if (templateKey === 'guide') {
-    builder.blocks.push(
+    builder.blocks.push(container('Guide', 0x3498DB, [
       block('text', { content: `# 📘 ${title}\nShort introduction explaining what this guide covers.` }),
       block('separator', { divider: true, spacing: 1 }),
       block('text', { content: '## Step 1\nExplain the first step.\n\n## Step 2\nExplain the next step.\n\n## Tips\n- Add useful notes\n- Link related channels with **Discord Insert**' })
-    );
+    ]));
     return builder;
   }
 
@@ -74,22 +97,72 @@ export function createBuilderTemplate(templateKey = 'blank', title = 'Informatio
     return builder;
   }
 
+  if (templateKey === 'raid_event') {
+    builder.blocks.push(container('Raid / Event', 0xE67E22, [
+      block('text', { content: `# ⚔️ ${title}\nUse **Discord Insert → Time** for the event time and **Roles/Channels** for the relevant mentions.` }),
+      block('separator', { divider: true, spacing: 1 }),
+      block('text', { content: '## Schedule\n📅 Date: <t:0:D>\n🕒 Starts: <t:0:t>\n\n## Information\n- Meeting point / channel\n- Requirements\n- What members should prepare' })
+    ]));
+    return builder;
+  }
+
+  if (templateKey === 'recruitment') {
+    builder.blocks.push(container('Recruitment', 0x2ECC71, [
+      block('text', { content: `# 🛡️ ${title}\nWe are looking for new members to join the team.` }),
+      block('separator', { divider: true, spacing: 1 }),
+      block('text', { content: '## We are looking for\n- Role / class / experience\n- Availability\n- Team-first attitude\n\n## What we offer\n- Raid / event schedule\n- Community information\n\n## Contact\nUse **Discord Insert** to mention the right person or channel.' })
+    ]));
+    return builder;
+  }
+
+  if (templateKey === 'patch_update') {
+    builder.blocks.push(container('Update notes', 0x9B59B6, [
+      block('text', { content: `# 🛠️ ${title}\n-# Update / changelog` }),
+      block('separator', { divider: true, spacing: 1 }),
+      block('text', { content: '## Added\n- New feature\n\n## Changed\n- Updated behaviour\n\n## Fixed\n- Resolved issue' })
+    ]));
+    return builder;
+  }
+
+  if (templateKey === 'warning') {
+    builder.blocks.push(container('Important', 0xED4245, [
+      block('text', { content: `# ⚠️ ${title}\nWrite the important warning or action members must take.` }),
+      block('separator', { divider: true, spacing: 2 }),
+      block('text', { content: '**Required action**\nExplain exactly what people need to do and when.' })
+    ]));
+    return builder;
+  }
+
+  if (templateKey === 'media_gallery') {
+    builder.blocks.push(
+      block('text', { content: `# 🖼️ ${title}\nAdd a short introduction to the gallery.` }),
+      block('gallery', { items: [
+        { url: 'https://example.com/image1.png', description: 'Image 1', spoiler: false },
+        { url: 'https://example.com/image2.png', description: 'Image 2', spoiler: false }
+      ] }),
+      block('text', { content: '-# Add, remove or reorder gallery images in the Inspector.' })
+    );
+    return builder;
+  }
+
   if (templateKey === 'youtube') {
     builder.blocks.push(
-      block('text', { content: `# ▶️ ${title}\nAdd a short introduction to the video.\n\n-# Replace VIDEO_ID in the thumbnail and link before publishing.` }),
-      block('image', { url: 'https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg', description: `${title} YouTube thumbnail`, spoiler: false }),
-      block('container', { label: 'Video actions', accentColor: 0xFF0000 }),
-      block('text', { content: '## Watch the video\nAdd a short description, chapter note or call to action here.' }),
-      block('link', { text: '▶️ • **Open on YouTube**', label: 'Watch video', url: 'https://www.youtube.com/watch?v=VIDEO_ID' })
+      block('text', { content: `# ▶️ ${title}\nAdd a short introduction to the video.` }),
+      block('youtube', {
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        title: 'Video title',
+        description: 'Add a short description or call to action.',
+        showThumbnail: true,
+        showButton: true,
+        buttonLabel: 'Watch on YouTube'
+      })
     );
     return builder;
   }
 
   if (templateKey === 'merfin_select') {
     builder.blocks.push(
-      block('text', {
-        content: `# ${title}\nVælg din World of Warcraft class og opløsning nedenfor. Den korrekte tekststreng sendes privat.`
-      }),
+      block('text', { content: `# ${title}\nVælg din World of Warcraft class og opløsning nedenfor. Den korrekte tekststreng sendes privat.` }),
       block('separator', { divider: true, spacing: 2 }),
       block('profile_select', { placeholder: 'Vælg class og opløsning…' })
     );
@@ -98,9 +171,7 @@ export function createBuilderTemplate(templateKey = 'blank', title = 'Informatio
 
   if (templateKey === 'merfin_open_list') {
     builder.blocks.push(
-      block('text', {
-        content: `# ${title}\nOversigt over de tilgængelige World of Warcraft class- og opløsningsprofiler.`
-      }),
+      block('text', { content: `# ${title}\nOversigt over de tilgængelige World of Warcraft class- og opløsningsprofiler.` }),
       block('separator', { divider: true, spacing: 2 }),
       block('profile_open_list')
     );
@@ -112,38 +183,27 @@ export function createBuilderTemplate(templateKey = 'blank', title = 'Informatio
 
 export function migrateLegacyPostToBuilder(post) {
   if (post?.builder?.blocks && post?.builder?.actions) {
-    return post.builder;
+    return normalizeBuilderStructure(post.builder, { preserveLegacyAppearance: true });
   }
 
-  const builder = {
-    schemaVersion: 1,
-    mode: 'components_v2',
-    accentColor: Number.isInteger(post?.accentColor)
-      ? post.accentColor
-      : Number.isInteger(post?.color)
-        ? post.color
-        : DEFAULT_ACCENT_COLOR,
-    blocks: [],
-    actions: {}
-  };
+  const builder = baseBuilder();
+  builder.accentColor = Number.isInteger(post?.accentColor)
+    ? post.accentColor
+    : Number.isInteger(post?.color)
+      ? post.color
+      : DEFAULT_ACCENT_COLOR;
 
   const heading = post?.heading || post?.title || post?.forumTitle || 'Information';
-
+  const children = [];
   if (post?.bannerUrl) {
-    builder.blocks.push(block('image', {
-      url: post.bannerUrl,
-      description: `${heading} header banner`
-    }));
+    children.push(block('image', { url: post.bannerUrl, description: `${heading} header banner` }));
   }
-
   const description = post?.description || '';
-  builder.blocks.push(
-    block('text', {
-      content: `# ${heading}${description ? `\n${description}` : ''}`
-    }),
+  children.push(
+    block('text', { content: `# ${heading}${description ? `\n${description}` : ''}` }),
     block('separator', { divider: true, spacing: 2 }),
     block('profile_select', { placeholder: 'Vælg class og opløsning…' })
   );
-
+  builder.blocks.push(container('Migrated post', builder.accentColor, children));
   return builder;
 }
