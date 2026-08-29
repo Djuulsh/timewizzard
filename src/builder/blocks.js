@@ -1,7 +1,8 @@
 import { makeShortId } from './ids.js';
+import { findBuilderBlock, totalBuilderBlocks } from './schema.js';
 
-export function makeContainerBlock({ label = 'New embed', accentColor = 0xF1C40F } = {}) {
-  return { id: makeShortId(3), type: 'container', label, accentColor };
+export function makeContainerBlock({ label = 'New container', accentColor = 0xF1C40F, children = [] } = {}) {
+  return { id: makeShortId(3), type: 'container', label, accentColor, collapsed: false, children: structuredClone(children) };
 }
 
 export function makeTextBlock(content) {
@@ -32,6 +33,19 @@ export function makeThumbnailBlock({ text, url, description = '', spoiler = fals
     url,
     description,
     spoiler: Boolean(spoiler)
+  };
+}
+
+export function makeYoutubeBlock({ url, title = 'YouTube video', description = '', showThumbnail = true, showButton = true, buttonLabel = 'Watch on YouTube' } = {}) {
+  return {
+    id: makeShortId(3),
+    type: 'youtube',
+    url: String(url || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ').trim(),
+    title: String(title || 'YouTube video').trim(),
+    description: String(description || '').trim(),
+    showThumbnail: Boolean(showThumbnail),
+    showButton: Boolean(showButton),
+    buttonLabel: String(buttonLabel || 'Watch on YouTube').trim()
   };
 }
 
@@ -143,21 +157,14 @@ function cloneActionTree(builder, actionId, seen = new Map()) {
   return id;
 }
 
-export function duplicateBuilderBlock(builder, blockId) {
-  const index = builder.blocks.findIndex((block) => block.id === blockId);
-  if (index < 0) throw new Error('Blocket findes ikke længere.');
-  if (builder.blocks.length >= 25) throw new Error('Builderen kan højst have 25 blocks.');
-
-  const copy = structuredClone(builder.blocks[index]);
+function cloneContentBlock(builder, source, seen) {
+  const copy = structuredClone(source);
   copy.id = makeShortId(3);
-  const seen = new Map();
-
   if (copy.actionId) {
     const nextActionId = cloneActionTree(builder, copy.actionId, seen);
     if (!nextActionId) throw new Error('Blockets action kunne ikke duplikeres.');
     copy.actionId = nextActionId;
   }
-
   if (Array.isArray(copy.options)) {
     copy.options = copy.options.map((option) => {
       if (!option.actionId) return option;
@@ -166,7 +173,25 @@ export function duplicateBuilderBlock(builder, blockId) {
       return { ...option, actionId: nextActionId };
     });
   }
+  return copy;
+}
 
-  builder.blocks.splice(index + 1, 0, copy);
+export function duplicateBuilderBlock(builder, blockId) {
+  const found = findBuilderBlock(builder, blockId);
+  if (!found) throw new Error('Blocket findes ikke længere.');
+  if (totalBuilderBlocks(builder) >= 75) throw new Error('Builderen har nået den samlede block-grænse.');
+  const seen = new Map();
+  let copy;
+  if (found.block.type === 'container') {
+    copy = {
+      ...structuredClone(found.block),
+      id: makeShortId(3),
+      label: `${found.block.label || 'Container'} copy`.slice(0, 80),
+      children: (found.block.children || []).map((child) => cloneContentBlock(builder, child, seen))
+    };
+  } else {
+    copy = cloneContentBlock(builder, found.block, seen);
+  }
+  found.list.splice(found.index + 1, 0, copy);
   return copy;
 }
