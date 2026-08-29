@@ -170,6 +170,15 @@ function blockToComponents(block, scope) {
   }
 }
 
+export function allowedMentionsFor(entity) {
+  const policy = entity?.mentionPolicy;
+  if (policy?.mode !== 'selected') return { parse: [], replied_user: false };
+  const snowflake = /^\d{16,22}$/;
+  const users = [...new Set((Array.isArray(policy.users) ? policy.users : []).map(String).filter((id) => snowflake.test(id)))].slice(0, 100);
+  const roles = [...new Set((Array.isArray(policy.roles) ? policy.roles : []).map(String).filter((id) => snowflake.test(id)))].slice(0, 100);
+  return { parse: [], users, roles, replied_user: false };
+}
+
 export function getBuilderStats(entity, scope = { kind: 'd', id: 'preview' }) {
   const components = entity.builder.blocks.flatMap((block) => blockToComponents(block, scope));
   if (components.length === 0) return { blockCount: 0, componentCount: 0, textLength: 0, messageCount: 0 };
@@ -223,9 +232,10 @@ export function buildBuilderPayloads(entity, scope) {
   }
   if (current.length > 0) groups.push(current);
 
+  const allowedMentions = allowedMentionsFor(entity);
   return groups.map((group) => ({
     flags: MessageFlags.IsComponentsV2,
-    allowedMentions: { parse: [] },
+    allowedMentions,
     components: [{ type: 17, accent_color: entity.builder.accentColor, components: group }]
   }));
 }
