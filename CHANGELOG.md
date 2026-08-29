@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.3.1
+
+### Bot identity
+- Added Web Builder controls for the bot's server-specific display name.
+- Added an explicitly confirmed global identity section for changing the Discord bot username and avatar/logo.
+- Global identity changes are kept separate because Discord rate-limits username/avatar updates and they affect every server using the bot.
+- Live Discord preview now reflects the current bot display name and avatar.
+
+### Discord Insert picker
+- Added a reusable **Discord Insert** control to Markdown-enabled Builder fields.
+- Added searchable People, Roles, Channels, Timewizzard Posts, Emojis and Timestamp tabs.
+- Channel and role/user selections insert native Discord mention syntax at the current cursor position.
+- Timewizzard forum posts insert as thread/channel mentions while normal-channel posts insert as named Discord message links.
+- Added **Open in Discord** and **Copy post link** actions for published posts.
+
+### Emoji and timestamp tools
+- Added server custom emoji browsing with image previews, including animated emoji.
+- Added common Unicode emoji browsing plus browser-local favorites and recently used ordering.
+- Added a Discord timestamp picker with local date/time input and Discord display styles, including relative time.
+
+### Safe mentions and autocomplete
+- Mentions remain **display only / no ping** by default.
+- Added an explicit **Notify whitelisted people/roles** mode; only individually selected users and roles can be allowed to notify.
+- `@`, `#` and `:` autocomplete now provides quick insertion for known people/roles, channels and emojis inside Builder textareas.
+- Publishing uses `allowed_mentions` with no automatic `@everyone`/`@here` parsing.
+
+### Compatibility
+- Existing v1.3 Builder data remains compatible; mention policy is additive and defaults to safe display-only behavior.
+- The Discord member picker uses members already known to the bot and always supports direct User ID insertion when the bot does not have the privileged Server Members intent.
+
 ## 1.3.0
 
 ### Reliability and post lifecycle
