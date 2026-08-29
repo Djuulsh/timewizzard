@@ -1,0 +1,52 @@
+name: Promote v1.6.2
+
+on:
+  push:
+    branches: ['feature/v1.6.2-ui-foundation']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-promote:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release candidate
+        uses: actions/checkout@v4
+        with:
+          ref: feature/v1.6.2-ui-foundation
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.17.0
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Validate release candidate
+        run: npm run validate
+
+      - name: Verify migration is complete
+        run: |
+          test ! -e scripts/apply-v162-upgrade.mjs
+          test ! -e .github/workflows/apply-v162-upgrade.yml
+          grep -q "1.6.2" src/version.js
+
+      - name: Remove one-time release gate
+        run: |
+          rm -f .github/workflows/promote-v162.yml package-lock.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Finalize Timewizzard v1.6.2 release"
+          fi
+
+      - name: Fast-forward feature branch and main
+        run: |
+          git push origin HEAD:feature/v1.6.2-ui-foundation
+          git push origin HEAD:main
