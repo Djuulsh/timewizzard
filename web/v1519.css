@@ -1,0 +1,105 @@
+/* Timewizzard v1.5.19 — responsive editor UX */
+
+/* Shared context-aware Markdown toolbar. Old per-field toolbars are hidden; the
+   single active toolbar follows whichever supported field currently has focus. */
+#inspector .markdown-toolbar:not(.v1519-context-toolbar){display:none!important}
+#inspector .v1519-context-toolbar{display:flex!important;flex-wrap:wrap;align-items:center;gap:6px;width:100%;margin:7px 0 9px!important;padding:7px;border:1px solid var(--line-soft);border-radius:8px;background:#11141a;overflow:visible!important}
+#inspector .v1519-context-toolbar.hidden{display:none!important}
+.v1519-toolbar-caption{flex:0 0 auto;color:#9ca4af;font-size:8px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;padding:0 3px}
+.v1519-toolbar-actions{display:flex;flex:1 1 280px;flex-wrap:wrap;gap:4px;min-width:0}
+.v1519-context-toolbar .toolbar-btn{flex:0 0 auto;min-height:30px;padding:5px 7px;white-space:nowrap}
+.v1519-context-toolbar .v1519-discord-insert{margin-left:auto;border-color:rgba(88,101,242,.45)!important;background:rgba(88,101,242,.08)!important;color:#d9dcff!important}
+.v1519-markdown-enabled{scroll-margin-top:110px}
+.v1519-markdown-active{outline-color:transparent}
+.v1519-responsive-editor-ux .v1513-fact-value-tools{display:none!important}
+
+/* Inspector width — not viewport width — decides how controls reorganize. */
+.inspector-column{container-type:inline-size;container-name:tw-inspector}
+
+/* Heading priority: Title owns most of the row; Level is compact; Emoji is
+   medium-sized. This overrides the older fixed 250px control allocation. */
+.v154-heading-primary-grid{grid-template-columns:minmax(220px,1fr) minmax(185px,235px)!important;gap:10px!important;align-items:end}
+.v154-heading-controls{grid-template-columns:72px minmax(105px,1fr)!important;gap:7px!important;min-width:0}
+.v154-heading-controls .v151-heading-emoji-button{min-width:0!important}
+
+/* Structured editors keep explicit columns while enough Inspector width exists. */
+.v1513-fact-row,.v1513-facts-column-head{grid-template-columns:minmax(105px,.72fr) minmax(0,1.28fr) 92px!important}
+.v1517-button-item,.v1517-button-columns{grid-template-columns:minmax(105px,.72fr) minmax(0,1.28fr) 92px!important}
+
+@container tw-inspector (max-width: 640px){
+  .v154-heading-primary-grid{grid-template-columns:1fr!important}
+  .v154-heading-controls{grid-template-columns:88px minmax(0,1fr)!important}
+
+  .v1513-facts-column-head,.v1517-button-columns{display:none!important}
+  .v1513-fact-row,.v1517-button-item{grid-template-columns:minmax(0,1fr) 40px!important;gap:7px!important}
+  .v1513-fact-label-cell,.v1513-fact-value-cell,.v1517-button-label-cell,.v1517-button-url-cell{grid-column:1!important}
+  .v1513-fact-row-actions,.v1517-button-actions{grid-column:2!important;grid-row:1 / span 2!important;grid-template-columns:1fr!important;align-content:start;width:40px!important}
+  .v1513-fact-row label>span,.v1517-button-item label>span{display:block!important;margin-bottom:4px;color:var(--muted);font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+
+  .v150-inline-fields{grid-template-columns:1fr!important}
+  .v150-triple-fields{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .v153-inspector-head{grid-template-columns:28px minmax(0,1fr)!important;align-items:start!important}
+  .v153-inspector-head-actions{grid-column:2!important;justify-content:flex-start!important}
+}
+
+@container tw-inspector (max-width: 430px){
+  .v154-heading-controls{grid-template-columns:1fr!important}
+  .v1513-fact-row,.v1517-button-item{grid-template-columns:1fr!important}
+  .v1513-fact-row-actions,.v1517-button-actions{grid-column:1!important;grid-row:auto!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;width:100%!important;padding-top:0!important}
+  .v150-triple-fields{grid-template-columns:1fr!important}
+  .v1519-toolbar-caption{flex-basis:100%}
+  .v1519-toolbar-actions{flex-basis:100%}
+  .v1519-context-toolbar .v1519-discord-insert{margin-left:0}
+}
+
+/* Editor header: no horizontal scrolling. Important authoring controls stay
+   visible; secondary Discord navigation can move into More on narrow builders. */
+.builder{container-type:inline-size;container-name:tw-builder}
+.v152-editor-head.v1519-responsive-editor-head{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;align-items:center!important;gap:10px!important;overflow:visible!important}
+.v1519-responsive-editor-head .title-editor{flex:1 1 330px!important;min-width:min(100%,240px)!important;max-width:none!important;width:auto!important}
+.v1519-responsive-editor-head .editor-actions{display:flex!important;flex:1 1 520px!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-end!important;gap:6px!important;width:auto!important;min-width:0!important;overflow:visible!important}
+.v1519-history-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+.v1519-copy-direct{display:none!important}
+.v1519-more-open-proxy{display:none!important}
+.v1519-more-copy-proxy:not(.hidden){display:flex!important}
+.v1519-responsive-editor-head .editor-actions>.btn,
+.v1519-responsive-editor-head .editor-actions>.v152-more-menu,
+.v1519-responsive-editor-head .v1519-history-actions{min-width:0}
+.v1519-responsive-editor-head .title-subrow{min-width:0;flex-wrap:wrap}
+.v1519-responsive-editor-head #editorMeta{min-width:0;overflow-wrap:anywhere}
+
+@container tw-builder (max-width: 900px){
+  .v1519-responsive-editor-head .title-editor{flex-basis:100%!important;width:100%!important}
+  .v1519-responsive-editor-head .editor-actions{flex-basis:100%!important;justify-content:flex-start!important}
+  .v1519-secondary-direct{display:none!important}
+  .v1519-more-open-proxy:not(.hidden){display:flex!important}
+}
+
+@container tw-builder (max-width: 650px){
+  .v1519-responsive-editor-head .editor-actions{display:grid!important;grid-template-columns:minmax(112px,1fr) auto auto!important;grid-template-rows:auto auto;gap:6px!important;width:100%!important}
+  .v1519-responsive-editor-head #v152AddBlockBtn{grid-column:1;grid-row:1;width:100%!important;min-width:0!important}
+  .v1519-responsive-editor-head #saveBtn{grid-column:2;grid-row:1}
+  .v1519-responsive-editor-head #publishBtn{grid-column:3;grid-row:1;min-width:0!important;white-space:nowrap}
+  .v1519-responsive-editor-head .v1519-history-actions{grid-column:1 / span 2;grid-row:2;justify-self:start}
+  .v1519-responsive-editor-head #v152MoreMenu{grid-column:3;grid-row:2;justify-self:end}
+  .v1519-responsive-editor-head .v1519-history-actions .btn{min-width:42px;padding-left:8px!important;padding-right:8px!important;font-size:0}
+  .v1519-responsive-editor-head #undoBtn::before{content:'↶';font-size:15px}
+  .v1519-responsive-editor-head #redoBtn::before{content:'↷';font-size:15px}
+}
+
+@container tw-builder (max-width: 430px){
+  .v1519-responsive-editor-head{padding-left:10px!important;padding-right:10px!important}
+  .v1519-responsive-editor-head .editor-actions{grid-template-columns:minmax(96px,1fr) auto auto!important}
+  .v1519-responsive-editor-head #publishBtn{padding-left:8px!important;padding-right:8px!important}
+  .v1519-responsive-editor-head .v152-add-main>small{max-width:90px!important}
+}
+
+/* Coarse-pointer devices need comfortable hit areas even when the visual UI stays compact. */
+@media(pointer:coarse){
+  #inspector .toolbar-btn,
+  #inspector .mini-btn,
+  #inspector button,
+  .v1519-responsive-editor-head .btn,
+  .v1519-responsive-editor-head .v152-more-menu>summary{min-height:40px}
+  .v1513-fact-row-actions,.v1517-button-actions{gap:5px}
+}
