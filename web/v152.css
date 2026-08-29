@@ -1,0 +1,70 @@
+/* Timewizzard v1.5.2 — sticky editor header and Add Block picker */
+
+.add-block[aria-hidden="true"]{display:none!important}
+.block-list:empty::before{content:"No blocks yet. Use + Add block in the editor header."}
+
+.v152-editor-head{position:sticky;top:0;z-index:24;margin:-16px -16px 14px!important;padding:12px 16px!important;align-items:center!important;background:rgba(21,24,30,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)!important;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.v152-editor-head .title-editor{min-width:220px;max-width:520px}
+.v152-editor-head .editor-actions{align-items:center;flex-wrap:nowrap;gap:6px}
+.v152-add-main{display:grid!important;grid-template-columns:auto;gap:0!important;min-width:112px;text-align:left;padding:7px 10px!important;line-height:1.1}
+.v152-add-main>span{font-size:12px;font-weight:800;white-space:nowrap}
+.v152-add-main>small{font-size:8px;font-weight:650;opacity:.78;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;margin-top:2px}
+
+.v152-more-menu{position:relative}
+.v152-more-menu>summary{list-style:none;white-space:nowrap;user-select:none}
+.v152-more-menu>summary::-webkit-details-marker{display:none}
+.v152-more-menu[open]>summary{border-color:#4e5665;background:var(--panel-3)}
+.v152-more-panel{position:absolute;right:0;top:calc(100% + 7px);z-index:80;width:210px;padding:8px;border:1px solid var(--line);border-radius:10px;background:#15181e;box-shadow:0 18px 50px rgba(0,0,0,.42)}
+.v152-more-panel>strong{display:block;padding:4px 6px 7px;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.08em}
+.v152-more-actions{display:grid;gap:4px}
+.v152-more-action{width:100%;text-align:left!important;justify-content:flex-start!important;background:transparent!important}
+.v152-more-action.btn.danger{margin-top:5px;border-top-color:rgba(237,66,69,.35)}
+
+.v152-add-dialog{width:min(840px,calc(100vw - 28px));max-height:min(760px,calc(100vh - 28px));padding:0!important;overflow:hidden}
+.v152-add-dialog::backdrop{background:rgba(0,0,0,.62);backdrop-filter:blur(2px)}
+.v152-add-shell{display:grid;grid-template-rows:auto auto auto auto minmax(150px,1fr) auto;gap:0;max-height:min(760px,calc(100vh - 28px));background:var(--panel)}
+.v152-add-shell>.dialog-head{padding:15px 16px 12px;border-bottom:1px solid var(--line-soft)}
+.v152-add-shell>.dialog-head h2{margin:0 0 3px;font-size:16px}
+.v152-add-toolbar{display:grid;grid-template-columns:minmax(180px,.75fr) minmax(260px,1.25fr);gap:10px;padding:12px 16px 10px}
+.v152-add-toolbar label{display:grid;gap:5px;color:var(--muted);font-size:10px;font-weight:750}
+.v152-add-toolbar input,.v152-add-toolbar select{height:36px;padding:7px 9px}
+.v152-add-categories{display:flex;gap:6px;overflow-x:auto;padding:2px 16px 10px;scrollbar-width:thin}
+.v152-add-categories button{flex:0 0 auto;border:1px solid var(--line);background:#11141a;color:var(--muted);border-radius:999px;padding:6px 10px;font-size:9px;font-weight:750;cursor:pointer}
+.v152-add-categories button:hover,.v152-add-categories button.active{border-color:var(--accent);background:rgba(88,101,242,.13);color:var(--text)}
+.v152-add-result-head{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);background:#12151b}
+.v152-add-result-head strong{font-size:11px}
+.v152-add-result-head span{color:var(--muted);font-size:9px}
+.v152-add-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px 16px 16px;overflow:auto;align-content:start}
+.v152-add-card{position:relative;display:grid;grid-template-columns:42px minmax(0,1fr);gap:10px;align-items:center;min-height:76px;padding:10px 66px 10px 10px;border:1px solid var(--line);border-radius:10px;background:#11141a;color:var(--text);text-align:left;cursor:pointer;transition:.12s ease}
+.v152-add-card:hover{border-color:var(--accent);background:rgba(88,101,242,.09);transform:translateY(-1px)}
+.v152-add-icon{display:grid;place-items:center;width:40px;height:40px;border:1px solid var(--line-soft);border-radius:9px;background:#1b1f27;font-size:20px}
+.v152-add-copy{display:grid;gap:3px;min-width:0}
+.v152-add-copy strong{font-size:11px;line-height:1.2}
+.v152-add-copy small{color:#9ea5b1;font-size:9px;line-height:1.4}
+.v152-add-card>i{position:absolute;right:8px;top:8px;font-style:normal;border:1px solid var(--line-soft);border-radius:999px;padding:2px 5px;background:#0e1116;color:#858d99;font-size:6.5px;font-weight:850;text-transform:uppercase;letter-spacing:.05em}
+.v152-add-empty{grid-column:1/-1;padding:32px 14px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center;font-size:10px}
+.v152-add-shell>.dialog-actions{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line-soft);padding:10px 16px;background:#12151b}
+.v152-add-hint{color:var(--muted);font-size:8.5px}
+
+@media(max-width:1120px){
+  .v152-editor-head{align-items:flex-start!important;flex-direction:column}
+  .v152-editor-head .title-editor{max-width:none;width:100%}
+  .v152-editor-head .editor-actions{width:100%;justify-content:flex-start;flex-wrap:wrap}
+}
+@media(max-width:760px){
+  .v152-editor-head{position:sticky;padding:10px 12px!important;margin:-16px -16px 12px!important}
+  .v152-editor-head .editor-actions{display:grid;grid-template-columns:1.4fr repeat(3,auto) auto;gap:5px}
+  .v152-add-main{min-width:0;width:100%}
+  .v152-add-main>small{max-width:110px}
+  .v152-more-menu{justify-self:end}
+  .v152-more-panel{position:fixed;right:10px;top:122px;width:min(260px,calc(100vw - 20px))}
+  .v152-add-dialog{width:calc(100vw - 10px);max-height:calc(100vh - 10px)}
+  .v152-add-shell{max-height:calc(100vh - 10px)}
+  .v152-add-toolbar{grid-template-columns:1fr;padding:10px 12px 8px}
+  .v152-add-categories{padding:2px 12px 9px}
+  .v152-add-result-head{padding:8px 12px}
+  .v152-add-grid{grid-template-columns:1fr;padding:10px 12px 14px}
+  .v152-add-card{min-height:72px}
+  .v152-add-shell>.dialog-actions{padding:9px 12px}
+  .v152-add-hint{display:none}
+}
