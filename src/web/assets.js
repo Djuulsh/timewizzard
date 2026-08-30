@@ -22,7 +22,8 @@ export const WEB_SCRIPT_FILES = Object.freeze([
   'v1518.js',
   'v1519.js',
   'v162.js',
-  'v163.js'
+  'v163.js',
+  'quickAnnouncements.js'
 ]);
 
 export const WEB_STYLE_FILES = Object.freeze([
@@ -48,5 +49,6 @@ export const WEB_STYLE_FILES = Object.freeze([
   'v1518.css',
   'v1519.css',
   'v162.css',
-  'v163.css'
+  'v163.css',
+  'quickAnnouncements.css'
 ]);
