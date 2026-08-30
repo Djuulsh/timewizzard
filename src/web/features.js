@@ -24,7 +24,7 @@ export const WEB_FEATURES = Object.freeze([
   'discord-post-links',
   'global-block-search',
   'global-template-search',
-  'template-catalog-35',
+  'template-catalog-38',
   'structured-button-row-editor',
   'wrap-safe-info-list',
   'context-aware-markdown-toolbar',
@@ -49,5 +49,8 @@ export const WEB_FEATURES = Object.freeze([
   'compact-edit-header',
   'inspector-priority-width',
   'single-posts-entry-point',
-  'top-layer-app-menu'
+  'top-layer-app-menu',
+  'quick-announcement-template-family',
+  'new-draft-single-scroll',
+  'uniform-template-badges'
 ]);
