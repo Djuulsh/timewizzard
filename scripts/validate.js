@@ -140,7 +140,10 @@ for (const template of POST_TEMPLATES) {
   validateBuilder(builder);
   if (builder.blocks.length) {
     const stats = getBuilderStats(makeEntity(`tpl-${template.value}`, template.value, builder), { kind: 'd', id: `tpl-${template.value}` });
-    if (stats.messageCount !== 1) throw new Error(`${template.value} template should fit one Discord message by default.`);
+    const expectedMessageCount = template.value === 'merfin_tbc_weakauras' ? 2 : 1;
+    if (stats.messageCount !== expectedMessageCount) {
+      throw new Error(`${template.value} template should render as ${expectedMessageCount} Discord message(s), received ${stats.messageCount}.`);
+    }
   }
 }
 
