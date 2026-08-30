@@ -23,6 +23,7 @@ import { ChannelFlags, ChannelType } from 'discord.js';
 import { destinationTypeForChannel, normalizeTagIds, validateDestination } from '../src/destinations.js';
 import { commands } from '../src/commands.js';
 import { createManagedPost } from '../src/postService.js';
+import { BotController, buildHelpContent, buildWebBuilderOverview } from '../src/controller.js';
 import { BUILDER_EXPORT_FORMAT, BUILDER_EXPORT_VERSION, MAX_BUILDER_IMPORT_BYTES, exportDefinition, parseBuilderDefinition, readBuilderAttachment } from '../src/builder/io.js';
 
 function makeEntity(id, title, builder, extra = {}) {
@@ -33,6 +34,22 @@ function addActionResult(builder, result, target = builder.blocks) {
   target.push(result.block);
   for (const action of result.actions ?? []) builder.actions[action.id] = action;
   return result;
+}
+
+const webBuilderOverview = buildWebBuilderOverview();
+const helpContent = buildHelpContent();
+if (webBuilderOverview.length > 2_000 || helpContent.length > 2_000) throw new Error('Discord help responses must stay within the 2000-character content limit.');
+if (!webBuilderOverview.includes(`Timewizzard Web Builder v${VERSION}`) || !webBuilderOverview.includes('Republish') || !webBuilderOverview.includes('Message split')) {
+  throw new Error('/webbuilder response must use the current version and publishing workflow.');
+}
+if (!helpContent.includes(`Timewizzard Info Bot v${VERSION}`) || /Shrouded|v1\.2\.1/.test(helpContent)) throw new Error('/hjaelp response contains obsolete branding or version information.');
+let webBuilderReply = null;
+const documentationController = new BotController({ client: null, store: null, config: { webEnabled: true, publicBaseUrl: 'https://timewizzard.example' } });
+await documentationController.showWebBuilder({ reply: async (payload) => { webBuilderReply = payload; } });
+const webBuilderButtons = webBuilderReply?.components?.[0]?.components ?? [];
+if (webBuilderReply?.content !== webBuilderOverview || webBuilderButtons.length !== 3) throw new Error('/webbuilder must return the current overview and three launch/documentation links.');
+if (!webBuilderButtons.some((button) => button.data?.url?.endsWith('/GUIDE_EN.md')) || !webBuilderButtons.some((button) => button.data?.url?.endsWith('/GUIDE_DA.md'))) {
+  throw new Error('/webbuilder must link both English and Danish operating guides.');
 }
 
 const plainBuilder = createBuilderTemplate('announcement_simple', 'Plain announcement');

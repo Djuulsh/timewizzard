@@ -32,7 +32,7 @@ for (const marker of [
   'font-style:normal!important'
 ]) assert(css.includes(marker), `Quick Announcement CSS contract missing: ${marker}`);
 
-for (const feature of ['template-catalog-38', 'quick-announcement-template-family', 'new-draft-single-scroll', 'uniform-template-badges']) {
+for (const feature of ['template-catalog-36', 'quick-announcement-template-family', 'new-draft-single-scroll', 'uniform-template-badges']) {
   assert(WEB_FEATURES.includes(feature), `Feature registry missing ${feature}.`);
 }
 

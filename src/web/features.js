@@ -29,7 +29,7 @@ export const WEB_FEATURES = Object.freeze([
   'discord-post-links',
   'global-block-search',
   'global-template-search',
-  'template-catalog-38',
+  'template-catalog-36',
   'structured-button-row-editor',
   'wrap-safe-info-list',
   'context-aware-markdown-toolbar',

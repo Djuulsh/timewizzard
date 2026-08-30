@@ -31,6 +31,7 @@ import {
   truncate
 } from './utils.js';
 import { validateDestination } from './destinations.js';
+import { VERSION } from './version.js';
 import {
   makeImageBlock,
   makeLinkBlock,
@@ -144,6 +145,49 @@ function interactionTagIds(interaction) {
   return [...new Set(Array.from({ length: 5 }, (_, index) =>
     interaction.options.getString(index === 0 ? 'tag' : `tag${index + 1}`, false)?.trim()
   ).filter(Boolean))];
+}
+
+export function buildWebBuilderOverview() {
+  return [
+    `## Timewizzard Web Builder v${VERSION}`,
+    'Åbn den Discord OAuth-beskyttede Builder for at oprette, redigere og publicere Components V2-opslag.',
+    '',
+    '- Forum-, tekst-, announcement- og eksisterende forum-post-destinationer.',
+    '- Op til fem tags vises kun for forumkanaler.',
+    '- Destinationer gemmes som afventende ændringer og anvendes først ved **Republish**.',
+    '- Message split vælges og valideres under **Publish / Republish**.',
+    '- JSON import/export, lange String Select-værdier som private TXT-filer og direkte ZIP-downloadknapper.'
+  ].join('\n');
+}
+
+export function buildHelpContent() {
+  return [
+    `## Timewizzard Info Bot v${VERSION} — Discord + Web Builder`,
+    '',
+    '**Post Builder**',
+    '`/post opret` — lav en kladde, vælg destination, op til fem forum-tags og evt. template.',
+    '`/post rediger` — åbn builderen for en kladde eller publiceret post.',
+    '`/post opdater` — send gemte builder-ændringer til Discord.',
+    '`/post eksporter` — download builderen som JSON.',
+    '`/post importer` — indlæs en builder-JSON som ny kladde.',
+    '`/post slet` — slet en kladde eller publiceret post med bekræftelse.',
+    '`/post klon` — klon en kladde eller publiceret post til en ny kladde.',
+    '`/post liste` — se kladder og publicerede posts.',
+    '',
+    '**Builder-indhold**',
+    'Plain content og valgfrie Containers kan blandes i samme opslag. Web Builderen indeholder tekst, headings, billeder, callouts, facts, events, countdowns, knapper, galleries, selects og flere smart blocks.',
+    '',
+    '**Class-strenge**',
+    '`/profil gem` / `importer` / `vis` / `slet` / `liste` administrerer class- og opløsningsstrenge.',
+    '',
+    '**Web Builder**',
+    '`/webbuilder` — åbner Railway-hostet drag-and-drop builder med Discord OAuth.',
+    'Save gemmer kun Builder-data. **Publish / Republish** viser review, Message split og den afventende destination, før Discord ændres.',
+    'Destination understøtter forum-, tekst- og announcement-kanaler samt eksisterende forum-posts. Tags er kun tilgængelige for forumkanaler.',
+    'JSON kan importeres/eksporteres. Lange String Select-værdier leveres privat som UTF-8 TXT-filer.',
+    '',
+    'Dansk og engelsk guide findes via knapperne i `/webbuilder`.'
+  ].join('\n');
 }
 
 export class BotController {
@@ -1121,10 +1165,18 @@ export class BotController {
       new ButtonBuilder()
         .setLabel('Åbn Web Builder')
         .setStyle(ButtonStyle.Link)
-        .setURL(`${this.config.publicBaseUrl}/auth/discord`)
+        .setURL(`${this.config.publicBaseUrl}/auth/discord`),
+      new ButtonBuilder()
+        .setLabel('Dansk guide')
+        .setStyle(ButtonStyle.Link)
+        .setURL('https://github.com/Djuulsh/timewizzard/blob/main/GUIDE_DA.md'),
+      new ButtonBuilder()
+        .setLabel('English guide')
+        .setStyle(ButtonStyle.Link)
+        .setURL('https://github.com/Djuulsh/timewizzard/blob/main/GUIDE_EN.md')
     );
     await interaction.reply({
-      content: '## Shrouded Web Builder v1.2.1\nÅbn den sikre Discord OAuth-beskyttede builder. Her kan du bruge ægte drag-and-drop og side-by-side preview.',
+      content: buildWebBuilderOverview(),
       components: [row],
       flags: MessageFlags.Ephemeral,
       allowedMentions: { parse: [] }
@@ -1132,34 +1184,7 @@ export class BotController {
   }
 
   async showHelp(interaction) {
-    const content = [
-      '## Shrouded Info Bot v1.2.1 — Discord + Web Builder',
-      '',
-      '**Post Builder**',
-      '`/post opret` — lav en kladde, vælg destination og evt. template.',
-      '`/post rediger` — åbn builderen for en kladde eller publiceret post.',
-      '`/post opdater` — send gemte builder-ændringer til Discord.',
-      '`/post eksporter` — download builderen som JSON.',
-      '`/post importer` — indlæs en builder-JSON som ny kladde.',
-      '`/post slet` — slet kladde eller forum-post med bekræftelse.',
-      '`/post klon` — klon en kladde eller publiceret post til en ny kladde.',
-      '`/post liste` — se kladder og publicerede posts.',
-      '',
-      '**Builder blocks**',
-      'Tekst · Billede/banner · Separator · Open + ephemeral · Link · Select + ephemeral · MerfinUI compact select · legacy Open-liste.',
-      'Vælg et block → **Rediger / Flyt / Duplikér / Slet**. Flyt vælger den endelige position direkte.',
-      'På MerfinUI-blocks åbner **Profiler** den direkte editor for alle 18 class/resolution-strenge.',
-      '',
-      '**Class-strenge**',
-      '`/profil gem` / `importer` / `vis` / `slet` / `liste` fungerer som før.',
-      '',
-      '',
-      '**Web Builder**',
-      '`/webbuilder` — åbner Railway-hostet drag-and-drop builder med Discord OAuth.',
-      'Web Builder og Discord-builderen bruger det samme dataformat og samme Railway Volume.',
-      '',
-      'Tip: Erstat legacy **MerfinUI Open-liste** med **MerfinUI compact select** for at få alle 18 class/resolution-valg i én dropdown og normalt holde opslaget i én Discord-besked.'
-    ].join('\n');
+    const content = buildHelpContent();
 
     await interaction.reply({
       content,

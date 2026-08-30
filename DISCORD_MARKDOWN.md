@@ -1,4 +1,4 @@
-# Discord Markdown in Timewizzard v1.3.0
+# Discord Markdown in Timewizzard v1.6.4
 
 Timewizzard publishes text through Discord Components V2 `Text Display` components. Discord itself remains authoritative for final rendering, while Web Builder previews the supported syntax.
 
@@ -39,7 +39,7 @@ __***underline bold italic***__
 
 ## Multi-line quote escape
 
-Discord `>>>` continues quoting the rest of the same Text Display. Timewizzard v1.3.0 adds a builder-only escape marker:
+Discord `>>>` continues quoting the rest of the same Text Display. Timewizzard supports a builder-only escape marker:
 
 ```text
 >>> This starts a multi-line quote

@@ -1,5 +1,7 @@
 # Opgradering: v1.1 / v1.1.1 → v1.2.0
 
+> **Historisk migrationsreference:** Trinnene nedenfor gælder kun opgradering fra v1.1 til v1.2. Brug [README.md](README.md) og [GUIDE_DA.md](GUIDE_DA.md) til den aktuelle v1.6.4-konfiguration og arbejdsgang.
+
 v1.2 kan deployes direkte oven på både v1.1 og v1.1.1. v1.1-data migreres automatisk til storage version 3, og eksisterende profile-strenge/posts bevares. Hvis du allerede kører v1.1.1, bruges samme storage version uden ekstra migration.
 
 ## 1. Backup

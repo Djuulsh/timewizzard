@@ -13,11 +13,11 @@ Timewizzard creates, previews, publishes and maintains structured information po
 - Desktop, tablet and phone layouts with desktop/mobile preview widths.
 - Undo/Redo, revision history, local crash recovery and pre-publish review.
 - Safe mentions, Discord user/role/channel insertion, emoji browser and timestamp picker.
-- Deleted-target detection, Re-create and destination repair/move workflows.
-- New posts can use up to five forum tags, and existing forum posts can receive a separately managed Timewizzard message.
+- Deleted-target detection and safe Republish/recovery workflows. Destination changes are staged and do not alter Discord until Publish or Republish is confirmed.
+- New posts can use up to five forum tags, shown only for forum destinations, and existing forum posts can receive a separately managed Timewizzard message.
 - DiscoHook JSON import and round-trip Builder JSON import/export in both Discord and the Web Builder (up to 20 MB).
 - Legacy MerfinUI and TBC ZIP selectors migrate to direct Discord download buttons.
-- Configurable Discord message splitting: automatic, one message per top-level block/container, or an exact valid message count.
+- Configurable Discord message splitting in the Publish/Republish review: automatic, one message per top-level block/container, or an exact valid message count.
 - Discord OAuth access control for the Web Builder.
 
 ## Long String Select TXT delivery
@@ -117,7 +117,7 @@ Railway persistent storage uses:
 /data/store.json.bak
 ```
 
-The current storage schema is v5 and the Builder schema is v2. Legacy layouts are migrated while preserving their published appearance.
+The current storage schema is v6 and the Builder schema is v2. Legacy layouts are migrated while preserving their published appearance.
 
 ## Local development
 
@@ -178,7 +178,7 @@ The response includes the live bot state, authoritative runtime version, Web Bui
   "webBuilder": true,
   "oauthLoginPath": "/auth/discord",
   "builderPath": "/builder",
-  "supportedDestinations": ["forum", "text", "announcement"]
+  "supportedDestinations": ["forum", "forum-post", "text", "announcement"]
 }
 ```
 
@@ -203,6 +203,8 @@ The response includes the live bot state, authoritative runtime version, Web Bui
 /webbuilder
 ```
 
+`/webbuilder` returns a private, versioned launch panel with links to the OAuth-protected Builder and both operating guides. The current feature summary covers staged destinations, Publish/Republish review, configurable message splitting, JSON round trips, long TXT delivery and direct ZIP download buttons.
+
 ## Deleted Discord targets
 
 A Builder record is not removed merely because its Discord message, thread or destination disappears:
@@ -216,7 +218,7 @@ Deleted on Discord
       ↓
 Builder data remains editable
       ↓
-Re-create in the original or a new destination
+Republish in the original or a new destination
 ```
 
 Only the explicit Builder Delete action removes the persistent record.
@@ -246,6 +248,7 @@ GitHub Actions runs the same validation on pushes to `main` and `feature/**`. It
 
 Additional documentation:
 
+- [`GUIDE_EN.md`](GUIDE_EN.md) — English operating guide.
 - [`GUIDE_DA.md`](GUIDE_DA.md) — Danish operating guide.
 - [`DISCORD_MARKDOWN.md`](DISCORD_MARKDOWN.md) — supported Discord Markdown.
 - [`CHANGELOG.md`](CHANGELOG.md) — release history.

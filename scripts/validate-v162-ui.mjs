@@ -18,12 +18,34 @@ assert(readme.startsWith(`# Timewizzard Info Bot v${VERSION}`), 'README heading 
 assert(readme.includes(`> Current release: **v${VERSION}**`), 'README current release must match the authoritative runtime version.');
 assert(readme.includes('200,000 characters') && readme.includes('package-lock.json'), 'README must document long TXT delivery and reproducible installs.');
 assert(readme.includes('single-server mode') && readme.includes('Manage Server'), 'README must document the current Discord guild and permission model.');
+assert(readme.includes('storage schema is v6') && readme.includes('staged') && readme.includes('Publish/Republish review'), 'README must document the current storage and safe publishing workflow.');
+assert(readme.includes('[`GUIDE_EN.md`](GUIDE_EN.md)') && readme.includes('[`GUIDE_DA.md`](GUIDE_DA.md)'), 'README must link both operating guides.');
+
+const guideDa = read('GUIDE_DA.md');
+const guideEn = read('GUIDE_EN.md');
+for (const [name, guide] of [['Danish', guideDa], ['English', guideEn]]) {
+  assert(guide.startsWith(`# Timewizzard Info Bot v${VERSION}`), `${name} guide heading must match the current version.`);
+  for (const marker of ['Publish/Republish', '200.000', 'GUIDE_DA.md']) {
+    if (name === 'Danish' && marker === 'GUIDE_DA.md') continue;
+    assert(guide.includes(marker) || (name === 'English' && marker === '200.000' && guide.includes('200,000')), `${name} guide is missing ${marker}.`);
+  }
+}
+assert(guideDa.includes('GUIDE_EN.md') && guideEn.includes('GUIDE_DA.md'), 'The operating guides must cross-link.');
+assert(read('DISCORD_MARKDOWN.md').startsWith(`# Discord Markdown in Timewizzard v${VERSION}`), 'Markdown reference heading must match the current version.');
+assert(read('UPLOAD_TO_GITHUB_DA.md').includes('Historisk dokument') && read('UPGRADE_v1.2_DA.md').includes('Historisk migrationsreference'), 'Legacy setup documents must be clearly marked as historical.');
+assert(read('UI_QA_v1.6.2.md').includes('Versionsspecifik QA-reference'), 'Version-specific QA documentation must point to the current validation suite.');
+const changelog = read('CHANGELOG.md');
+assert(changelog.includes('## 1.6.4') && changelog.includes('Publishing safety and current documentation'), 'Changelog must cover the current release documentation and publishing flow.');
+const controller = read('src/controller.js');
+assert(controller.includes("from './version.js'") && controller.includes('buildWebBuilderOverview') && controller.includes('GUIDE_EN.md'), 'Discord help responses must use the current version and link the English guide.');
+assert(!controller.includes('Shrouded Web Builder v1.2.1') && !controller.includes('Shrouded Info Bot v1.2.1'), 'Discord responses must not contain obsolete branding or versions.');
 
 for (const file of WEB_SCRIPT_FILES) assert(fs.existsSync(path.join(root, 'web', file)), `Missing Web Builder script: ${file}`);
 for (const file of WEB_STYLE_FILES) assert(fs.existsSync(path.join(root, 'web', file)), `Missing Web Builder stylesheet: ${file}`);
 assert(WEB_SCRIPT_FILES.at(-1) === 'quickAnnouncements.js', 'Quick Announcement controller must be the final Web Builder script.');
 assert(WEB_STYLE_FILES.at(-1) === 'quickAnnouncements.css', 'Quick Announcement polish must be the final Web Builder stylesheet.');
 assert(new Set(WEB_FEATURES).size === WEB_FEATURES.length, 'Web feature registry contains duplicates.');
+assert(WEB_FEATURES.includes('template-catalog-36') && !WEB_FEATURES.includes('template-catalog-38'), 'Feature registry template count must match the validated catalogue.');
 
 const html = read('web/index.html');
 assert(!html.includes('v1.3.1'), 'The HTML shell must not expose the legacy v1.3.1 version.');

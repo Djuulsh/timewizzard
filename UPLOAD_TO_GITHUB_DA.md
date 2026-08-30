@@ -1,5 +1,7 @@
 # Upload hele v1.2.1 til GitHub
 
+> **Historisk dokument:** Denne vejledning beskriver den gamle v1.2.1-upload. Brug [README.md](README.md) og [GUIDE_DA.md](GUIDE_DA.md) til den aktuelle v1.6.4-installation og drift.
+
 Denne ZIP er **repository-ready**: `package.json`, `Dockerfile`, `src/`, `web/` osv. ligger direkte i ZIP-roden.
 Der er ingen ekstra `shrouded-info-bot/` undermappe.
 

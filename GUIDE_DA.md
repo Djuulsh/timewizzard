@@ -1,102 +1,96 @@
-# Shrouded Info Bot v1.2 — Web Builder guide
+# Timewizzard Info Bot v1.6.4 — Web Builder-guide
 
-## Arbejdsgangen
+> [English guide](GUIDE_EN.md) · [README](README.md)
 
-```text
-Discord /webbuilder
-        ↓
-Discord OAuth
-        ↓
-Web Builder på Railway
-        ↓
-Drag blocks + edit content
-        ↓
-Live preview
-        ↓
-Save
-        ↓
-Publish to Discord
-```
+Timewizzard bygger og vedligeholder Discord Components V2-opslag i forum-, tekst- og announcement-kanaler samt i eksisterende forum-posts. `/webbuilder` sender et privat startpanel med sikker Discord OAuth-login.
 
-Discord-builderen fra v1.1.1 eksisterer stadig og bruger samme data.
+## Adgang og tilladelser
 
-## Skærmens tre områder
+- Timewizzard kører aktuelt i single-server mode via `GUILD_ID`.
+- Brugeren skal have **Manage Server** (`ManageGuild`), Administrator eller være serverejer.
+- Botten skal kunne se destinationen, sende beskeder og læse beskedhistorik.
+- Nye forum-posts kræver **Create Public Threads**. Arkiverede eller låste posts kan også kræve **Manage Threads**.
 
-### Venstre: Posts
-Viser kladder og publicerede posts. En orange/ændret status betyder at builder-data er gemt, men den offentlige Discord-post endnu ikke er opdateret.
-
-### Midten: Builder + Inspector
-Her ligger alle blocks. Træk i `☰` for at ændre rækkefølgen.
-
-Under **Add block** kan du tilføje:
-
-- Text / Markdown
-- Image / banner
-- Separator
-- Open + ephemeral
-- Link button
-- Select + ephemeral
-- MerfinUI class/resolution select
-- Legacy MerfinUI Open List
-
-Klik på et block for at redigere det i Inspector.
-
-### Højre: Live Discord preview
-Previewet forsøger visuelt at efterligne Components V2 og beregner løbende om Discord-grænserne sandsynligvis tvinger posten over flere beskeder.
-
-## True drag-and-drop
-
-Desktop: klik/hold `☰`, træk blocket og slip det på den ønskede position.
-
-Touch/iPad: `☰` bruger Pointer Events som touch-fallback, så blocket kan flyttes med fingeren.
-
-## MerfinUI TXT
-
-Vælg `MerfinUI class/resolution select` i block-listen. Inspector viser alle 18 profiler.
-
-Klik eksempelvis:
+## Normal arbejdsgang
 
 ```text
-Warrior — FHD
+/webbuilder → Discord OAuth → Create draft → Edit → Save
+            → Publish review → Publish/Republish → Discord
 ```
 
-Du får en stor TXT-editor. Web-versionen er ikke begrænset af Discords 4.000-tegn modal, så lange genererede strings kan indsættes direkte.
+**Save** gemmer kun Builder-data. Discord ændres først, når du bekræfter **Publish** eller **Republish**.
 
-Den offentlige dropdown henter altid den seneste gemte værdi fra Railway storage.
+## Create draft
 
-## Save vs Publish
+1. Skriv en titel.
+2. Vælg en forum-, tekst- eller announcement-kanal eller en eksisterende forum-post.
+3. Forum-tags vises kun, når destinationen er en forumkanal. Der kan vælges op til fem.
+4. Vælg en af de 36 startskabeloner, eller begynd tomt.
 
-**Save** gemmer builder-data til Railway Volume.
+Quick Announcement-skabeloner giver en hurtig start, mens de øvrige kategorier dækker guides, events, onboarding, rekruttering, medier, WeakAuras og meget mere.
 
-På en allerede publiceret post bliver status derefter **Modified**. Den offentlige Discord-post ændrer sig først når du vælger **Publish changes**.
+## Arbejdsområdet
 
-Det giver en staging-lignende arbejdsgang:
+- **Posts** viser kladder og publicerede opslag. På mindre skærme åbnes listen som en drawer.
+- **Blocks** viser opslagets hierarki: `POST → valgfrie Containers → indholdsblokke`.
+- **Inspector** redigerer den valgte blok.
+- **Discord Preview** viser layoutet og kan skifte mellem desktop- og mobilbredde.
 
-```text
-Edit → Preview → Save → Publish
+Desktop understøtter drag-and-drop. På touch-enheder bruges tap-to-move. Undo/Redo, revisionshistorik og lokal crash recovery beskytter arbejdet under redigering.
+
+## Indhold og struktur
+
+Plain indhold og farvede Containers kan blandes i samme opslag. Web Builderen understøtter blandt andet Text, Heading, Image, Thumbnail, Separator, Callout, Checklist, Steps, Facts, Button Row, Event, Countdown, Code, Progress, Gallery, YouTube, selects og nested ephemeral actions.
+
+Preview-elementer kan vælges direkte for at åbne den tilhørende blok i Inspector. Markdown-værktøjer, emoji/mention-vælgere, timestamps, inline-validering og tegnoptællere hjælper med Discord-kompatibelt indhold.
+
+## Publish og Message split
+
+Publish/Republish-dialogen validerer den rigtige Discord-payload og viser destination, antal beskeder, blocks, komponenter, mentions og advarsler.
+
+Message split vælges i samme dialog:
+
+- **Automatic** bruger færrest mulige Discord-beskeder.
+- **One message per top-level block** starter hver top-level block eller Container i en ny besked.
+- **Choose exact number** accepterer et bestemt antal, når Discord-grænserne gør det muligt.
+
+## Destination og Republish
+
+Når Destination ændres på et publiceret opslag, gemmes valget som en afventende ændring. Den eksisterende Discord-post flyttes eller genskabes ikke med det samme.
+
+Ved **Republish** oprettes den nye destination først. Den gamle Discord-post ryddes først, når den nye publicering er lykkedes. Hvis publiceringen fejler, forbliver den gamle post intakt, og den afventende destination kan prøves igen.
+
+Hvis en Discord-message, thread eller destination slettes eksternt, bevarer Timewizzard Builder-data og tilbyder Republish til en gyldig destination.
+
+## JSON import og export
+
+**Export JSON** downloader hele Builder-definitionen. **Import Builder JSON** indlæser en nuværende eller understøttet legacy-export som en ny kladde. Maksimal fil/request-størrelse er 20 MB.
+
+DiscoHook JSON kan også importeres og konverteres til understøttede blokke.
+
+## Lange String Select-værdier
+
+En String Select-option kan indeholde op til **200.000 tegn**. Den faktiske textarea viser sin egen tegntæller og kan fyldes ved at indsætte tekst eller importere en UTF-8 `.txt`-fil.
+
+Når en Discord-bruger vælger optionen, modtager brugeren værdien privat som en UTF-8 `.txt`-vedhæftning. En test dækker komplette værdier på 100.000 tegn.
+
+## Download-knapper
+
+Kendte legacy-selects til `MerfinUI_v7.80.zip` og `TBC_AddOns.zip` migreres til direkte Discord-linkknapper. Nye downloads bør oprettes som Button Row-links frem for codestrings.
+
+## Lokal udvikling
+
+Kopiér `.env.local.example` til `.env.local`, tilføj lokale Discord/OAuth-værdier og kør:
+
+```bash
+npm ci
+npm run local
 ```
 
-## Clone
+Web Builderen åbnes via `http://127.0.0.1:3000/auth/discord`, og lokale data gemmes i `./data-local`. Produktionsdata ligger normalt i Railway-volumen på `/data`.
 
-Clone laver en ny kladde med samme builder og forum-destination. Den originale post ændres ikke.
+Kør hele valideringen med:
 
-## Discord OAuth-sikkerhed
-
-Web Builder bruger Discord OAuth scopes:
-
-```text
-identify
-guilds
+```bash
+npm test
 ```
-
-Efter login kontrollerer serveren, at brugeren har adgang til den `GUILD_ID`, botten er konfigureret til, samt Manage Guild / Administrator / owner permission.
-
-Session-cookie er HttpOnly og SameSite=Lax; på Railway HTTPS markeres den også Secure. Write-API requests afviser fremmede origins.
-
-## Health endpoint
-
-```text
-/health
-```
-
-returnerer bot-ready status samt om Web Builder er aktiveret.

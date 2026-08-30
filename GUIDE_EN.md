@@ -1,0 +1,96 @@
+# Timewizzard Info Bot v1.6.4 — Web Builder Guide
+
+> [Dansk guide](GUIDE_DA.md) · [README](README.md)
+
+Timewizzard builds and maintains Discord Components V2 information posts in forum, text and announcement channels, as well as inside existing forum posts. `/webbuilder` returns a private launch panel with secure Discord OAuth login.
+
+## Access and permissions
+
+- Timewizzard currently operates in single-server mode through `GUILD_ID`.
+- The user needs **Manage Server** (`ManageGuild`), Administrator, or server ownership.
+- The bot needs permission to view the destination, send messages and read message history.
+- Creating forum posts requires **Create Public Threads**. Archived or locked posts may also require **Manage Threads**.
+
+## Normal workflow
+
+```text
+/webbuilder → Discord OAuth → Create draft → Edit → Save
+            → Publish review → Publish/Republish → Discord
+```
+
+**Save** only stores Builder data. Discord is not changed until **Publish** or **Republish** is confirmed.
+
+## Create draft
+
+1. Enter a title.
+2. Select a forum, text or announcement channel, or an existing forum post.
+3. Forum tags appear only when the destination is a forum channel. Up to five can be selected.
+4. Choose one of the 36 starter templates or begin with a blank post.
+
+Quick Announcement templates provide a fast starting point, while the other categories cover guides, events, onboarding, recruitment, media, WeakAuras and more.
+
+## Workspace
+
+- **Posts** lists drafts and published posts. It becomes a drawer on smaller screens.
+- **Blocks** shows the post hierarchy: `POST → optional Containers → content blocks`.
+- **Inspector** edits the selected block.
+- **Discord Preview** renders the layout and supports desktop and mobile widths.
+
+Desktop supports drag-and-drop. Touch devices use tap-to-move. Undo/Redo, revision history and local crash recovery protect work during editing.
+
+## Content and structure
+
+Plain content and colored Containers can coexist in one post. The Web Builder supports Text, Heading, Image, Thumbnail, Separator, Callout, Checklist, Steps, Facts, Button Row, Event, Countdown, Code, Progress, Gallery, YouTube, selects and nested ephemeral actions.
+
+Preview elements can be selected to open their associated block in the Inspector. Markdown tools, emoji/mention pickers, timestamps, inline validation and character counters help keep content compatible with Discord.
+
+## Publish and Message split
+
+The Publish/Republish dialog validates the real Discord payload and shows the destination, message count, blocks, components, mention behavior and warnings.
+
+Message split is selected in the same dialog:
+
+- **Automatic** uses the fewest Discord messages possible.
+- **One message per top-level block** starts every top-level block or Container in a separate message.
+- **Choose exact number** accepts a specific count when Discord limits allow it.
+
+## Destination and Republish
+
+Changing Destination on a published post stores a pending change. It does not immediately move or recreate the existing Discord post.
+
+When **Republish** is confirmed, the new target is created first. The previous Discord post is removed only after the new publication succeeds. If publication fails, the previous post remains intact and the pending destination can be retried.
+
+If a Discord message, thread or destination is deleted externally, Timewizzard preserves the Builder data and offers Republish to a valid destination.
+
+## JSON import and export
+
+**Export JSON** downloads the complete Builder definition. **Import Builder JSON** loads a current or supported legacy export as a new draft. The maximum file/request size is 20 MB.
+
+DiscoHook JSON can also be imported and converted into supported blocks.
+
+## Long String Select values
+
+A String Select option can contain up to **200,000 characters**. Its textarea has a dedicated character counter and accepts pasted text or an imported UTF-8 `.txt` file.
+
+When a Discord user selects the option, the complete value is delivered privately as a UTF-8 `.txt` attachment. Automated validation covers an intact 100,000-character value.
+
+## Download buttons
+
+Known legacy selectors for `MerfinUI_v7.80.zip` and `TBC_AddOns.zip` migrate to direct Discord link buttons. New downloads should use Button Row links instead of code strings.
+
+## Local development
+
+Copy `.env.local.example` to `.env.local`, add local Discord/OAuth values and run:
+
+```bash
+npm ci
+npm run local
+```
+
+Open the Web Builder through `http://127.0.0.1:3000/auth/discord`. Local data is stored in `./data-local`; production data normally lives in the Railway volume at `/data`.
+
+Run the complete validation suite with:
+
+```bash
+npm test
+```

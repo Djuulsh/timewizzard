@@ -1,12 +1,28 @@
 # Changelog
 
-## 1.6.2
+## 1.6.4
 
-### v1.6.0 — UI foundation consolidation
-- Added one authoritative runtime version source and one Web Builder asset manifest.
-- Removed the obsolete serverV15 response-patching wrapper and legacy inline v1.3 separator observers.
-- Health, bootstrap, Discord status and Web Builder branding now share the same version and current feature registry.
-- Added a server-side canonical Components V2 preview endpoint using the normal publish payload generator.
+### v1.6.4 — Publishing safety and current documentation
+- Destination changes on published posts are staged and no longer create, move or delete Discord content until **Republish** is confirmed.
+- Republish creates the new Discord target before cleaning the old target, preserving the old post if publication fails.
+- Message split selection moved into Publish/Republish review and supports automatic, per-top-level-block and exact valid counts.
+- Added Builder JSON round-trip import in the Web Builder and retained the 20 MB request/import limit.
+- Added direct ZIP download-button migration for known MerfinUI/TBC legacy selectors.
+- Added compact Create Draft destination controls; forum tags appear only for forum channels and support up to five selections.
+- Updated README, Danish guide, Discord `/webbuilder` and `/hjaelp` responses, and added an English Web Builder guide.
+
+### v1.6.3 — Long strings and destination expansion
+- String Select content supports up to 200,000 characters with a counter on the actual textarea and direct UTF-8 TXT import.
+- String Select choices deliver their complete value privately as a UTF-8 `.txt` attachment; validation covers 100,000 characters intact.
+- Save/Preview requests support up to 20 MB and revision history compacts automatically for very large builders.
+- Added existing forum-post destinations, active/archived forum discovery and up to five forum tags.
+- Added normal text and announcement destinations consistently across Discord and Web Builder flows.
+
+### v1.6.2 — Safety, accessibility and QA
+- Added a pre-publish review with destination, message count, blocks, components, mention behaviour and payload warnings.
+- Added local crash recovery for unsaved editor work, cleared after successful Save.
+- Added keyboard-accessible blocks, visible focus states, dialog focus restoration, reduced-motion support and live payload status.
+- Added cross-platform UI contract validation and a documented desktop/iPad/phone QA matrix.
 
 ### v1.6.1 — Cross-platform workspace
 - Added a Posts drawer for laptop, iPad and phone layouts.
@@ -14,11 +30,11 @@
 - Added Desktop / Mobile preview widths and eliminated horizontal workspace/header scrolling.
 - Standardized responsive Heading, Facts/Info List and Button Row layouts, touch targets, safe areas and dynamic viewport dialogs.
 
-### v1.6.2 — Safety, accessibility and QA
-- Added a pre-publish review with destination, message count, blocks, components, mention behaviour and payload warnings.
-- Added local crash recovery for unsaved editor work, cleared after successful Save.
-- Added keyboard-accessible blocks, visible focus states, dialog focus restoration, reduced-motion support and live payload status.
-- Added cross-platform UI contract validation and a documented desktop/iPad/phone QA matrix.
+### v1.6.0 — UI foundation consolidation
+- Added one authoritative runtime version source and one Web Builder asset manifest.
+- Removed the obsolete serverV15 response-patching wrapper and legacy inline v1.3 separator observers.
+- Health, bootstrap, Discord status and Web Builder branding now share the same version and current feature registry.
+- Added a server-side canonical Components V2 preview endpoint using the normal publish payload generator.
 
 ## 1.5.5
 
