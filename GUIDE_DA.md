@@ -20,6 +20,12 @@ Timewizzard bygger og vedligeholder Discord Components V2-opslag i forum-, tekst
 
 **Save** gemmer kun Builder-data. Discord ændres først, når du bekræfter **Publish** eller **Republish**.
 
+## Åbn et opslag med højreklik
+
+Højreklik på startbeskeden eller en fortsættelsesbesked i et publiceret Timewizzard-opslag, og vælg **Apps → Edit in Web Builder**. Botten kontrollerer, at beskeden tilhører et administreret opslag, og sender et privat link, som åbner præcis dette opslag efter Discord OAuth.
+
+Funktionen kræver **Manage Server** og vises kun på den server, hvor Timewizzard-kommandoerne er registreret. Almindelige beskeder, som ikke tilhører et Timewizzard-opslag, kan ikke åbnes som Builder-data.
+
 ## Create draft
 
 1. Skriv en titel.

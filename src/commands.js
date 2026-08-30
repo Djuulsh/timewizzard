@@ -1,5 +1,7 @@
 import {
+  ApplicationCommandType,
   ChannelType,
+  ContextMenuCommandBuilder,
   PermissionFlagsBits,
   SlashCommandBuilder
 } from 'discord.js';
@@ -242,4 +244,9 @@ const webBuilderCommand = new SlashCommandBuilder()
   .setDescription('Åbn Web Builder med drag-and-drop')
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
-export const commands = [postCommand, profileCommand, helpCommand, webBuilderCommand];
+const editInWebBuilderCommand = new ContextMenuCommandBuilder()
+  .setName('Edit in Web Builder')
+  .setType(ApplicationCommandType.Message)
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
+
+export const commands = [postCommand, profileCommand, helpCommand, webBuilderCommand, editInWebBuilderCommand];

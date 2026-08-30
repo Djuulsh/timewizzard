@@ -8,6 +8,14 @@ const CURRENT_VERSION = 6;
 const MAX_REVISIONS = 30;
 const MAX_REVISION_STORAGE_BYTES = 20_000_000;
 
+export function managedPostMatchesMessage(post, messageId) {
+  const id = String(messageId ?? '');
+  if (!id) return false;
+  return [post?.builderId, post?.postId, post?.threadId, post?.starterMessageId, ...(post?.continuationMessageIds ?? [])]
+    .filter(Boolean)
+    .some((candidate) => String(candidate) === id);
+}
+
 function createDefaultProfiles() {
   const profiles = {};
   for (const wowClass of WOW_CLASSES) {
@@ -267,9 +275,7 @@ export class JsonStore {
       : idOrPost;
     if (!id) return null;
     if (this.data.posts[id]) return id;
-    for (const [key, post] of Object.entries(this.data.posts)) {
-      if ([post.builderId, post.postId, post.threadId, post.starterMessageId].filter(Boolean).includes(String(id))) return key;
-    }
+    for (const [key, post] of Object.entries(this.data.posts)) if (managedPostMatchesMessage(post, id)) return key;
     return null;
   }
 

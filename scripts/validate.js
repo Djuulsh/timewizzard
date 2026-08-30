@@ -18,12 +18,13 @@ import { validateBuilder } from '../src/builder/validate.js';
 import { VERSION } from '../src/version.js';
 import { convertDiscohook } from '../src/discohook.js';
 import { MAX_STRING_SELECT_CONTENT_LENGTH, MAX_WEB_JSON_BODY_BYTES } from '../src/constants.js';
-import { compactRevisionHistory } from '../src/storage.js';
-import { ChannelFlags, ChannelType } from 'discord.js';
+import { compactRevisionHistory, managedPostMatchesMessage } from '../src/storage.js';
+import { ApplicationCommandType, ChannelFlags, ChannelType, PermissionFlagsBits } from 'discord.js';
 import { destinationTypeForChannel, normalizeTagIds, validateDestination } from '../src/destinations.js';
 import { commands } from '../src/commands.js';
 import { createManagedPost } from '../src/postService.js';
 import { BotController, buildHelpContent, buildWebBuilderOverview } from '../src/controller.js';
+import { builderReturnPath } from '../src/web/server.js';
 import { BUILDER_EXPORT_FORMAT, BUILDER_EXPORT_VERSION, MAX_BUILDER_IMPORT_BYTES, exportDefinition, parseBuilderDefinition, readBuilderAttachment } from '../src/builder/io.js';
 
 function makeEntity(id, title, builder, extra = {}) {
@@ -50,6 +51,39 @@ const webBuilderButtons = webBuilderReply?.components?.[0]?.components ?? [];
 if (webBuilderReply?.content !== webBuilderOverview || webBuilderButtons.length !== 3) throw new Error('/webbuilder must return the current overview and three launch/documentation links.');
 if (!webBuilderButtons.some((button) => button.data?.url?.endsWith('/GUIDE_EN.md')) || !webBuilderButtons.some((button) => button.data?.url?.endsWith('/GUIDE_DA.md'))) {
   throw new Error('/webbuilder must link both English and Danish operating guides.');
+}
+const messageContextCommand = commands.find((command) => command.name === 'Edit in Web Builder')?.toJSON();
+if (messageContextCommand?.type !== ApplicationCommandType.Message || messageContextCommand.default_member_permissions !== String(PermissionFlagsBits.ManageGuild)) {
+  throw new Error('Edit in Web Builder must be a Manage Server message context command.');
+}
+const contextPost = { builderId: 'builder-context', title: 'Context post', starterMessageId: 'starter-message', continuationMessageIds: ['continuation-message'] };
+if (!managedPostMatchesMessage(contextPost, 'starter-message') || !managedPostMatchesMessage(contextPost, 'continuation-message') || managedPostMatchesMessage(contextPost, 'other-message')) {
+  throw new Error('Managed post lookup must recognize starter and continuation messages only.');
+}
+if (builderReturnPath(new URL('https://timewizzard.example/builder?kind=p&id=builder-context')) !== '/builder?kind=p&id=builder-context') throw new Error('Valid Web Builder deep links must survive OAuth.');
+if (builderReturnPath(new URL('https://timewizzard.example/builder?kind=p&id=https://evil.example')) !== '/builder') throw new Error('Web Builder OAuth return paths must reject unsafe IDs.');
+let contextReply = null;
+const contextController = new BotController({
+  client: null,
+  store: { getPost: (id) => managedPostMatchesMessage(contextPost, id) ? contextPost : null, getPostKey: () => contextPost.builderId },
+  config: { guildId: 'guild-context', webEnabled: true, publicBaseUrl: 'https://timewizzard.example' }
+});
+await contextController.handle({
+  guildId: 'guild-context',
+  commandName: 'Edit in Web Builder',
+  targetMessage: { id: 'continuation-message' },
+  memberPermissions: { has: (permission) => permission === PermissionFlagsBits.ManageGuild },
+  isAutocomplete: () => false,
+  isButton: () => false,
+  isStringSelectMenu: () => false,
+  isModalSubmit: () => false,
+  isMessageContextMenuCommand: () => true,
+  isChatInputCommand: () => false,
+  reply: async (payload) => { contextReply = payload; }
+});
+const contextEditUrl = contextReply?.components?.[0]?.components?.[0]?.data?.url;
+if (contextEditUrl !== 'https://timewizzard.example/builder?kind=p&id=builder-context' || !contextReply?.content?.includes('Context post')) {
+  throw new Error('Message context action must return a direct link to the selected managed post.');
 }
 
 const plainBuilder = createBuilderTemplate('announcement_simple', 'Plain announcement');

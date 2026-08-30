@@ -156,7 +156,8 @@ export function buildWebBuilderOverview() {
     '- Op til fem tags vises kun for forumkanaler.',
     '- Destinationer gemmes som afventende ændringer og anvendes først ved **Republish**.',
     '- Message split vælges og valideres under **Publish / Republish**.',
-    '- JSON import/export, lange String Select-værdier som private TXT-filer og direkte ZIP-downloadknapper.'
+    '- JSON import/export, lange String Select-værdier som private TXT-filer og direkte ZIP-downloadknapper.',
+    '- Højreklik på en administreret Discord-besked → **Apps → Edit in Web Builder** for at åbne opslaget direkte.'
   ].join('\n');
 }
 
@@ -185,6 +186,7 @@ export function buildHelpContent() {
     'Save gemmer kun Builder-data. **Publish / Republish** viser review, Message split og den afventende destination, før Discord ændres.',
     'Destination understøtter forum-, tekst- og announcement-kanaler samt eksisterende forum-posts. Tags er kun tilgængelige for forumkanaler.',
     'JSON kan importeres/eksporteres. Lange String Select-værdier leveres privat som UTF-8 TXT-filer.',
+    'Højreklik på en administreret besked og vælg **Apps → Edit in Web Builder** for at åbne opslaget direkte.',
     '',
     'Dansk og engelsk guide findes via knapperne i `/webbuilder`.'
   ].join('\n');
@@ -218,6 +220,18 @@ export class BotController {
 
       if (interaction.isModalSubmit()) {
         await this.handleModal(interaction);
+        return;
+      }
+
+      if (interaction.isMessageContextMenuCommand()) {
+        if (!hasAdminPermission(interaction)) {
+          await interaction.reply({
+            content: 'You need **Manage Server** to edit Timewizzard posts.',
+            flags: MessageFlags.Ephemeral
+          });
+          return;
+        }
+        await this.handleMessageContextMenu(interaction);
         return;
       }
 
@@ -293,6 +307,49 @@ export class BotController {
 
   validateForumDestination(destination, tagIds) {
     return validateDestination(destination, tagIds);
+  }
+
+  async handleMessageContextMenu(interaction) {
+    if (interaction.commandName !== 'Edit in Web Builder') {
+      await interaction.reply({ content: 'Unknown message action.', flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const messageId = interaction.targetMessage?.id || interaction.targetId;
+    const post = this.store.getPost(messageId);
+    if (!post) {
+      await interaction.reply({
+        content: 'This message is not part of a published post managed by Timewizzard.',
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: { parse: [] }
+      });
+      return;
+    }
+    if (!this.config.webEnabled) {
+      await interaction.reply({
+        content: 'Web Builder is not enabled. Add `DISCORD_CLIENT_SECRET` and `PUBLIC_BASE_URL`, then redeploy.',
+        flags: MessageFlags.Ephemeral,
+        allowedMentions: { parse: [] }
+      });
+      return;
+    }
+
+    const builderId = String(post.builderId || this.store.getPostKey?.(messageId) || post.threadId || post.postId);
+    const builderUrl = new URL('/builder', this.config.publicBaseUrl);
+    builderUrl.searchParams.set('kind', 'p');
+    builderUrl.searchParams.set('id', builderId);
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setLabel('Edit in Web Builder')
+        .setStyle(ButtonStyle.Link)
+        .setURL(builderUrl.toString())
+    );
+    await interaction.reply({
+      content: `## Edit in Web Builder\nOpen **${post.title || 'Timewizzard post'}** directly in the secure Web Builder.`,
+      components: [row],
+      flags: MessageFlags.Ephemeral,
+      allowedMentions: { parse: [] }
+    });
   }
 
   resolveEntityInput(input) {

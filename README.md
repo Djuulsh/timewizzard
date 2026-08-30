@@ -19,6 +19,7 @@ Timewizzard creates, previews, publishes and maintains structured information po
 - Legacy MerfinUI and TBC ZIP selectors migrate to direct Discord download buttons.
 - Configurable Discord message splitting in the Publish/Republish review: automatic, one message per top-level block/container, or an exact valid message count.
 - Discord OAuth access control for the Web Builder.
+- Discord message context action: right-click a managed post and choose **Apps → Edit in Web Builder** to open that exact post.
 
 ## Long String Select TXT delivery
 
@@ -204,6 +205,8 @@ The response includes the live bot state, authoritative runtime version, Web Bui
 ```
 
 `/webbuilder` returns a private, versioned launch panel with links to the OAuth-protected Builder and both operating guides. The current feature summary covers staged destinations, Publish/Republish review, configurable message splitting, JSON round trips, long TXT delivery and direct ZIP download buttons.
+
+For an existing published post, right-click its starter message or any Timewizzard continuation message and choose **Apps → Edit in Web Builder**. The bot verifies that the message belongs to a managed post, checks **Manage Server**, and returns a private deep link. The selected post opens automatically after Discord OAuth.
 
 ## Deleted Discord targets
 

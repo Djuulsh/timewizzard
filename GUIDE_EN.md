@@ -20,6 +20,12 @@ Timewizzard builds and maintains Discord Components V2 information posts in foru
 
 **Save** only stores Builder data. Discord is not changed until **Publish** or **Republish** is confirmed.
 
+## Open a post from the context menu
+
+Right-click the starter message or any continuation message in a published Timewizzard post, then choose **Apps → Edit in Web Builder**. The bot verifies that the message belongs to a managed post and returns a private link that opens that exact post after Discord OAuth.
+
+The action requires **Manage Server** and is available only in the server where Timewizzard commands are registered. Ordinary messages that do not belong to a Timewizzard post cannot be opened as Builder data.
+
 ## Create draft
 
 1. Enter a title.

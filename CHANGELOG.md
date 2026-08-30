@@ -3,6 +3,7 @@
 ## 1.6.4
 
 ### v1.6.4 — Publishing safety and current documentation
+- Added **Apps → Edit in Web Builder** as a Discord message context action for managed starter and continuation messages, with permission checks and OAuth-preserved deep links.
 - Destination changes on published posts are staged and no longer create, move or delete Discord content until **Republish** is confirmed.
 - Republish creates the new Discord target before cleaning the old target, preserving the old post if publication fails.
 - Message split selection moved into Publish/Republish review and supports automatic, per-top-level-block and exact valid counts.

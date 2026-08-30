@@ -249,6 +249,13 @@ function authSetupPage(config) {
   return `<!doctype html><html lang="da"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Timewizzard</title><style>body{font-family:system-ui;background:#111318;color:#eee;max-width:760px;margin:80px auto;padding:24px}a{color:#8ab4ff}.card{background:#1b1e25;border:1px solid #30343d;border-radius:14px;padding:24px}code{background:#0d0f13;padding:3px 6px;border-radius:5px}</style><div class="card"><h1>Timewizzard v${VERSION}</h1>${config.webEnabled ? '<p>Web Builder er aktiv.</p><p><a href="/auth/discord">Log ind med Discord</a></p>' : '<p>Discord-botten kører, men Web Builder er ikke konfigureret endnu.</p>'}</div></html>`;
 }
 
+export function builderReturnPath(url) {
+  const kind = url?.searchParams?.get('kind');
+  const id = String(url?.searchParams?.get('id') ?? '').trim();
+  if (!['d', 'p'].includes(kind) || !/^[A-Za-z0-9_-]{1,128}$/.test(id)) return '/builder';
+  return `/builder?kind=${kind}&id=${encodeURIComponent(id)}`;
+}
+
 export function createWebServer({ client, store, config }) {
   const sessions = new Map();
   const oauthStates = new Map();
@@ -273,13 +280,13 @@ export function createWebServer({ client, store, config }) {
     return { token, ...session };
   }
 
-  async function beginOAuth(response) {
+  async function beginOAuth(response, requestUrl) {
     if (!config.webEnabled) {
       text(response, 503, authSetupPage(config), 'text/html; charset=utf-8');
       return;
     }
     const state = randomBytes(24).toString('hex');
-    oauthStates.set(state, { expiresAt: Date.now() + OAUTH_STATE_TTL_MS });
+    oauthStates.set(state, { expiresAt: Date.now() + OAUTH_STATE_TTL_MS, returnTo: builderReturnPath(requestUrl) });
     const redirectUri = `${config.publicBaseUrl}/auth/discord/callback`;
     const url = new URL('https://discord.com/oauth2/authorize');
     url.searchParams.set('client_id', config.clientId);
@@ -335,7 +342,7 @@ export function createWebServer({ client, store, config }) {
       user: { id: user.id, username: user.global_name || user.username, avatar: user.avatar },
       expiresAt: Date.now() + SESSION_TTL_MS
     });
-    redirect(response, '/builder', { 'set-cookie': sessionCookie(sessionToken, secureCookies) });
+    redirect(response, savedState.returnTo || '/builder', { 'set-cookie': sessionCookie(sessionToken, secureCookies) });
   }
 
   async function refreshAllPosts() {
@@ -724,7 +731,7 @@ export function createWebServer({ client, store, config }) {
       }
       if (url.pathname === '/app.css') { await serveCombinedFiles(response, WEB_STYLE_FILES, 'text/css; charset=utf-8'); return; }
       if (url.pathname === '/app.js') { await serveCombinedFiles(response, WEB_SCRIPT_FILES, 'text/javascript; charset=utf-8'); return; }
-      if (url.pathname === '/auth/discord') { await beginOAuth(response); return; }
+      if (url.pathname === '/auth/discord') { await beginOAuth(response, url); return; }
       if (url.pathname === '/auth/discord/callback') { await finishOAuth(request, response, url); return; }
       if (url.pathname === '/logout') {
         const session = currentSession(request);
@@ -739,7 +746,7 @@ export function createWebServer({ client, store, config }) {
       }
       if (url.pathname === '/builder') {
         const session = currentSession(request);
-        if (!session) { redirect(response, '/auth/discord'); return; }
+        if (!session) { redirect(response, builderReturnPath(url).replace(/^\/builder/, '/auth/discord')); return; }
         await serveFile(response, 'index.html', 'text/html; charset=utf-8');
         return;
       }

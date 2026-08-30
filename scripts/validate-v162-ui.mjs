@@ -46,6 +46,7 @@ assert(WEB_SCRIPT_FILES.at(-1) === 'quickAnnouncements.js', 'Quick Announcement 
 assert(WEB_STYLE_FILES.at(-1) === 'quickAnnouncements.css', 'Quick Announcement polish must be the final Web Builder stylesheet.');
 assert(new Set(WEB_FEATURES).size === WEB_FEATURES.length, 'Web feature registry contains duplicates.');
 assert(WEB_FEATURES.includes('template-catalog-36') && !WEB_FEATURES.includes('template-catalog-38'), 'Feature registry template count must match the validated catalogue.');
+assert(WEB_FEATURES.includes('message-context-webbuilder-edit'), 'Feature registry must advertise message context editing.');
 
 const html = read('web/index.html');
 assert(!html.includes('v1.3.1'), 'The HTML shell must not expose the legacy v1.3.1 version.');
@@ -142,6 +143,7 @@ assert(server.includes("url.pathname === '/api/import/builder'") && server.inclu
 assert(appJs.includes("api('/api/import/builder'") && appJs.includes('MAX_BUILDER_IMPORT_BYTES'), 'Web Builder must submit Builder JSON files through the round-trip import endpoint.');
 assert(appJs.includes('messageLayout') && !appJs.includes('updateMessageLayout'), 'The editor may preview a saved message layout but must only change it from Publish/Republish review.');
 assert(appJs.includes('tagIds') && appJs.includes("channelType==='thread'"), 'Web Builder must submit multiple tags and render existing forum post destinations.');
+assert(appJs.includes('new URLSearchParams(location.search)') && appJs.includes('requestedKind') && appJs.includes('requestedId'), 'Web Builder must open OAuth-preserved entity deep links.');
 assert(appJs.includes("tagLabel?.classList.toggle('hidden',!isForum)") && appJs.includes('new-draft-no-tags'), 'Forum tag controls must be hidden unless the selected destination is a forum channel.');
 assert(appJs.includes('Destination staged. Use Republish to apply it.') && appJs.includes('pendingDestination'), 'Published destination changes must be presented as staged until Republish.');
 const destinationRoute = server.slice(server.indexOf('const destinationMatch'), server.indexOf('const profileMatch'));
