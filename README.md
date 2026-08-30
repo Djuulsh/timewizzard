@@ -1,26 +1,35 @@
-# Timewizzard Info Bot v1.4.0
+# Timewizzard Info Bot v1.6.4
 
-> Current release: **v1.6.2** — consolidated cross-platform Web Builder, publish review and local crash recovery.
+> Current release: **v1.6.4** — a Discord Components V2 information-post builder with a Discord-native workflow and an OAuth-protected Web Builder.
 
-Timewizzard is a Discord Components V2 information-post builder with both a Discord-native builder and a Railway-hosted Web Builder.
+Timewizzard creates, previews, publishes and maintains structured information posts in Discord forum, text and announcement channels. It supports plain Components V2 posts, optional colored Containers, reusable templates, interactive controls and private TXT delivery for long generated strings.
 
-## v1.4.0 highlights
+## Current highlights
 
-- **Plain posts are truly plain.** A new post no longer receives an invisible/implicit colored container.
-- **Containers are explicit.** Add a Container only when you want an embed-style colored section.
-- **Hierarchical Web Builder:** `POST → optional Containers → content blocks`.
-- Drag content between the POST root and containers, reorder blocks, collapse containers and duplicate an entire container with its contents.
-- Each Container owns its own accent color. The old post-level accent picker is hidden from the Web Builder.
-- Simplified Container Inspector: internal name, one color control and explicit keep/delete actions.
-- Structured **Add Block** menu grouped into Content, Layout, Interactions and Special.
-- Smart **YouTube block**: paste a normal YouTube, youtu.be, Shorts or Live URL and Timewizzard derives the video ID, thumbnail and canonical Watch link.
-- Expanded template gallery with Blank, Simple Announcement, Styled Announcement, Guide, FAQ, Links, Raid/Event, Recruitment, Patch/Update, Warning, Media/Gallery, YouTube and MerfinUI starters.
-- New Draft uses visual template cards instead of relying only on a long dropdown.
-- Legacy MerfinUI Profile List remains compact and has no 18 individual Open buttons.
-- Existing v1.3.x builders migrate to schema v2 while preserving their old colored-container appearance.
-- DiscoHook imports preserve separate embeds as separate v1.4 Containers.
+- Hierarchical `POST → optional Containers → content blocks` editor.
+- 36 starter templates, including announcements, guides, events, recruitment, media, YouTube, Quick Announcements and WeakAura layouts.
+- Text, Heading, Callout, Checklist, Steps, Facts, Button Row, Event, Countdown, Code, Progress, Gallery, Thumbnail and Smart YouTube blocks.
+- Drag-and-drop on desktop and tap-to-move controls on touch devices.
+- Desktop, tablet and phone layouts with desktop/mobile preview widths.
+- Undo/Redo, revision history, local crash recovery and pre-publish review.
+- Safe mentions, Discord user/role/channel insertion, emoji browser and timestamp picker.
+- Deleted-target detection, Re-create and destination repair/move workflows.
+- DiscoHook JSON import and Builder JSON import/export.
+- Discord OAuth access control for the Web Builder.
 
-All v1.3 features remain available: deleted-post Re-create, destination repair, revision history, Discord Insert, emoji browser, safe mentions, timestamps, Bot Identity, nested ephemeral actions, media gallery and thumbnail blocks.
+## Long String Select TXT delivery
+
+A String Select option can contain up to **200,000 characters**. When a Discord user chooses an option, Timewizzard sends the complete value privately as a UTF-8 `.txt` attachment instead of trying to place it inside a Discord text component.
+
+The Web Builder provides:
+
+- a character counter on the actual String Select textarea;
+- direct UTF-8 `.txt` import for each option;
+- file names derived from the selected option label;
+- a 20 MB Save/Preview request limit;
+- size-aware revision compaction for large builders.
+
+The automated validation suite includes an intact 100,000-character TXT delivery test.
 
 ## Builder structure
 
@@ -34,7 +43,7 @@ POST
 └─ Link
 ```
 
-A styled post explicitly contains one or more Containers:
+A styled post can contain one or more explicit Containers:
 
 ```text
 POST
@@ -47,59 +56,33 @@ POST
    └─ Text
 ```
 
-Root content and multiple Containers can still be published in the same Discord message when Discord's component/text limits allow it.
+Root content and multiple Containers can be published in the same Discord message when Discord's component and text limits allow it.
 
-## Local testing without Railway
+## Discord installation and permissions
 
-Timewizzard can run as a complete local Discord bot + Web Builder. Railway is not required for development or testing.
+Timewizzard currently runs in **single-server mode**. `GUILD_ID` selects the one Discord server where slash commands are registered, interactions are accepted and the Web Builder is authorized.
 
-1. Install Node.js 24.17+ and clone the repository.
-2. Run `npm install`.
-3. Copy `.env.local.example` to `.env.local` and insert the Discord bot/application values.
-4. In Discord Developer Portal → OAuth2 → Redirects, add exactly:
+Install the Discord application with these OAuth2 scopes:
 
 ```text
-http://127.0.0.1:3000/auth/discord/callback
+bot
+applications.commands
 ```
 
-5. Start Timewizzard locally:
+Timewizzard slash commands require the invoking member to have **Manage Server** (`ManageGuild`). The server owner and members with Administrator also satisfy this requirement. The channel must not deny the member the **Use Application Commands** permission.
 
-```bash
-npm run local
-```
+If the bot is moved to another server:
 
-For automatic restart while editing source files:
+1. Enable Discord Developer Mode.
+2. Copy the new server ID.
+3. Replace `GUILD_ID` in Railway or the local environment.
+4. Restart/redeploy Timewizzard so guild commands are registered again.
 
-```bash
-npm run local:watch
-```
+Running the same deployment safely across several servers requires guild-isolated storage and authorization; simply removing the guild check would expose one server's Builder data to another.
 
-Then test:
+## Railway configuration
 
-```text
-http://127.0.0.1:3000/health
-http://127.0.0.1:3000/auth/discord
-http://127.0.0.1:3000/builder
-```
-
-Local data is intentionally stored separately in `./data-local`, so local tests do not touch the Railway `/data/store.json` volume. The local process still connects directly to Discord, so a working internet connection and valid Discord credentials are required.
-
-If Railway comes back online while the same bot token is running locally, stop one of the two instances before testing interactions to avoid two bot processes handling the same guild. A separate Discord development bot is the safest long-term option.
-
-## Persistent storage
-
-Railway uses:
-
-```text
-/data/store.json
-/data/store.json.bak
-```
-
-v1.4.0 uses storage schema **v5**. Existing v1.3.x data migrates in place to Builder schema v2. Old flat container-marker layouts are converted to explicit hierarchical Containers so their public appearance is preserved.
-
-## Railway variables
-
-Required:
+Required variables:
 
 ```env
 CLIENT_ID=...
@@ -109,20 +92,69 @@ DATA_DIR=/data
 NODE_ENV=production
 ```
 
-Required for Web Builder:
+Additional variables required for the Web Builder:
 
 ```env
 DISCORD_CLIENT_SECRET=...
 PUBLIC_BASE_URL=https://YOUR-SERVICE.up.railway.app
 ```
 
-`PUBLIC_BASE_URL` must not have a trailing slash.
-
-Discord OAuth redirect:
+`PUBLIC_BASE_URL` must not have a trailing slash. Add this redirect URL in the Discord Developer Portal:
 
 ```text
 https://YOUR-SERVICE.up.railway.app/auth/discord/callback
 ```
+
+Railway persistent storage uses:
+
+```text
+/data/store.json
+/data/store.json.bak
+```
+
+The current storage schema is v5 and the Builder schema is v2. Legacy layouts are migrated while preserving their published appearance.
+
+## Local development
+
+Requirements:
+
+- Node.js 24.17 or newer;
+- a Discord bot/application;
+- a Discord server where you have Manage Server.
+
+Install the exact dependency versions recorded in `package-lock.json`:
+
+```bash
+npm ci
+```
+
+Copy `.env.local.example` to `.env.local`, insert the local Discord values and add this OAuth redirect in the Discord Developer Portal:
+
+```text
+http://127.0.0.1:3000/auth/discord/callback
+```
+
+Start the complete local bot and Web Builder:
+
+```bash
+npm run local
+```
+
+Use automatic restart while editing:
+
+```bash
+npm run local:watch
+```
+
+Local endpoints:
+
+```text
+http://127.0.0.1:3000/health
+http://127.0.0.1:3000/auth/discord
+http://127.0.0.1:3000/builder
+```
+
+Local data is stored in `./data-local`, separate from Railway's `/data` volume. Do not run the Railway and local processes simultaneously with the same bot token; both processes would receive interactions from the configured server.
 
 ## Health check
 
@@ -132,15 +164,16 @@ Open:
 https://YOUR-SERVICE.up.railway.app/health
 ```
 
-Expected version:
+The response includes the live bot state, authoritative runtime version, Web Builder state, supported destinations, feature registry and uptime. A ready v1.6.4 deployment starts with:
 
 ```json
 {
   "ok": true,
-  "version": "1.4.0",
+  "version": "1.6.4",
   "webBuilder": true,
   "oauthLoginPath": "/auth/discord",
-  "builderPath": "/builder"
+  "builderPath": "/builder",
+  "supportedDestinations": ["forum", "text", "announcement"]
 }
 ```
 
@@ -165,28 +198,27 @@ Expected version:
 /webbuilder
 ```
 
-## Deleted / missing Discord targets
+## Deleted Discord targets
 
-A published Builder record is not deleted just because its Discord message or forum thread disappears.
+A Builder record is not removed merely because its Discord message, thread or destination disappears:
 
 ```text
 Published + live
       ↓
-Discord message/thread deleted externally
+Discord target deleted externally
       ↓
-🔴 Deleted on Discord
+Deleted on Discord
       ↓
-Edit / Preview still available
+Builder data remains editable
       ↓
-Re-create in original destination
-or choose a new destination
+Re-create in the original or a new destination
 ```
 
-Only the explicit Builder **Delete** action removes the persistent Builder record.
+Only the explicit Builder Delete action removes the persistent record.
 
-## Markdown multi-line quote escape
+## Markdown quote escape
 
-Discord `>>>` normally quotes the rest of the same Text Display. Timewizzard adds this builder-only marker:
+Discord `>>>` normally quotes the rest of the same Text Display. Timewizzard supports `\>>>` as a Builder-only boundary:
 
 ```text
 >>> This is quoted
@@ -195,10 +227,20 @@ Still quoted
 This is normal text again
 ```
 
-The `\>>>` line is not sent as visible text. It becomes a boundary between two Text Display components.
-
-See `DISCORD_MARKDOWN.md` for the complete Markdown reference.
+The `\>>>` line is not published. See [`DISCORD_MARKDOWN.md`](DISCORD_MARKDOWN.md) for the complete Markdown reference.
 
 ## Validation
 
-GitHub Actions runs `npm run validate` on every push to `main`. v1.4 validates plain root posts, explicit Containers, legacy migration, smart YouTube parsing/rendering, all starter templates, quote escape, media blocks, nested ephemeral actions, safe mentions and multi-embed DiscoHook import.
+Run the complete validation suite with:
+
+```bash
+npm test
+```
+
+GitHub Actions runs the same validation on pushes to `main` and `feature/**`. It covers Builder rendering, schema migration, all templates and smart blocks, String Select TXT delivery, safe mentions, Discord limits, UI asset contracts and responsive device contracts.
+
+Additional documentation:
+
+- [`GUIDE_DA.md`](GUIDE_DA.md) — Danish operating guide.
+- [`DISCORD_MARKDOWN.md`](DISCORD_MARKDOWN.md) — supported Discord Markdown.
+- [`CHANGELOG.md`](CHANGELOG.md) — release history.

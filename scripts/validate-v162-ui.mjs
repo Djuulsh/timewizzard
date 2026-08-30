@@ -13,6 +13,12 @@ assert(VERSION === '1.6.4', 'The authoritative version must be 1.6.4.');
 const pkg = JSON.parse(read('package.json'));
 assert(pkg.version === VERSION, 'package.json must match src/version.js.');
 
+const readme = read('README.md');
+assert(readme.startsWith(`# Timewizzard Info Bot v${VERSION}`), 'README heading must match the authoritative runtime version.');
+assert(readme.includes(`> Current release: **v${VERSION}**`), 'README current release must match the authoritative runtime version.');
+assert(readme.includes('200,000 characters') && readme.includes('package-lock.json'), 'README must document long TXT delivery and reproducible installs.');
+assert(readme.includes('single-server mode') && readme.includes('Manage Server'), 'README must document the current Discord guild and permission model.');
+
 for (const file of WEB_SCRIPT_FILES) assert(fs.existsSync(path.join(root, 'web', file)), `Missing Web Builder script: ${file}`);
 for (const file of WEB_STYLE_FILES) assert(fs.existsSync(path.join(root, 'web', file)), `Missing Web Builder stylesheet: ${file}`);
 assert(WEB_SCRIPT_FILES.at(-1) === 'quickAnnouncements.js', 'Quick Announcement controller must be the final Web Builder script.');
