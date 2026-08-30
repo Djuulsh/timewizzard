@@ -1,6 +1,6 @@
-# Timewizzard Info Bot v1.6.4
+# Timewizzard Info Bot v1.7.0
 
-> Current release: **v1.6.4** — a Discord Components V2 information-post builder with a Discord-native workflow and an OAuth-protected Web Builder.
+> Current release: **v1.7.0** — a Discord Components V2 information-post builder with a Discord-native workflow and an OAuth-protected Web Builder.
 
 Timewizzard creates, previews, publishes and maintains structured information posts in Discord forum, text and announcement channels. It supports plain Components V2 posts, optional colored Containers, reusable templates, interactive controls and private TXT delivery for long generated strings.
 
@@ -170,12 +170,12 @@ Open:
 https://YOUR-SERVICE.up.railway.app/health
 ```
 
-The response includes the live bot state, authoritative runtime version, Web Builder state, supported destinations, feature registry and uptime. A ready v1.6.4 deployment starts with:
+The response includes the live bot state, authoritative runtime version, Web Builder state, supported destinations, feature registry and uptime. A ready v1.7.0 deployment starts with:
 
 ```json
 {
   "ok": true,
-  "version": "1.6.4",
+  "version": "1.7.0",
   "webBuilder": true,
   "oauthLoginPath": "/auth/discord",
   "builderPath": "/builder",

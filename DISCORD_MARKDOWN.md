@@ -1,4 +1,4 @@
-# Discord Markdown in Timewizzard v1.6.4
+# Discord Markdown in Timewizzard v1.7.0
 
 Timewizzard publishes text through Discord Components V2 `Text Display` components. Discord itself remains authoritative for final rendering, while Web Builder previews the supported syntax.
 

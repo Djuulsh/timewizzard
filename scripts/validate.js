@@ -409,5 +409,5 @@ console.log('Nested ephemeral action validation passed.');
 console.log('100000-character String Select TXT delivery validation passed.');
 console.log('DiscoHook nested container import validation passed.');
 console.log('Safe mention validation passed.');
-if (VERSION !== '1.6.4') throw new Error('Runtime version is not v1.6.4.');
+if (VERSION !== '1.7.0') throw new Error('Runtime version is not v1.7.0.');
 console.log(`Timewizzard v${VERSION} validation passed.`);

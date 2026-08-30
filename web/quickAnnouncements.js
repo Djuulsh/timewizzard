@@ -1,4 +1,4 @@
-// Timewizzard v1.6.4 hotfix — Quick Announcement template family.
+// Timewizzard v1.7.0 — Quick Announcement template family.
 // These templates are injected into the Web Builder catalogue and are created
 // through the existing blank-draft API, then replaced with a validated builder.
 
@@ -185,9 +185,9 @@ refreshBootstrap = async function refreshBootstrapWithQuickAnnouncements(...args
 };
 
 function quickAnnouncementInit() {
-  document.title = 'Timewizzard Web Builder v1.6.4';
+  document.title = 'Timewizzard Web Builder v1.7.0';
   const brand = document.querySelector('.brand small');
-  if (brand) brand.textContent = 'v1.6.4 · Quick Announcement templates';
+  if (brand) brand.textContent = 'v1.7.0 · Quick Announcement templates';
 
   els.newDraftForm?.addEventListener('submit', createQuickAnnouncementDraft, true);
 

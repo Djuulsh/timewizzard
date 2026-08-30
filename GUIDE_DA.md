@@ -1,4 +1,4 @@
-# Timewizzard Info Bot v1.6.4 — Web Builder-guide
+# Timewizzard Info Bot v1.7.0 — Web Builder-guide
 
 > [English guide](GUIDE_EN.md) · [README](README.md)
 

@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
-assert(VERSION === '1.6.4', 'The authoritative version must be 1.6.4.');
+assert(VERSION === '1.7.0', 'The authoritative version must be 1.7.0.');
 const pkg = JSON.parse(read('package.json'));
 assert(pkg.version === VERSION, 'package.json must match src/version.js.');
 
@@ -35,7 +35,7 @@ assert(read('DISCORD_MARKDOWN.md').startsWith(`# Discord Markdown in Timewizzard
 assert(read('UPLOAD_TO_GITHUB_DA.md').includes('Historisk dokument') && read('UPGRADE_v1.2_DA.md').includes('Historisk migrationsreference'), 'Legacy setup documents must be clearly marked as historical.');
 assert(read('UI_QA_v1.6.2.md').includes('Versionsspecifik QA-reference'), 'Version-specific QA documentation must point to the current validation suite.');
 const changelog = read('CHANGELOG.md');
-assert(changelog.includes('## 1.6.4') && changelog.includes('Publishing safety and current documentation'), 'Changelog must cover the current release documentation and publishing flow.');
+assert(changelog.includes('## 1.7.0') && changelog.includes('Publishing safety, flexible destinations and context editing'), 'Changelog must cover the current release documentation and publishing flow.');
 const controller = read('src/controller.js');
 assert(controller.includes("from './version.js'") && controller.includes('buildWebBuilderOverview') && controller.includes('GUIDE_EN.md'), 'Discord help responses must use the current version and link the English guide.');
 assert(!controller.includes('Shrouded Web Builder v1.2.1') && !controller.includes('Shrouded Info Bot v1.2.1'), 'Discord responses must not contain obsolete branding or versions.');

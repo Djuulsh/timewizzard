@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
-assert(VERSION === '1.6.4', 'Quick Announcement hotfix expects runtime v1.6.4.');
+assert(VERSION === '1.7.0', 'Quick Announcement validation expects runtime v1.7.0.');
 assert(WEB_SCRIPT_FILES.includes('quickAnnouncements.js'), 'Quick Announcement script must be loaded.');
 assert(WEB_STYLE_FILES.includes('quickAnnouncements.css'), 'Quick Announcement stylesheet must be loaded.');
 

@@ -1,8 +1,8 @@
-// Timewizzard v1.6.4 — compact editing + reliable workspace navigation.
+// Timewizzard v1.7.0 — compact editing + reliable workspace navigation.
 // Keeps one Posts entry point, fixes top-layer menu behaviour, preserves the
 // Preview return path and keeps the Inspector larger than the Block tree.
 
-const V163_VERSION = '1.6.4';
+const V163_VERSION = '1.7.0';
 const V163_MORE_ACTIONS = [
   ['v131OpenDiscordBtn', '↗ Open in Discord'],
   ['v131CopyDiscordBtn', '⧉ Copy post link'],
