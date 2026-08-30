@@ -83,6 +83,24 @@ function profileSelect(block, scope) {
   };
 }
 
+function stringSelect(block, scope) {
+  return {
+    type: 1,
+    components: [{
+      type: 3,
+      custom_id: `info_select:${scope.kind}:${scope.id}:${block.id}`,
+      placeholder: block.placeholder || 'Vælg en string…',
+      min_values: 1,
+      max_values: 1,
+      options: block.options.map((option) => ({
+        label: option.label.slice(0, 100),
+        value: `string:${option.id}`,
+        ...(option.description ? { description: option.description.slice(0, 100) } : {})
+      }))
+    }]
+  };
+}
+
 function genericSelect(block, scope) {
   return {
     type: 1,
@@ -185,6 +203,7 @@ function contentBlockToComponents(block, scope) {
         }
       }];
     case 'select': return [genericSelect(block, scope)];
+    case 'string_select': return [stringSelect(block, scope)];
     case 'profile_select': return [profileSelect(block, scope)];
     case 'profile_open_list': return profileOpenSections();
     default: {
