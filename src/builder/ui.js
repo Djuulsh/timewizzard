@@ -9,6 +9,7 @@ import {
   TextInputStyle
 } from 'discord.js';
 import { RESOLUTIONS, WOW_CLASSES, findClass, findResolution } from '../constants.js';
+import { VERSION } from '../version.js';
 import { getBuilderStats } from './render.js';
 import { colorToHex } from './validate.js';
 import { serializeSelectOptions } from './blocks.js';
@@ -129,7 +130,7 @@ export function buildBuilderPanel(entity, scope) {
   const noBlocks = (entity.builder?.blocks?.length ?? 0) === 0;
 
   const lines = [
-    '## 🛠 Timewizzard Post Builder v1.3.0',
+    `## 🛠 Timewizzard Post Builder v${VERSION}`,
     `**${entity.title}**`,
     `${status} · Builder-ID: \`${scope.id}\``,
     `Blocks: **${stats.blockCount}** · Discord-beskeder: **${stats.messageCount}** · Accent: \`${colorToHex(entity.builder.accentColor)}\``

@@ -32,13 +32,20 @@ for (const [name, guide] of [['Danish', guideDa], ['English', guideEn]]) {
 }
 assert(guideDa.includes('GUIDE_EN.md') && guideEn.includes('GUIDE_DA.md'), 'The operating guides must cross-link.');
 assert(read('DISCORD_MARKDOWN.md').startsWith(`# Discord Markdown in Timewizzard v${VERSION}`), 'Markdown reference heading must match the current version.');
-assert(read('UPLOAD_TO_GITHUB_DA.md').includes('Historisk dokument') && read('UPGRADE_v1.2_DA.md').includes('Historisk migrationsreference'), 'Legacy setup documents must be clearly marked as historical.');
-assert(read('UI_QA_v1.6.2.md').includes('Versionsspecifik QA-reference'), 'Version-specific QA documentation must point to the current validation suite.');
+assert(read('UPLOAD_TO_GITHUB_DA.md').includes('Historisk dokument') && read('UPLOAD_TO_GITHUB_DA.md').includes(`aktuelle v${VERSION}`), 'Legacy upload documentation must be historical and point to the current release.');
+assert(read('UPGRADE_v1.2_DA.md').includes('Historisk migrationsreference') && read('UPGRADE_v1.2_DA.md').includes(`aktuelle v${VERSION}`), 'Legacy migration documentation must be historical and point to the current release.');
+assert(read('UI_QA_v1.6.2.md').includes('Versionsspecifik QA-reference') && read('UI_QA_v1.6.2.md').includes(`aktuelle v${VERSION}`), 'Version-specific QA documentation must point to the current validation suite.');
 const changelog = read('CHANGELOG.md');
 assert(changelog.includes('## 1.7.0') && changelog.includes('Publishing safety, flexible destinations and context editing'), 'Changelog must cover the current release documentation and publishing flow.');
 const controller = read('src/controller.js');
 assert(controller.includes("from './version.js'") && controller.includes('buildWebBuilderOverview') && controller.includes('GUIDE_EN.md'), 'Discord help responses must use the current version and link the English guide.');
 assert(!controller.includes('Shrouded Web Builder v1.2.1') && !controller.includes('Shrouded Info Bot v1.2.1'), 'Discord responses must not contain obsolete branding or versions.');
+const currentDiscordSupport = read('src/v158Support.js');
+assert(currentDiscordSupport.includes('buildWebBuilderOverview()') && currentDiscordSupport.includes('buildHelpContent()'), 'The installed Discord compatibility layer must use the current Web Builder and help responses.');
+assert(!read('src/nativeV13Support.js').includes('prototype.showHelp') && !read('src/nativeV14Support.js').includes('prototype.showHelp'), 'Legacy support layers must not override the current help response.');
+const discordBuilderUi = read('src/builder/ui.js');
+assert(discordBuilderUi.includes("from '../version.js'") && discordBuilderUi.includes('Post Builder v${VERSION}'), 'The Discord Post Builder panel must use the authoritative runtime version.');
+assert(!discordBuilderUi.includes('Post Builder v1.3.0'), 'The Discord Post Builder panel must not expose legacy branding.');
 
 for (const file of WEB_SCRIPT_FILES) assert(fs.existsSync(path.join(root, 'web', file)), `Missing Web Builder script: ${file}`);
 for (const file of WEB_STYLE_FILES) assert(fs.existsSync(path.join(root, 'web', file)), `Missing Web Builder stylesheet: ${file}`);

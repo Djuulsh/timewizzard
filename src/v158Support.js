@@ -4,6 +4,7 @@ import {
   ButtonStyle,
   MessageFlags
 } from 'discord.js';
+import { buildHelpContent, buildWebBuilderOverview } from './controller.js';
 import { VERSION } from './version.js';
 
 export function installV158Support(ControllerClass) {
@@ -21,23 +22,28 @@ export function installV158Support(ControllerClass) {
       new ButtonBuilder()
         .setLabel(`Åbn Web Builder · v${VERSION}`)
         .setStyle(ButtonStyle.Link)
-        .setURL(`${this.config.publicBaseUrl}/auth/discord`)
+        .setURL(`${this.config.publicBaseUrl}/auth/discord`),
+      new ButtonBuilder()
+        .setLabel('Dansk guide')
+        .setStyle(ButtonStyle.Link)
+        .setURL('https://github.com/Djuulsh/timewizzard/blob/main/GUIDE_DA.md'),
+      new ButtonBuilder()
+        .setLabel('English guide')
+        .setStyle(ButtonStyle.Link)
+        .setURL('https://github.com/Djuulsh/timewizzard/blob/main/GUIDE_EN.md')
     );
 
     await interaction.reply({
-      content: [
-        `## Timewizzard Web Builder v${VERSION}`,
-        'Åbn den sikre Discord OAuth-beskyttede builder.',
-        '',
-        '**Flyt blocks:** Træk hele block-rækken på computer, eller klik/tap `::` og vælg destination.',
-        '**Redigér blocks:** Et almindeligt klik på blockets indhold åbner det i Inspector.',
-        '**Markdown:** Én fælles toolbar følger nu det aktive Markdown-felt og Discord Insert arbejder på samme aktive felt.',
-        '**Responsive UX:** Heading, Facts, Button Row og øvrige Inspector-felter tilpasser sig Inspectorens faktiske bredde på computer, iPad og mobil.',
-        '**Header:** Add block, Save, Publish, Undo og Redo forbliver direkte tilgængelige; sekundære handlinger flyttes til More på smallere skærme uden horisontal scroll.',
-        '**Search:** Block- og template-søgning søger globalt på tværs af alle kategorier.',
-        '**Preview & safety:** Publish Review, canonical Discord payload validation og local crash recovery er en del af v1.6.2.'
-      ].join('\n'),
+      content: buildWebBuilderOverview(),
       components: [row],
+      flags: MessageFlags.Ephemeral,
+      allowedMentions: { parse: [] }
+    });
+  };
+
+  ControllerClass.prototype.showHelp = async function showHelpCurrent(interaction) {
+    await interaction.reply({
+      content: buildHelpContent(),
       flags: MessageFlags.Ephemeral,
       allowedMentions: { parse: [] }
     });

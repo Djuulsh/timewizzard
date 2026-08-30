@@ -1,6 +1,6 @@
 # Timewizzard v1.6.2 — UI QA matrix
 
-> **Versionsspecifik QA-reference:** Denne matrix dokumenterer v1.6.2-baselinen. Den aktuelle v1.6.4-validering køres med `npm test`; se [README.md](README.md), [GUIDE_EN.md](GUIDE_EN.md) og [GUIDE_DA.md](GUIDE_DA.md).
+> **Versionsspecifik QA-reference:** Denne matrix dokumenterer v1.6.2-baselinen. Den aktuelle v1.7.0-validering køres med `npm test`; se [README.md](README.md), [GUIDE_EN.md](GUIDE_EN.md) og [GUIDE_DA.md](GUIDE_DA.md).
 
 ## Supported layout contracts
 

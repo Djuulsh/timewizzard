@@ -1,7 +1,4 @@
 import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
   MessageFlags
 } from 'discord.js';
 import {
@@ -221,53 +218,4 @@ export function installNativeV13Support(BotController) {
     return originalHandlePostCommand.call(this, interaction);
   };
 
-  BotController.prototype.showWebBuilder = async function showWebBuilderV13(interaction) {
-    if (!this.config.webEnabled) {
-      await interaction.reply({
-        content: 'Web Builder er ikke aktiveret endnu. Tilføj `DISCORD_CLIENT_SECRET` og `PUBLIC_BASE_URL` i Railway og redeploy.',
-        flags: MessageFlags.Ephemeral,
-        allowedMentions: { parse: [] }
-      });
-      return;
-    }
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setLabel('Åbn Web Builder').setStyle(ButtonStyle.Link).setURL(`${this.config.publicBaseUrl}/auth/discord`)
-    );
-    await interaction.reply({
-      content: '## Timewizzard Web Builder v1.3.0\nÅbn den Discord OAuth-beskyttede builder med drag-and-drop, revisionshistorik, Repair/Re-create, Markdown toolbar og Components V2 media blocks.',
-      components: [row],
-      flags: MessageFlags.Ephemeral,
-      allowedMentions: { parse: [] }
-    });
-  };
-
-  BotController.prototype.showHelp = async function showHelpV13(interaction) {
-    const content = [
-      '## Timewizzard Info Bot v1.3.0',
-      '',
-      '**Post Builder**',
-      '`/post opret` — lav en kladde til forum-, tekst- eller announcement-kanal.',
-      '`/post rediger` — åbn Discord-builderen for en kladde eller publiceret post.',
-      '`/post opdater` — publicer ændringer; slettede Discord-targets genskabes automatisk når destinationen stadig findes.',
-      '`/post klon` / `eksporter` / `importer` / `slet` / `liste` — administrér Builder-data.',
-      '',
-      '**v1.3 blocks**',
-      'Tekst/Markdown · Billede · Media Gallery · Thumbnail · Separator · Open + ephemeral · Link · Select + ephemeral · MerfinUI select · legacy Open-liste.',
-      'Gallery-format i Discord-builderen: `URL | beskrivelse | ja/nej` — én fil pr. linje, maks. 10.',
-      'Thumbnail har tekst, URL, alt-tekst og spoiler-indstilling.',
-      '',
-      '**Sikker redigering**',
-      'Nested ephemeral flows bevares, når en Select redigeres i Discord-builderen. Selve nested flowet redigeres lettest i Web Builder.',
-      'Hvis et opslag slettes direkte i Discord, bevares Builder-data og posten markeres som **Deleted on Discord** / **Genskab**.',
-      '',
-      '**Web Builder**',
-      '`/webbuilder` — drag-and-drop, Undo/Redo, revisionshistorik, destination Repair/Re-create, Discord Markdown reference, `\\>>>` quote-stop, DiscoHook import og media blocks.',
-      '',
-      '**Profiler**',
-      '`/profil gem` / `importer` / `vis` / `slet` / `liste` administrerer de 18 MerfinUI class/resolution-strenge.'
-    ].join('\n');
-
-    await interaction.reply({ content, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
-  };
 }
