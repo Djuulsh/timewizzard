@@ -119,6 +119,9 @@ export function validateBuilder(input) {
   if (!input || typeof input !== 'object') throw new Error('Builder-data mangler.');
   const builder = normalizeBuilderStructure(input, { preserveLegacyAppearance: true });
   if (builder.mode !== 'components_v2') throw new Error('Builderen understøtter kun components_v2 mode.');
+  if (builder.messageLayout?.mode === 'target' && (!Number.isInteger(builder.messageLayout.targetCount) || builder.messageLayout.targetCount < 1 || builder.messageLayout.targetCount > 75)) {
+    throw new Error('Det valgte antal Discord-beskeder skal være mellem 1 og 75.');
+  }
   if (!Number.isInteger(builder.accentColor) || builder.accentColor < 0 || builder.accentColor > 0xFFFFFF) throw new Error('Builderens legacy/default accentColor er ugyldig.');
   if (!Array.isArray(builder.blocks) || builder.blocks.length > 25) throw new Error('Builderen kan højst have 25 root blocks/containers.');
   if (totalBuilderBlocks(builder) > 75) throw new Error('Builderen kan højst have 75 blocks inklusive indhold i containers.');

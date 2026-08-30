@@ -382,10 +382,14 @@ async function v162ValidateCanonicalPayload() {
     });
     if (sequence !== v162Ui.canonicalSequence) return null;
     const messages = Number(data.stats?.messageCount || data.payloads?.length || 0);
+    const minimum = Number(data.stats?.automaticMessageCount || messages);
+    const maximum = Number(data.stats?.maximumMessageCount || messages);
+    if (els.messageSplitHint) els.messageSplitHint.textContent = `Validated: ${messages} message${messages === 1 ? '' : 's'} · allowed range for exact split: ${minimum}-${maximum}.`;
     v162CanonicalStatus(`Discord payload valid · ${messages} message${messages === 1 ? '' : 's'}`, messages > 1 ? 'warning' : 'valid');
     return data;
   } catch (error) {
     if (sequence !== v162Ui.canonicalSequence) return null;
+    if (els.messageSplitHint) els.messageSplitHint.textContent = error.message;
     v162CanonicalStatus(`Discord validation: ${error.message}`, 'error');
     return { error };
   }

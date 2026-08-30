@@ -2,7 +2,15 @@ import { DEFAULT_ACCENT_COLOR } from '../constants.js';
 import { makeShortId } from './ids.js';
 
 export const BUILDER_SCHEMA_VERSION = 2;
+export const MESSAGE_LAYOUT_MODES = Object.freeze(['auto', 'per_block', 'target']);
 const LEGACY_DOWNLOAD_LABELS = new Set(['MerfinUI_v7.80.zip', 'TBC_AddOns.zip']);
+
+export function normalizeMessageLayout(value) {
+  const mode = MESSAGE_LAYOUT_MODES.includes(value?.mode) ? value.mode : 'auto';
+  if (mode !== 'target') return { mode };
+  const targetCount = Number(value?.targetCount);
+  return { mode, targetCount: Number.isInteger(targetCount) ? targetCount : 2 };
+}
 
 function migrateKnownDownloadSelector(block) {
   if (block?.type !== 'string_select' || !Array.isArray(block.options) || block.options.length !== LEGACY_DOWNLOAD_LABELS.size) return cloneBlock(block);
@@ -51,6 +59,7 @@ export function normalizeBuilderStructure(input, { preserveLegacyAppearance = tr
   builder.actions = builder.actions && typeof builder.actions === 'object' && !Array.isArray(builder.actions) ? builder.actions : {};
   builder.accentColor = Number.isInteger(builder.accentColor) ? builder.accentColor : DEFAULT_ACCENT_COLOR;
   builder.blocks = Array.isArray(builder.blocks) ? builder.blocks : [];
+  builder.messageLayout = normalizeMessageLayout(builder.messageLayout);
 
   if (isNestedV2(builder)) {
     builder.schemaVersion = BUILDER_SCHEMA_VERSION;

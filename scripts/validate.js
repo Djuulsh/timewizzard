@@ -105,6 +105,14 @@ const multiPayloads = buildBuilderPayloads(makeEntity('multi', 'Multiple contain
 if (multiPayloads.length !== 1 || multiPayloads[0].components.filter((component) => component.type === 17).length !== 2) {
   throw new Error('Plain root content plus two explicit containers should remain one Discord message when limits allow.');
 }
+const perBlockBuilder = structuredClone(multiContainerBuilder);
+perBlockBuilder.messageLayout = { mode: 'per_block' };
+const perBlockPayloads = buildBuilderPayloads(makeEntity('multi-per-block', 'One message per block', perBlockBuilder), { kind: 'd', id: 'multi-per-block' });
+if (perBlockPayloads.length !== 3) throw new Error('Per-block message layout must start a new Discord message for every top-level block/container.');
+const targetBuilder = structuredClone(multiContainerBuilder);
+targetBuilder.messageLayout = { mode: 'target', targetCount: 2 };
+const targetPayloads = buildBuilderPayloads(makeEntity('multi-target', 'Two messages', targetBuilder), { kind: 'd', id: 'multi-target' });
+if (targetPayloads.length !== 2) throw new Error('Target message layout must produce the requested number of Discord messages.');
 
 const youtubeBuilder = createBuilderTemplate('blank', 'YouTube');
 youtubeBuilder.blocks.push(makeYoutubeBlock({
@@ -249,6 +257,23 @@ if (existingPostResult.destinationType !== 'thread' || existingPostResult.destin
   throw new Error('Existing forum post publication metadata is incorrect.');
 }
 
+let splitMessageSends = 0;
+const splitDestination = {
+  id: 'split-channel',
+  type: ChannelType.GuildText,
+  isThread: () => false,
+  send: async () => {
+    splitMessageSends += 1;
+    return { id: `split-message-${splitMessageSends}`, edit: async () => undefined };
+  }
+};
+const splitDraft = makeEntity('split-draft', 'Split publishing', structuredClone(perBlockBuilder), {
+  createdBy: 'validator',
+  createdAt: new Date().toISOString()
+});
+const splitPost = await createManagedPost({ destination: splitDestination, draft: splitDraft, store: existingPostStore });
+if (splitMessageSends !== 3 || splitPost.continuationMessageIds.length !== 2) throw new Error('Publishing service must send and track every message selected by the message layout.');
+
 const exportedDefinition = exportDefinition(makeEntity('roundtrip', 'Round-trip JSON', structuredClone(plainBuilder)));
 if (exportedDefinition.format !== BUILDER_EXPORT_FORMAT || exportedDefinition.version !== BUILDER_EXPORT_VERSION) throw new Error('Builder export format metadata is inconsistent.');
 const roundTripImport = parseBuilderDefinition(exportedDefinition);
@@ -285,6 +310,13 @@ const downloadButtons = addonsContainer?.children?.find((block) => block.type ==
 if (downloadButtons.length !== 2 || !downloadButtons.every((button) => button.url.includes('.zip?') && button.url.includes('dl=1'))) throw new Error('TBC template must expose both ZIP files as direct download buttons.');
 const tbcPayloadJson = JSON.stringify(buildBuilderPayloads(makeEntity('tbc-downloads', 'TBC downloads', tbcTemplate), { kind: 'd', id: 'tbc-downloads' }));
 if (!tbcPayloadJson.includes('Download MerfinUI_v7.80.zip') || !tbcPayloadJson.includes('Download TBC_AddOns.zip')) throw new Error('Discord payload must render both ZIP download buttons.');
+const impossibleTbcTarget = structuredClone(tbcTemplate);
+impossibleTbcTarget.messageLayout = { mode: 'target', targetCount: 1 };
+const impossibleTbcStats = getBuilderStats(makeEntity('tbc-too-small', 'TBC target', impossibleTbcTarget), { kind: 'd', id: 'tbc-too-small' });
+if (!impossibleTbcStats.layoutError?.includes('at least 2')) throw new Error('Stats must explain when Discord limits require more messages than requested.');
+let impossibleTargetRejected = false;
+try { buildBuilderPayloads(makeEntity('tbc-too-small', 'TBC target', impossibleTbcTarget), { kind: 'd', id: 'tbc-too-small' }); } catch (error) { impossibleTargetRejected = error.message.includes('at least 2'); }
+if (!impossibleTargetRejected) throw new Error('Publishing must reject a target below Discord\'s minimum message count.');
 if (MAX_STRING_SELECT_CONTENT_LENGTH !== 200_000 || MAX_WEB_JSON_BODY_BYTES !== 20_000_000) throw new Error('String Select size contracts are incorrect.');
 const largeRevisionContent = 'R'.repeat(6_000_000);
 const compactedRevisions = compactRevisionHistory(Array.from({ length: 6 }, (_, index) => ({

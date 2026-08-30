@@ -244,12 +244,12 @@ function splitContainer(container, scope) {
 
 function topLevelComponents(entity, scope) {
   const builder = normalizeBuilderStructure(entity.builder, { preserveLegacyAppearance: true });
-  const result = [];
+  const units = [];
   for (const block of builder.blocks) {
-    if (block.type === 'container') result.push(...splitContainer(block, scope));
-    else result.push(...contentBlockToComponents(block, scope));
+    const components = block.type === 'container' ? splitContainer(block, scope) : contentBlockToComponents(block, scope);
+    if (components.length) units.push({ blockId: block.id, components });
   }
-  return { builder, components: result };
+  return { builder, units, components: units.flatMap((unit) => unit.components) };
 }
 
 function packMessages(components) {
@@ -275,6 +275,47 @@ function packMessages(components) {
   return groups;
 }
 
+function splitGroupsToTarget(groups, targetCount) {
+  const result = groups.map((group) => [...group]);
+  while (result.length < targetCount) {
+    let splitIndex = -1;
+    let largestSize = 1;
+    for (let index = 0; index < result.length; index += 1) {
+      if (result[index].length > largestSize) {
+        largestSize = result[index].length;
+        splitIndex = index;
+      }
+    }
+    if (splitIndex < 0) break;
+    const group = result[splitIndex];
+    const midpoint = Math.ceil(group.length / 2);
+    result.splice(splitIndex, 1, group.slice(0, midpoint), group.slice(midpoint));
+  }
+  return result;
+}
+
+function groupsForLayout(builder, units, components, { strict = true } = {}) {
+  const automaticGroups = packMessages(components);
+  const layout = builder.messageLayout ?? { mode: 'auto' };
+  if (layout.mode === 'auto') return { groups: automaticGroups, automaticGroups };
+  if (layout.mode === 'per_block') {
+    return { groups: units.flatMap((unit) => packMessages(unit.components)), automaticGroups };
+  }
+
+  const targetCount = Number(layout.targetCount);
+  if (!Number.isInteger(targetCount) || targetCount < automaticGroups.length) {
+    const layoutError = `Discord limits require at least ${automaticGroups.length} messages for this post.`;
+    if (strict) throw new Error(layoutError);
+    return { groups: automaticGroups, automaticGroups, layoutError };
+  }
+  if (targetCount > components.length) {
+    const layoutError = `This post can be split into at most ${components.length} non-empty messages with its current content.`;
+    if (strict) throw new Error(layoutError);
+    return { groups: automaticGroups, automaticGroups, layoutError };
+  }
+  return { groups: splitGroupsToTarget(automaticGroups, targetCount), automaticGroups };
+}
+
 export function allowedMentionsFor(entity) {
   const policy = entity?.mentionPolicy;
   if (policy?.mode !== 'selected') return { parse: [], replied_user: false };
@@ -285,7 +326,7 @@ export function allowedMentionsFor(entity) {
 }
 
 export function getBuilderStats(entity, scope = { kind: 'd', id: 'preview' }) {
-  const { builder, components } = topLevelComponents(entity, scope);
+  const { builder, units, components } = topLevelComponents(entity, scope);
   if (!components.length) {
     return {
       blockCount: totalBuilderBlocks(builder),
@@ -293,25 +334,33 @@ export function getBuilderStats(entity, scope = { kind: 'd', id: 'preview' }) {
       componentCount: 0,
       textLength: 0,
       messageCount: 0,
+      automaticMessageCount: 0,
+      maximumMessageCount: 0,
+      messageLayout: builder.messageLayout,
+      layoutError: null,
       containerCount: builder.blocks.filter((block) => block.type === 'container').length
     };
   }
-  const groups = packMessages(components);
+  const { groups, automaticGroups, layoutError = null } = groupsForLayout(builder, units, components, { strict: false });
   return {
     blockCount: totalBuilderBlocks(builder),
     rootCount: builder.blocks.length,
     componentCount: components.reduce((sum, component) => sum + countComponents(component), 0),
     textLength: components.reduce((sum, component) => sum + countText(component), 0),
     messageCount: groups.length,
+    automaticMessageCount: automaticGroups.length,
+    maximumMessageCount: components.length,
+    messageLayout: builder.messageLayout,
+    layoutError,
     containerCount: builder.blocks.filter((block) => block.type === 'container').length
   };
 }
 
 export function buildBuilderPayloads(entity, scope) {
   if (!entity?.builder?.blocks?.length) throw new Error('Opslaget har ingen blocks. Tilføj mindst ét block før Preview eller Publish.');
-  const { components } = topLevelComponents(entity, scope);
+  const { builder, units, components } = topLevelComponents(entity, scope);
   if (!components.length) throw new Error('Opslaget har ingen publicerbart indhold. Tilføj mindst ét content block.');
-  const groups = packMessages(components);
+  const { groups } = groupsForLayout(builder, units, components);
   const allowedMentions = allowedMentionsFor(entity);
   return groups.map((group) => ({
     flags: MessageFlags.IsComponentsV2,

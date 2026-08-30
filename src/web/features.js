@@ -15,6 +15,7 @@ export const WEB_FEATURES = Object.freeze([
   'discohook-import',
   'builder-json-roundtrip-import',
   'download-button-migration',
+  'configurable-message-splitting',
   'media-gallery',
   'thumbnail',
   'smart-youtube',

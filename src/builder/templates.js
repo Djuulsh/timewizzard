@@ -19,6 +19,7 @@ function baseBuilder() {
   return {
     schemaVersion: BUILDER_SCHEMA_VERSION,
     mode: 'components_v2',
+    messageLayout: { mode: 'auto' },
     accentColor: DEFAULT_ACCENT_COLOR,
     blocks: [],
     actions: {}
