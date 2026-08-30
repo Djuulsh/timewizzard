@@ -20,6 +20,7 @@ import {
   destinationTypeForChannel,
   getDestinationChannelId,
   getDestinationType,
+  normalizeTagIds,
   validateDestination
 } from '../destinations.js';
 import { convertDiscohook } from '../discohook.js';
@@ -134,7 +135,7 @@ async function saveEntity(store, kind, entity, reason = 'save') {
 async function listDestinations(client, guildId) {
   const guild = await client.guilds.fetch(guildId);
   const channels = await guild.channels.fetch();
-  return [...channels.values()]
+  const baseChannels = [...channels.values()]
     .filter((channel) => channel && destinationTypeForChannel(channel))
     .sort((a, b) => a.rawPosition - b.rawPosition)
     .map((channel) => ({
@@ -147,6 +148,43 @@ async function listDestinations(client, guildId) {
         ? channel.availableTags.map((tag) => ({ id: tag.id, name: tag.name }))
         : []
     }));
+
+  const forums = [...channels.values()].filter((channel) => channel?.type === ChannelType.GuildForum);
+  const forumIds = new Set(forums.map((forum) => forum.id));
+  const threads = new Map();
+  const active = await guild.channels.fetchActiveThreads().catch((error) => {
+    console.warn('Could not fetch active Discord threads for destination picker:', error.message);
+    return { threads: new Map() };
+  });
+  for (const thread of active.threads.values()) {
+    if (forumIds.has(thread.parentId)) threads.set(thread.id, thread);
+  }
+  const archivedGroups = await Promise.all(forums.map((forum) =>
+    forum.threads.fetchArchived({ type: 'public', fetchAll: true }).catch((error) => {
+      console.warn(`Could not fetch archived forum posts for ${forum.id}:`, error.message);
+      return { threads: new Map() };
+    })
+  ));
+  for (const group of archivedGroups) {
+    for (const thread of group.threads.values()) threads.set(thread.id, thread);
+  }
+
+  const forumNames = new Map(forums.map((forum) => [forum.id, forum.name]));
+  const threadDestinations = [...threads.values()]
+    .sort((a, b) => String(a.name).localeCompare(String(b.name), 'en'))
+    .map((thread) => ({
+      id: thread.id,
+      name: `${forumNames.get(thread.parentId) || 'Forum'} / ${thread.name}`,
+      type: 'thread',
+      channelType: 'thread',
+      parentId: thread.parentId,
+      parentName: forumNames.get(thread.parentId) || null,
+      archived: Boolean(thread.archived),
+      requireTag: false,
+      tags: []
+    }));
+
+  return [...baseChannels, ...threadDestinations];
 }
 
 async function previewEntities(client, guildId, session) {
@@ -393,11 +431,11 @@ export function createWebServer({ client, store, config }) {
       const body = await readJsonBody(request);
       const title = String(body.title ?? '').trim();
       const destinationId = String(body.destinationId ?? body.forumId ?? '').trim();
-      const tagId = String(body.tagId ?? '').trim() || null;
+      const tagIds = normalizeTagIds(body.tagIds ?? body.tagId);
       const template = String(body.template ?? 'blank');
       if (!title || title.length > 100) throw Object.assign(new Error('Titel skal være 1-100 tegn.'), { statusCode: 400 });
       const destination = await client.channels.fetch(destinationId);
-      const destinationError = validateDestination(destination, tagId);
+      const destinationError = validateDestination(destination, tagIds);
       if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
       const now = new Date().toISOString();
       const type = destinationTypeForChannel(destination);
@@ -407,7 +445,7 @@ export function createWebServer({ client, store, config }) {
         forumId: destination.id,
         destinationType: type,
         destinationChannelId: destination.id,
-        appliedTagIds: type === 'forum' && tagId ? [tagId] : [],
+        appliedTagIds: type === 'forum' ? tagIds : [],
         mentionPolicy: normalizeMentionPolicy(null),
         createdBy: session.user.id,
         createdAt: now,
@@ -422,9 +460,9 @@ export function createWebServer({ client, store, config }) {
     if (url.pathname === '/api/import/discohook' && method === 'POST') {
       const body = await readJsonBody(request, 3_000_000);
       const destinationId = String(body.destinationId ?? '').trim();
-      const tagId = String(body.tagId ?? '').trim() || null;
+      const tagIds = normalizeTagIds(body.tagIds ?? body.tagId);
       const destination = await client.channels.fetch(destinationId);
-      const destinationError = validateDestination(destination, tagId);
+      const destinationError = validateDestination(destination, tagIds);
       if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
       const converted = convertDiscohook(body.payload, body.title || null);
       const now = new Date().toISOString();
@@ -435,7 +473,7 @@ export function createWebServer({ client, store, config }) {
         forumId: destination.id,
         destinationType: type,
         destinationChannelId: destination.id,
-        appliedTagIds: type === 'forum' && tagId ? [tagId] : [],
+        appliedTagIds: type === 'forum' ? tagIds : [],
         mentionPolicy: normalizeMentionPolicy(null),
         createdBy: session.user.id,
         createdAt: now,
@@ -536,11 +574,13 @@ export function createWebServer({ client, store, config }) {
       if (kind === 'd') {
         const destinationId = String(body.destinationId ?? getDestinationChannelId(resolved.entity) ?? '').trim();
         const destination = await client.channels.fetch(destinationId);
-        const tagId = body.tagId !== undefined ? String(body.tagId || '') || null : resolved.entity.appliedTagIds?.[0] ?? null;
-        const destinationError = validateDestination(destination, tagId);
+        const tagIds = body.tagIds !== undefined || body.tagId !== undefined
+          ? normalizeTagIds(body.tagIds ?? body.tagId)
+          : [...(resolved.entity.appliedTagIds ?? [])];
+        const destinationError = validateDestination(destination, tagIds);
         if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
         const type = destinationTypeForChannel(destination);
-        const draft = { ...resolved.entity, destinationType: type, destinationChannelId: destination.id, forumId: destination.id, appliedTagIds: type === 'forum' && tagId ? [tagId] : [] };
+        const draft = { ...resolved.entity, destinationType: type, destinationChannelId: destination.id, forumId: destination.id, appliedTagIds: type === 'forum' ? tagIds : [] };
         const post = await createManagedPost({ destination, draft, store });
         json(response, 200, { scope: { kind: 'p', id: post.builderId }, entity: post, modified: false, revisions: store.listRevisions('p', post.builderId), stats: getBuilderStats(post, { kind: 'p', id: post.builderId }) });
         return;
@@ -553,10 +593,12 @@ export function createWebServer({ client, store, config }) {
       let post;
       if (wantsRecreate) {
         if (destination) {
-          const tagId = body.tagId !== undefined ? String(body.tagId || '') || null : refreshed.appliedTagIds?.[0] ?? null;
-          const destinationError = validateDestination(destination, tagId);
+          const tagIds = body.tagIds !== undefined || body.tagId !== undefined
+            ? normalizeTagIds(body.tagIds ?? body.tagId)
+            : [...(refreshed.appliedTagIds ?? [])];
+          const destinationError = validateDestination(destination, tagIds);
           if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
-          post = await recreateManagedPost({ client, post: refreshed, store, destination, tagId, removeOld: true });
+          post = await recreateManagedPost({ client, post: refreshed, store, destination, tagIds, removeOld: true });
         } else {
           post = await recreateManagedPost({ client, post: refreshed, store, removeOld: true });
         }
@@ -574,15 +616,15 @@ export function createWebServer({ client, store, config }) {
       if (!resolved) { json(response, 404, { error: 'Opslaget blev ikke fundet.' }); return; }
       const body = await readJsonBody(request);
       const destination = await client.channels.fetch(String(body.destinationId || ''));
-      const tagId = String(body.tagId || '') || null;
-      const destinationError = validateDestination(destination, tagId);
+      const tagIds = normalizeTagIds(body.tagIds ?? body.tagId);
+      const destinationError = validateDestination(destination, tagIds);
       if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
       if (kind === 'p') {
-        const moved = await recreateManagedPost({ client, post: resolved.entity, store, destination, tagId, removeOld: true });
+        const moved = await recreateManagedPost({ client, post: resolved.entity, store, destination, tagIds, removeOld: true });
         json(response, 200, { scope: { kind: 'p', id: moved.builderId }, entity: moved });
       } else {
         const type = destinationTypeForChannel(destination);
-        const saved = await saveEntity(store, kind, { ...resolved.entity, forumId: destination.id, destinationType: type, destinationChannelId: destination.id, appliedTagIds: type === 'forum' && tagId ? [tagId] : [] }, 'change-destination');
+        const saved = await saveEntity(store, kind, { ...resolved.entity, forumId: destination.id, destinationType: type, destinationChannelId: destination.id, appliedTagIds: type === 'forum' ? tagIds : [] }, 'change-destination');
         json(response, 200, { scope: { kind: 'd', id: saved.id }, entity: saved });
       }
       return;
@@ -622,7 +664,7 @@ export function createWebServer({ client, store, config }) {
       if (url.pathname === '/health') {
         json(response, client.isReady() ? 200 : 503, {
           ok: client.isReady(), version: VERSION, bot: client.user?.tag ?? null, webBuilder: config.webEnabled,
-          oauthLoginPath: '/auth/discord', builderPath: '/builder', supportedDestinations: ['forum', 'text', 'announcement'],
+          oauthLoginPath: '/auth/discord', builderPath: '/builder', supportedDestinations: ['forum', 'forum-post', 'text', 'announcement'],
           features: WEB_FEATURES,
           uptimeSeconds: Math.floor(process.uptime())
         });

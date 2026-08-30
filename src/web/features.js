@@ -1,6 +1,8 @@
 export const WEB_FEATURES = Object.freeze([
   'oauth-web-builder',
   'forum-text-announcement-destinations',
+  'existing-forum-post-destinations',
+  'multi-forum-tags',
   'orphan-recreate',
   'change-destination',
   'plain-root-posts',

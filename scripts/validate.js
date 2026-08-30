@@ -19,6 +19,10 @@ import { VERSION } from '../src/version.js';
 import { convertDiscohook } from '../src/discohook.js';
 import { MAX_STRING_SELECT_CONTENT_LENGTH, MAX_WEB_JSON_BODY_BYTES } from '../src/constants.js';
 import { compactRevisionHistory } from '../src/storage.js';
+import { ChannelFlags, ChannelType } from 'discord.js';
+import { destinationTypeForChannel, normalizeTagIds, validateDestination } from '../src/destinations.js';
+import { commands } from '../src/commands.js';
+import { createManagedPost } from '../src/postService.js';
 
 function makeEntity(id, title, builder, extra = {}) {
   return { id, title, builder, ...extra };
@@ -195,6 +199,53 @@ try {
   throw new Error('String Select accepterede mere end 200000 tegn.');
 } catch (error) {
   if (!String(error.message).includes('200000')) throw error;
+}
+
+const forumDestination = {
+  type: ChannelType.GuildForum,
+  availableTags: Array.from({ length: 6 }, (_, index) => ({ id: `tag-${index + 1}`, name: `Tag ${index + 1}` })),
+  flags: { has: (flag) => flag === ChannelFlags.RequireTag }
+};
+if (validateDestination(forumDestination, ['tag-1', 'tag-2']) !== null) throw new Error('Forum destination must accept multiple valid tags.');
+if (!validateDestination(forumDestination, []).includes('requires at least one tag')) throw new Error('Required forum tag validation failed.');
+if (!validateDestination(forumDestination, forumDestination.availableTags.map((tag) => tag.id)).includes('at most five')) throw new Error('Discord five-tag limit validation failed.');
+const normalizedTags = normalizeTagIds(['tag-1', 'tag-1', '', 'tag-2']);
+if (normalizedTags.join(',') !== 'tag-1,tag-2') throw new Error('Tag IDs must be trimmed and deduplicated.');
+const existingForumPost = { type: ChannelType.PublicThread };
+if (destinationTypeForChannel(existingForumPost) !== 'thread' || validateDestination(existingForumPost, []) !== null) throw new Error('Existing forum posts must be valid managed-message destinations.');
+if (!validateDestination(existingForumPost, ['tag-1']).includes('cannot be changed')) throw new Error('Existing forum post tags must remain owned by the thread itself.');
+const postCommandJson = commands.find((command) => command.name === 'post').toJSON();
+const createOptions = postCommandJson.options.find((option) => option.name === 'opret').options;
+if (!['tag', 'tag2', 'tag3', 'tag4', 'tag5'].every((name) => createOptions.some((option) => option.name === name))) throw new Error('Slash create command must expose five forum tag options.');
+const destinationOption = createOptions.find((option) => option.name === 'forum');
+if (!destinationOption.channel_types.includes(ChannelType.PublicThread)) throw new Error('Slash create command must allow an existing forum post destination.');
+
+let reopenedExistingPost = false;
+let managedMessageEdited = false;
+const existingPostDestination = {
+  id: 'existing-forum-post',
+  type: ChannelType.PublicThread,
+  archived: true,
+  isThread: () => true,
+  setArchived: async (archived) => { reopenedExistingPost = archived === false; },
+  send: async () => ({
+    id: 'timewizzard-message',
+    edit: async () => { managedMessageEdited = true; }
+  })
+};
+const existingPostStore = {
+  savePost: async (post) => post,
+  removeDraft: async () => undefined
+};
+const existingPostDraft = makeEntity('existing-post-draft', 'Existing post test', structuredClone(plainBuilder), {
+  createdBy: 'validator',
+  createdAt: new Date().toISOString(),
+  appliedTagIds: []
+});
+const existingPostResult = await createManagedPost({ destination: existingPostDestination, draft: existingPostDraft, store: existingPostStore });
+if (!reopenedExistingPost || !managedMessageEdited) throw new Error('Publishing to an archived existing forum post must reopen it and render the managed message.');
+if (existingPostResult.destinationType !== 'thread' || existingPostResult.destinationChannelId !== existingPostDestination.id || existingPostResult.starterMessageId !== 'timewizzard-message') {
+  throw new Error('Existing forum post publication metadata is incorrect.');
 }
 if (MAX_STRING_SELECT_CONTENT_LENGTH !== 200_000 || MAX_WEB_JSON_BODY_BYTES !== 20_000_000) throw new Error('String Select size contracts are incorrect.');
 const largeRevisionContent = 'R'.repeat(6_000_000);

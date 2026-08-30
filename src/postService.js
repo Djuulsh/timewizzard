@@ -131,6 +131,7 @@ async function publishChannel({ channel, source, store, builderId, removeDraftId
   let starterMessage = null;
   const sentIds = [];
   try {
+    if (channel.isThread?.()) await prepareThread(channel);
     starterMessage = await channel.send({ content: 'Opretter informationspanelet…', allowedMentions: { parse: [] } });
     sentIds.push(starterMessage.id);
 
@@ -159,8 +160,8 @@ async function publishChannel({ channel, source, store, builderId, removeDraftId
 async function publishToDestination({ destination, source, store, builderId, removeDraftId = null, reason = 'publish' }) {
   const type = destinationTypeForChannel(destination);
   if (type === 'forum') return publishForum({ forum: destination, source, store, builderId, removeDraftId, reason });
-  if (type === 'channel') return publishChannel({ channel: destination, source, store, builderId, removeDraftId, reason });
-  throw new Error('Destinationen skal være en forum-, tekst- eller announcement-kanal.');
+  if (type === 'channel' || type === 'thread') return publishChannel({ channel: destination, source, store, builderId, removeDraftId, reason });
+  throw new Error('Choose a forum, existing forum post, text channel or announcement channel.');
 }
 
 export async function createManagedPost({ destination, forum, draft, store }) {
@@ -218,12 +219,14 @@ async function updateForumPost({ client, post, store }) {
 async function updateChannelPost({ client, post, store }) {
   const builderId = String(post.builderId || post.threadId);
   const channel = await fetchChannelOrNull(client, getDestinationChannelId(post));
-  if (!channel || destinationTypeForChannel(channel) !== 'channel') {
+  if (!channel || !['channel', 'thread'].includes(destinationTypeForChannel(channel))) {
     await store.setPostDiscordState(builderId, {
       status: 'deleted', reason: 'destination_missing', checkedAt: new Date().toISOString()
     });
     throw new Error('Destination-kanalen findes ikke længere. Builder-data er bevaret; vælg en ny destination og brug Re-create.');
   }
+
+  if (channel.isThread?.()) await prepareThread(channel);
 
   const starterMessage = await channel.messages.fetch(post.starterMessageId).catch((error) => {
     if (isGoneOrInaccessible(error)) return null;
@@ -261,9 +264,9 @@ async function updateChannelPost({ client, post, store }) {
 }
 
 export async function updateManagedPost({ client, post, store }) {
-  return getDestinationType(post) === 'channel'
-    ? updateChannelPost({ client, post, store })
-    : updateForumPost({ client, post, store });
+  return getDestinationType(post) === 'forum'
+    ? updateForumPost({ client, post, store })
+    : updateChannelPost({ client, post, store });
 }
 
 export async function inspectManagedPost({ client, post }) {
@@ -299,7 +302,7 @@ export async function refreshManagedPostState({ client, post, store }) {
 }
 
 async function deleteDiscordTargetOnly({ client, post }) {
-  if (getDestinationType(post) === 'channel') {
+  if (getDestinationType(post) !== 'forum') {
     const channel = await fetchChannelOrNull(client, getDestinationChannelId(post));
     if (!channel) return false;
     await removeMessages(channel, [post.starterMessageId, ...(post.continuationMessageIds ?? [])]);
@@ -317,7 +320,7 @@ async function deleteDiscordTargetOnly({ client, post }) {
   }
 }
 
-export async function recreateManagedPost({ client, post, store, destination = null, tagId = undefined, removeOld = true }) {
+export async function recreateManagedPost({ client, post, store, destination = null, tagIds = undefined, removeOld = true }) {
   const builderId = String(post.builderId || store.getPostKey?.(post) || post.threadId);
   let target = destination;
   if (!target) target = await fetchChannelOrNull(client, getDestinationChannelId(post));
@@ -329,8 +332,8 @@ export async function recreateManagedPost({ client, post, store, destination = n
     ...structuredClone(post),
     builderId,
     appliedTagIds: type === 'forum'
-      ? tagId !== undefined
-        ? tagId ? [tagId] : []
+      ? tagIds !== undefined
+        ? [...tagIds]
         : [...(post.appliedTagIds ?? [])]
       : []
   };

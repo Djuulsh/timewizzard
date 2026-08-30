@@ -47,19 +47,24 @@ function addDestinationOption(subcommand) {
       .addChannelTypes(
         ChannelType.GuildForum,
         ChannelType.GuildText,
-        ChannelType.GuildAnnouncement
+        ChannelType.GuildAnnouncement,
+        ChannelType.PublicThread,
+        ChannelType.AnnouncementThread
       )
   );
 }
 
-function addTagOption(subcommand) {
-  return subcommand.addStringOption((option) =>
-    option
-      .setName('tag')
-      .setDescription('Valgfrit forum-tag (ignoreres for normale kanaler)')
-      .setRequired(false)
-      .setAutocomplete(true)
-  );
+function addTagOptions(subcommand) {
+  for (let index = 1; index <= 5; index += 1) {
+    subcommand.addStringOption((option) =>
+      option
+        .setName(index === 1 ? 'tag' : `tag${index}`)
+        .setDescription(index === 1 ? 'Optional forum tag' : `Optional forum tag ${index}`)
+        .setRequired(false)
+        .setAutocomplete(true)
+    );
+  }
+  return subcommand;
 }
 
 const postCommand = new SlashCommandBuilder()
@@ -86,7 +91,7 @@ const postCommand = new SlashCommandBuilder()
         .setRequired(false)
         .addChoices(...SLASH_TEMPLATE_CHOICES)
     );
-    addTagOption(subcommand);
+    addTagOptions(subcommand);
     return subcommand;
   })
   .addSubcommand((subcommand) =>
@@ -176,7 +181,7 @@ const postCommand = new SlashCommandBuilder()
         .setMinLength(1)
         .setMaxLength(100)
     );
-    addTagOption(subcommand);
+    addTagOptions(subcommand);
     return subcommand;
   });
 

@@ -120,7 +120,7 @@
       <div class="dialog-head"><div><h2>Create draft</h2><p>Choose destination and template.</p></div><button type="button" class="icon-btn" data-close-dialog="newDraftDialog" aria-label="Close">×</button></div>
       <label>Title<input id="newTitle" maxlength="100" required placeholder="Information"></label>
       <label>Destination<select id="newForum" required></select></label>
-      <label>Forum tag<select id="newTag"><option value="">No tag</option></select></label>
+      <label>Forum tags (up to 5)<small class="tag-picker-help">Click a tag to toggle it. No Ctrl/Cmd key required.</small><select id="newTag" multiple size="5"></select></label>
       <label>Template<select id="newTemplate"></select></label>
       <div class="dialog-actions"><button type="button" class="btn ghost" data-close-dialog="newDraftDialog">Cancel</button><button type="submit" class="btn primary">Create draft</button></div>
     </form>
@@ -130,7 +130,7 @@
     <form id="destinationForm" method="dialog">
       <div class="dialog-head"><div><h2>Destination / Repair</h2><p>Move, relink or re-create the current post.</p></div><button type="button" class="icon-btn" data-close-dialog="destinationDialog" aria-label="Close">×</button></div>
       <label>Destination<select id="destinationSelect" required></select></label>
-      <label>Forum tag<select id="destinationTag"><option value="">No tag</option></select></label>
+      <label>Forum tags (up to 5)<small class="tag-picker-help">Click a tag to toggle it. No Ctrl/Cmd key required.</small><select id="destinationTag" multiple size="5"></select></label>
       <div id="destinationHint" class="dialog-note"></div>
       <div class="dialog-actions"><button type="button" class="btn ghost" data-close-dialog="destinationDialog">Cancel</button><button type="submit" class="btn primary">Apply destination</button></div>
     </form>
@@ -149,7 +149,7 @@
       <div class="dialog-head"><div><h2>Import DiscoHook JSON</h2><p>Converts text, embeds, images, links and supported Components V2.</p></div><button type="button" class="icon-btn" data-close-dialog="discohookDialog" aria-label="Close">×</button></div>
       <label>Optional title<input id="discohookTitle" maxlength="100" placeholder="Imported DiscoHook"></label>
       <label>Destination<select id="discohookDestination" required></select></label>
-      <label>Forum tag<select id="discohookTag"><option value="">No tag</option></select></label>
+      <label>Forum tags (up to 5)<small class="tag-picker-help">Click a tag to toggle it. No Ctrl/Cmd key required.</small><select id="discohookTag" multiple size="5"></select></label>
       <label>DiscoHook JSON<textarea id="discohookJson" rows="16" spellcheck="false" placeholder="{ ... }" required></textarea></label>
       <div class="dialog-actions"><button type="button" class="btn ghost" data-close-dialog="discohookDialog">Cancel</button><button type="submit" class="btn primary">Import as draft</button></div>
     </form>

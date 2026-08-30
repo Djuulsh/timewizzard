@@ -2,7 +2,6 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ChannelFlags,
   ChannelType,
   LabelBuilder,
   MessageFlags,
@@ -31,6 +30,7 @@ import {
   safeFileName,
   truncate
 } from './utils.js';
+import { validateDestination } from './destinations.js';
 import {
   makeImageBlock,
   makeLinkBlock,
@@ -140,6 +140,12 @@ function profileSelectValue(value) {
   return { classKey, resolutionKey };
 }
 
+function interactionTagIds(interaction) {
+  return [...new Set(Array.from({ length: 5 }, (_, index) =>
+    interaction.options.getString(index === 0 ? 'tag' : `tag${index + 1}`, false)?.trim()
+  ).filter(Boolean))];
+}
+
 export class BotController {
   constructor({ client, store, config }) {
     this.client = client;
@@ -203,7 +209,7 @@ export class BotController {
 
     const subcommand = interaction.options.getSubcommand(false);
     const focused = interaction.options.getFocused(true);
-    if (!['opret', 'importer'].includes(subcommand) || focused.name !== 'tag') {
+    if (!['opret', 'importer'].includes(subcommand) || !/^tag[2-5]?$/.test(focused.name)) {
       await interaction.respond([]);
       return;
     }
@@ -241,14 +247,8 @@ export class BotController {
     }
   }
 
-  validateForumDestination(forum, tagId) {
-    if (!forum || forum.type !== ChannelType.GuildForum) return 'Den valgte kanal er ikke en forum-kanal.';
-    if (tagId && !forum.availableTags.some((tag) => tag.id === tagId)) return 'Det valgte tag findes ikke længere i forum-kanalen.';
-    if (forum.flags.has(ChannelFlags.RequireTag) && !tagId) {
-      const tags = forum.availableTags.map((tag) => `• ${tag.name}`).join('\n') || 'Ingen tags fundet.';
-      return `Forum-kanalen kræver et tag. Vælg et tag i kommandoen:\n${tags}`;
-    }
-    return null;
+  validateForumDestination(destination, tagIds) {
+    return validateDestination(destination, tagIds);
   }
 
   resolveEntityInput(input) {
@@ -308,8 +308,8 @@ export class BotController {
       const forum = interaction.options.getChannel('forum', true);
       const title = interaction.options.getString('titel', true).trim();
       const template = interaction.options.getString('template', false) || 'blank';
-      const tagId = interaction.options.getString('tag', false);
-      const destinationError = this.validateForumDestination(forum, tagId);
+      const tagIds = interactionTagIds(interaction);
+      const destinationError = this.validateForumDestination(forum, tagIds);
       if (destinationError) {
         await interaction.reply({ content: destinationError, flags: MessageFlags.Ephemeral });
         return;
@@ -320,7 +320,7 @@ export class BotController {
         id: makeShortId(4),
         title,
         forumId: forum.id,
-        appliedTagIds: tagId ? [tagId] : [],
+        appliedTagIds: tagIds,
         createdBy: interaction.user.id,
         createdAt: now,
         updatedAt: now,
@@ -338,8 +338,8 @@ export class BotController {
       const forum = interaction.options.getChannel('forum', true);
       const attachment = interaction.options.getAttachment('fil', true);
       const overrideTitle = interaction.options.getString('titel', false)?.trim();
-      const tagId = interaction.options.getString('tag', false);
-      const destinationError = this.validateForumDestination(forum, tagId);
+      const tagIds = interactionTagIds(interaction);
+      const destinationError = this.validateForumDestination(forum, tagIds);
       if (destinationError) {
         await interaction.reply({ content: destinationError, flags: MessageFlags.Ephemeral });
         return;
@@ -352,7 +352,7 @@ export class BotController {
         id: makeShortId(4),
         title: overrideTitle || imported.title,
         forumId: forum.id,
-        appliedTagIds: tagId ? [tagId] : [],
+        appliedTagIds: tagIds,
         createdBy: interaction.user.id,
         createdAt: now,
         updatedAt: now,
@@ -677,7 +677,7 @@ export class BotController {
       if (scope.kind === 'd') {
         const forum = await this.client.channels.fetch(entity.forumId);
         if (!forum || forum.type !== ChannelType.GuildForum) throw new Error('Forum-kanalen findes ikke længere.');
-        const destinationError = this.validateForumDestination(forum, entity.appliedTagIds?.[0] ?? null);
+        const destinationError = this.validateForumDestination(forum, entity.appliedTagIds ?? []);
         if (destinationError) throw new Error(destinationError);
         const post = await createManagedPost({ forum, draft: entity, store: this.store });
         await interaction.editReply({

@@ -39,6 +39,9 @@ h3 { font-size: 13px; }
 input, select, textarea { width: 100%; background: #0f1217; border: 1px solid var(--line); border-radius: 8px; color: var(--text); padding: 9px 10px; outline: none; }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(88,101,242,.12); }
 textarea { resize: vertical; line-height: 1.45; }
+.tag-picker-help { display: block; margin: 3px 0 6px; color: var(--muted); font-size: 9px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+select[multiple] { min-height: 112px; padding: 5px; }
+select[multiple] option { border-radius: 5px; padding: 6px 8px; }
 .entity-list { display: grid; gap: 4px; }
 .entity-section { margin-top: 13px; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .entity-card { border: 1px solid transparent; border-radius: 8px; padding: 9px; cursor: pointer; background: transparent; }

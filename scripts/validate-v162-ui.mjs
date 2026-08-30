@@ -31,6 +31,7 @@ assert(!html.includes('syncSeparatorPreview'), 'Legacy inline separator Mutation
 assert(!/<style>[\s\S]*separator-size-demo/.test(html), 'Legacy inline separator CSS must be removed.');
 assert(html.includes('viewport-fit=cover'), 'The HTML viewport must support device safe areas.');
 assert(html.includes('aria-live="polite"'), 'The UI must expose a polite live region.');
+assert((html.match(/<select id="(?:newTag|destinationTag|discohookTag)" multiple size="5">/g) || []).length === 3, 'All Web Builder forum tag pickers must support up to five selections.');
 
 const js162 = read('web/v162.js');
 for (const marker of [
@@ -105,6 +106,10 @@ const server = read('src/web/server.js');
 assert(server.includes("url.pathname === '/api/preview'"), 'Server must expose canonical preview validation.');
 assert(server.includes('WEB_SCRIPT_FILES') && server.includes('WEB_STYLE_FILES'), 'Server must use the consolidated asset manifest.');
 assert(server.includes('WEB_FEATURES'), 'Server must use the current feature registry.');
+assert(server.includes('fetchActiveThreads') && server.includes('fetchArchived'), 'Destination API must expose active and archived forum posts.');
+assert(server.includes("'forum-post'"), 'Health metadata must advertise existing forum post support.');
+assert(appJs.includes('tagIds') && appJs.includes("channelType==='thread'"), 'Web Builder must submit multiple tags and render existing forum post destinations.');
+assert(!quickJs.includes('tagId:'), 'Quick Announcement drafts must preserve all selected forum tags.');
 assert(!fs.existsSync(path.join(root, 'src/web/serverV15.js')), 'The obsolete serverV15 wrapper must be removed.');
 
 const index = read('src/index.js');

@@ -14,6 +14,7 @@ Timewizzard creates, previews, publishes and maintains structured information po
 - Undo/Redo, revision history, local crash recovery and pre-publish review.
 - Safe mentions, Discord user/role/channel insertion, emoji browser and timestamp picker.
 - Deleted-target detection, Re-create and destination repair/move workflows.
+- New posts can use up to five forum tags, and existing forum posts can receive a separately managed Timewizzard message.
 - DiscoHook JSON import and Builder JSON import/export.
 - Discord OAuth access control for the Web Builder.
 
@@ -70,6 +71,8 @@ applications.commands
 ```
 
 Timewizzard slash commands require the invoking member to have **Manage Server** (`ManageGuild`). The server owner and members with Administrator also satisfy this requirement. The channel must not deny the member the **Use Application Commands** permission.
+
+The bot needs **View Channel**, **Send Messages**, **Send Messages in Threads** and **Read Message History** in every destination. It also needs **Create Public Threads** when Timewizzard creates a new forum post. Publishing into an archived forum post automatically attempts to reopen it; locked posts additionally require **Manage Threads**.
 
 If the bot is moved to another server:
 

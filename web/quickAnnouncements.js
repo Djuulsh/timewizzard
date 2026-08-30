@@ -140,7 +140,8 @@ async function createQuickAnnouncementDraft(event) {
   const title = String(els.newTitle?.value || '').trim();
   const destination = state.destinations?.find((item) => item.id === els.newForum?.value);
   if (!title) return toast('The post title cannot be empty.', 'error');
-  if (destination?.requireTag && !els.newTag?.value) return toast('This forum requires a tag.', 'error');
+  const tagIds = validateSelectedTags(destination, els.newTag);
+  if (!tagIds) return;
 
   let temporaryScope = null;
   try {
@@ -149,7 +150,7 @@ async function createQuickAnnouncementDraft(event) {
       body: {
         title,
         destinationId: els.newForum.value,
-        tagId: els.newTag.value || null,
+        tagIds,
         template: 'blank'
       }
     });

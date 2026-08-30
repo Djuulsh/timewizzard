@@ -38,8 +38,8 @@ function canAdmin(interaction) {
 }
 
 export function installDestinationSupport(BotController) {
-  BotController.prototype.validateForumDestination = function validateBuilderDestination(channel, tagId) {
-    return validateDestination(channel, tagId);
+  BotController.prototype.validateForumDestination = function validateBuilderDestination(channel, tagIds) {
+    return validateDestination(channel, tagIds);
   };
 
   BotController.prototype.cloneToDraft = async function cloneToDraft(entity, scope, userId, titleOverride = null) {
@@ -70,11 +70,11 @@ export function installDestinationSupport(BotController) {
 
     if (subcommand === 'opret') {
       const channel = interaction.options.getChannel('forum', true);
-      if (destinationTypeForChannel(channel) === 'channel') {
+      const destinationType = destinationTypeForChannel(channel);
+      if (destinationType && destinationType !== 'forum') {
         const title = interaction.options.getString('titel', true).trim();
         const template = interaction.options.getString('template', false) || 'blank';
-        const tagId = interaction.options.getString('tag', false);
-        const error = validateDestination(channel, tagId);
+        const error = validateDestination(channel, []);
         if (error) {
           await interaction.reply({ content: error, flags: MessageFlags.Ephemeral });
           return;
@@ -84,7 +84,7 @@ export function installDestinationSupport(BotController) {
           id: makeShortId(4),
           title,
           forumId: channel.id,
-          destinationType: 'channel',
+          destinationType,
           destinationChannelId: channel.id,
           appliedTagIds: [],
           createdBy: interaction.user.id,
@@ -103,11 +103,11 @@ export function installDestinationSupport(BotController) {
 
     if (subcommand === 'importer') {
       const channel = interaction.options.getChannel('forum', true);
-      if (destinationTypeForChannel(channel) === 'channel') {
+      const destinationType = destinationTypeForChannel(channel);
+      if (destinationType && destinationType !== 'forum') {
         const attachment = interaction.options.getAttachment('fil', true);
         const overrideTitle = interaction.options.getString('titel', false)?.trim();
-        const tagId = interaction.options.getString('tag', false);
-        const error = validateDestination(channel, tagId);
+        const error = validateDestination(channel, []);
         if (error) {
           await interaction.reply({ content: error, flags: MessageFlags.Ephemeral });
           return;
@@ -119,7 +119,7 @@ export function installDestinationSupport(BotController) {
           id: makeShortId(4),
           title: overrideTitle || imported.title,
           forumId: channel.id,
-          destinationType: 'channel',
+          destinationType,
           destinationChannelId: channel.id,
           appliedTagIds: [],
           createdBy: interaction.user.id,
@@ -138,7 +138,7 @@ export function installDestinationSupport(BotController) {
       const posts = this.store.listPosts();
       const draftLines = drafts.map((draft) => {
         const type = draft.destinationType || 'forum';
-        return `• **${draft.title}** — ${type === 'forum' ? 'Forum' : 'Kanal'} <#${getDestinationChannelId(draft)}> — ID: \`${draft.id}\``;
+        return `• **${draft.title}** — ${destinationLabel(draft)} <#${getDestinationChannelId(draft)}> — ID: \`${draft.id}\``;
       });
       const postLines = posts.map((post) =>
         `• ${postReference(this.config, post)} — **${post.title}** — ${destinationLabel(post)} — ID: \`${post.threadId}\``
@@ -160,7 +160,7 @@ export function installDestinationSupport(BotController) {
     if (subcommand === 'opdater') {
       const input = interaction.options.getString('post', true);
       const resolved = this.resolveEntityInput(input);
-      if (resolved?.scope.kind === 'p' && getDestinationType(resolved.entity) === 'channel') {
+      if (resolved?.scope.kind === 'p' && getDestinationType(resolved.entity) !== 'forum') {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const updated = await updateManagedPost({ client: this.client, post: resolved.entity, store: this.store });
         const link = messageLink(this.config, updated);
@@ -185,8 +185,9 @@ export function installDestinationSupport(BotController) {
       if (resolved) {
         const destinationId = getDestinationChannelId(resolved.entity);
         const channel = await this.client.channels.fetch(destinationId).catch(() => null);
-        if (channel && destinationTypeForChannel(channel) === 'channel') {
-          const error = validateDestination(channel, null);
+        const destinationType = channel ? destinationTypeForChannel(channel) : null;
+        if (destinationType && destinationType !== 'forum') {
+          const error = validateDestination(channel, []);
           if (error) throw new Error(error);
           await interaction.update({ content: 'Publicerer opslaget i kanalen…', components: [] });
           const post = await createManagedPost({ destination: channel, draft: resolved.entity, store: this.store });
