@@ -64,7 +64,8 @@ import {
 import { parseStrictHexColor, validateBuilder } from './builder/validate.js';
 import {
   buildGenericActionReply,
-  resolveGenericAction
+  resolveGenericAction,
+  resolveStringSelect
 } from './builder/actions.js';
 
 function textInput({ id, style = TextInputStyle.Short, required = true, maxLength, value, placeholder }) {
@@ -807,6 +808,15 @@ export class BotController {
       if (value?.startsWith('profile:')) {
         const { classKey, resolutionKey } = profileSelectValue(value);
         await interaction.reply(buildProfileReply(classKey, resolutionKey, this.store.getProfile(classKey, resolutionKey)));
+        return;
+      }
+      if (value?.startsWith('string:')) {
+        const resolved = resolveStringSelect(this.store, kind, id, blockId, value.slice('string:'.length));
+        if (!resolved) {
+          await interaction.reply({ content: 'Denne string findes ikke længere.', flags: MessageFlags.Ephemeral });
+          return;
+        }
+        await interaction.reply(buildGenericActionReply(resolved.action));
         return;
       }
       if (value?.startsWith('action:')) {
