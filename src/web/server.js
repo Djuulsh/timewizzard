@@ -7,6 +7,7 @@ import { ChannelFlags, ChannelType } from 'discord.js';
 import { MAX_WEB_JSON_BODY_BYTES, WOW_CLASSES, RESOLUTIONS, findClass, findResolution } from '../constants.js';
 import { createBuilderTemplate, POST_TEMPLATES } from '../builder/templates.js';
 import { makeShortId } from '../builder/ids.js';
+import { parseBuilderDefinition } from '../builder/io.js';
 import { buildBuilderPayloads, getBuilderStats } from '../builder/render.js';
 import { validateBuilder } from '../builder/validate.js';
 import {
@@ -482,6 +483,42 @@ export function createWebServer({ client, store, config }) {
       };
       await store.saveDraft(draft, { revision: false });
       json(response, 201, { scope: { kind: 'd', id: draft.id }, entity: draft, warnings: converted.warnings, stats: getBuilderStats(draft, { kind: 'd', id: draft.id }) });
+      return;
+    }
+
+    if (url.pathname === '/api/import/builder' && method === 'POST') {
+      const body = await readJsonBody(request, MAX_WEB_JSON_BODY_BYTES);
+      const destinationId = String(body.destinationId ?? '').trim();
+      const tagIds = normalizeTagIds(body.tagIds ?? body.tagId);
+      const destination = await client.channels.fetch(destinationId);
+      const destinationError = validateDestination(destination, tagIds);
+      if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
+      let imported;
+      try {
+        imported = parseBuilderDefinition(body.definition);
+      } catch (error) {
+        error.statusCode = 400;
+        throw error;
+      }
+      const overrideTitle = String(body.title ?? '').trim();
+      const title = (overrideTitle || imported.title).slice(0, 100);
+      const now = new Date().toISOString();
+      const type = destinationTypeForChannel(destination);
+      const draft = {
+        id: makeShortId(4),
+        title,
+        forumId: destination.id,
+        destinationType: type,
+        destinationChannelId: destination.id,
+        appliedTagIds: type === 'forum' ? tagIds : [],
+        mentionPolicy: normalizeMentionPolicy(null),
+        createdBy: session.user.id,
+        createdAt: now,
+        updatedAt: now,
+        builder: imported.builder
+      };
+      await store.saveDraft(draft, { revision: false });
+      json(response, 201, { scope: { kind: 'd', id: draft.id }, entity: draft, stats: getBuilderStats(draft, { kind: 'd', id: draft.id }) });
       return;
     }
 

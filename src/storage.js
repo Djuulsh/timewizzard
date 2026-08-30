@@ -4,7 +4,7 @@ import { RESOLUTIONS, WOW_CLASSES } from './constants.js';
 import { migrateLegacyPostToBuilder } from './builder/templates.js';
 import { BUILDER_SCHEMA_VERSION, normalizeBuilderStructure } from './builder/schema.js';
 
-const CURRENT_VERSION = 5;
+const CURRENT_VERSION = 6;
 const MAX_REVISIONS = 30;
 const MAX_REVISION_STORAGE_BYTES = 20_000_000;
 

@@ -2,6 +2,20 @@ import { DEFAULT_ACCENT_COLOR } from '../constants.js';
 import { makeShortId } from './ids.js';
 
 export const BUILDER_SCHEMA_VERSION = 2;
+const LEGACY_DOWNLOAD_LABELS = new Set(['MerfinUI_v7.80.zip', 'TBC_AddOns.zip']);
+
+function migrateKnownDownloadSelector(block) {
+  if (block?.type !== 'string_select' || !Array.isArray(block.options) || block.options.length !== LEGACY_DOWNLOAD_LABELS.size) return cloneBlock(block);
+  const labels = new Set(block.options.map((option) => String(option?.label ?? '')));
+  if (labels.size !== LEGACY_DOWNLOAD_LABELS.size || [...LEGACY_DOWNLOAD_LABELS].some((label) => !labels.has(label))) return cloneBlock(block);
+
+  const buttons = block.options.map((option) => {
+    const match = String(option.content ?? '').match(/\]\((https?:\/\/[^\s)]+)\)/i);
+    return match ? { label: `Download ${String(option.label)}`, url: match[1] } : null;
+  });
+  if (buttons.some((button) => !button)) return cloneBlock(block);
+  return { id: block.id || makeShortId(3), type: 'button_row', buttons };
+}
 
 function cloneBlock(block) {
   return structuredClone(block);
@@ -41,12 +55,12 @@ export function normalizeBuilderStructure(input, { preserveLegacyAppearance = tr
   if (isNestedV2(builder)) {
     builder.schemaVersion = BUILDER_SCHEMA_VERSION;
     builder.blocks = builder.blocks.map((block) => {
-      if (block.type !== 'container') return cloneBlock(block);
+      if (block.type !== 'container') return migrateKnownDownloadSelector(block);
       return {
         ...cloneBlock(block),
         label: String(block.label || 'Embed').slice(0, 80),
         accentColor: Number.isInteger(block.accentColor) ? block.accentColor : builder.accentColor,
-        children: (block.children || []).filter((child) => child?.type !== 'container').map(cloneBlock)
+        children: (block.children || []).filter((child) => child?.type !== 'container').map(migrateKnownDownloadSelector)
       };
     });
     return builder;
@@ -61,7 +75,7 @@ export function normalizeBuilderStructure(input, { preserveLegacyAppearance = tr
 
   if (!preserveLegacyAppearance) {
     builder.schemaVersion = BUILDER_SCHEMA_VERSION;
-    builder.blocks = builder.blocks.filter((block) => block?.type !== 'container').map(cloneBlock);
+    builder.blocks = builder.blocks.filter((block) => block?.type !== 'container').map(migrateKnownDownloadSelector);
     return builder;
   }
 
@@ -80,7 +94,7 @@ export function normalizeBuilderStructure(input, { preserveLegacyAppearance = tr
       current = containerFromMarker(rawBlock, builder.accentColor);
       continue;
     }
-    current.children.push(cloneBlock(rawBlock));
+    current.children.push(migrateKnownDownloadSelector(rawBlock));
   }
   flush();
 

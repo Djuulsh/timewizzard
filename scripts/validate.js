@@ -23,6 +23,7 @@ import { ChannelFlags, ChannelType } from 'discord.js';
 import { destinationTypeForChannel, normalizeTagIds, validateDestination } from '../src/destinations.js';
 import { commands } from '../src/commands.js';
 import { createManagedPost } from '../src/postService.js';
+import { BUILDER_EXPORT_FORMAT, BUILDER_EXPORT_VERSION, MAX_BUILDER_IMPORT_BYTES, exportDefinition, parseBuilderDefinition, readBuilderAttachment } from '../src/builder/io.js';
 
 function makeEntity(id, title, builder, extra = {}) {
   return { id, title, builder, ...extra };
@@ -247,6 +248,43 @@ if (!reopenedExistingPost || !managedMessageEdited) throw new Error('Publishing 
 if (existingPostResult.destinationType !== 'thread' || existingPostResult.destinationChannelId !== existingPostDestination.id || existingPostResult.starterMessageId !== 'timewizzard-message') {
   throw new Error('Existing forum post publication metadata is incorrect.');
 }
+
+const exportedDefinition = exportDefinition(makeEntity('roundtrip', 'Round-trip JSON', structuredClone(plainBuilder)));
+if (exportedDefinition.format !== BUILDER_EXPORT_FORMAT || exportedDefinition.version !== BUILDER_EXPORT_VERSION) throw new Error('Builder export format metadata is inconsistent.');
+const roundTripImport = parseBuilderDefinition(exportedDefinition);
+if (roundTripImport.title !== 'Round-trip JSON' || !roundTripImport.builder.blocks.length) throw new Error('A current Builder export must import without data loss.');
+const originalFetch = globalThis.fetch;
+try {
+  globalThis.fetch = async () => new Response(JSON.stringify(exportedDefinition), { status: 200, headers: { 'content-type': 'application/json' } });
+  const attachmentImport = await readBuilderAttachment({ url: 'https://cdn.example.com/roundtrip.json', size: JSON.stringify(exportedDefinition).length });
+  if (attachmentImport.title !== 'Round-trip JSON' || !attachmentImport.builder.blocks.length) throw new Error('Discord attachment import must accept the current Web Builder export.');
+} finally {
+  globalThis.fetch = originalFetch;
+}
+const legacyImport = parseBuilderDefinition({ ...exportedDefinition, format: 'shrouded-info-builder', version: 1 });
+if (legacyImport.title !== 'Round-trip JSON') throw new Error('Legacy Builder exports must remain importable.');
+let unknownFormatRejected = false;
+try { parseBuilderDefinition({ ...exportedDefinition, format: 'unknown-builder' }); } catch { unknownFormatRejected = true; }
+if (!unknownFormatRejected || MAX_BUILDER_IMPORT_BYTES !== 20_000_000) throw new Error('Builder import format or size validation is incorrect.');
+
+const legacyDownloadBuilder = createBuilderTemplate('blank', 'Legacy downloads');
+legacyDownloadBuilder.blocks.push({
+  id: 'downloads',
+  type: 'string_select',
+  placeholder: 'Choose download',
+  options: [
+    { id: 'merfin', label: 'MerfinUI_v7.80.zip', content: '**MerfinUI_v7.80.zip**\n[Download directly](https://example.com/MerfinUI_v7.80.zip)' },
+    { id: 'addons', label: 'TBC_AddOns.zip', content: '**TBC_AddOns.zip**\n[Download directly](https://example.com/TBC_AddOns.zip)' }
+  ]
+});
+const migratedDownloads = validateBuilder(legacyDownloadBuilder);
+if (migratedDownloads.blocks[0]?.type !== 'button_row' || migratedDownloads.blocks[0].buttons.length !== 2) throw new Error('Legacy ZIP String Select must migrate to two download buttons.');
+const tbcTemplate = createBuilderTemplate('merfin_tbc_weakauras', 'TBC downloads');
+const addonsContainer = tbcTemplate.blocks.find((block) => block.type === 'container' && block.label === 'Addons & UI');
+const downloadButtons = addonsContainer?.children?.find((block) => block.type === 'button_row')?.buttons ?? [];
+if (downloadButtons.length !== 2 || !downloadButtons.every((button) => button.url.includes('.zip?') && button.url.includes('dl=1'))) throw new Error('TBC template must expose both ZIP files as direct download buttons.');
+const tbcPayloadJson = JSON.stringify(buildBuilderPayloads(makeEntity('tbc-downloads', 'TBC downloads', tbcTemplate), { kind: 'd', id: 'tbc-downloads' }));
+if (!tbcPayloadJson.includes('Download MerfinUI_v7.80.zip') || !tbcPayloadJson.includes('Download TBC_AddOns.zip')) throw new Error('Discord payload must render both ZIP download buttons.');
 if (MAX_STRING_SELECT_CONTENT_LENGTH !== 200_000 || MAX_WEB_JSON_BODY_BYTES !== 20_000_000) throw new Error('String Select size contracts are incorrect.');
 const largeRevisionContent = 'R'.repeat(6_000_000);
 const compactedRevisions = compactRevisionHistory(Array.from({ length: 6 }, (_, index) => ({

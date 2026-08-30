@@ -17,6 +17,7 @@
     <div class="top-actions">
       <span id="identity" class="identity">Loading…</span>
       <button id="refreshBtn" class="btn ghost" type="button">↻ Refresh</button>
+      <button id="importBuilderBtn" class="btn ghost" type="button">Import Builder JSON</button>
       <button id="importDiscohookBtn" class="btn ghost" type="button">Import DiscoHook</button>
       <button id="newDraftBtn" class="btn primary" type="button">+ New draft</button>
       <a class="btn ghost" href="/logout">Log out</a>
@@ -141,6 +142,18 @@
       <div class="dialog-head"><div><h2>Revision history</h2><p>Restore a saved builder revision.</p></div><button type="button" class="icon-btn" data-close-dialog="historyDialog" aria-label="Close">×</button></div>
       <div id="historyList" class="history-list"></div>
       <div class="dialog-actions"><button type="button" class="btn ghost" data-close-dialog="historyDialog">Close</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="builderImportDialog" class="dialog profile-dialog">
+    <form id="builderImportForm" method="dialog">
+      <div class="dialog-head"><div><h2>Import Builder JSON</h2><p>Imports a JSON file created by Export JSON as a new draft.</p></div><button type="button" class="icon-btn" data-close-dialog="builderImportDialog" aria-label="Close">×</button></div>
+      <label>Builder JSON file<input id="builderImportFile" type="file" accept="application/json,.json" required></label>
+      <label>Optional title override<input id="builderImportTitle" maxlength="100" placeholder="Use the title from the file"></label>
+      <label>Destination<select id="builderImportDestination" required></select></label>
+      <label>Forum tags (up to 5)<small class="tag-picker-help">Click a tag to toggle it. No Ctrl/Cmd key required.</small><select id="builderImportTag" multiple size="5"></select></label>
+      <div class="dialog-note">Maximum file size: 20 MB. Current and legacy Timewizzard Builder exports are supported.</div>
+      <div class="dialog-actions"><button type="button" class="btn ghost" data-close-dialog="builderImportDialog">Cancel</button><button type="submit" class="btn primary">Import as draft</button></div>
     </form>
   </dialog>
 

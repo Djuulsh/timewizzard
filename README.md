@@ -15,7 +15,8 @@ Timewizzard creates, previews, publishes and maintains structured information po
 - Safe mentions, Discord user/role/channel insertion, emoji browser and timestamp picker.
 - Deleted-target detection, Re-create and destination repair/move workflows.
 - New posts can use up to five forum tags, and existing forum posts can receive a separately managed Timewizzard message.
-- DiscoHook JSON import and Builder JSON import/export.
+- DiscoHook JSON import and round-trip Builder JSON import/export in both Discord and the Web Builder (up to 20 MB).
+- Legacy MerfinUI and TBC ZIP selectors migrate to direct Discord download buttons.
 - Discord OAuth access control for the Web Builder.
 
 ## Long String Select TXT delivery

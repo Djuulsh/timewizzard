@@ -31,9 +31,11 @@ assert(!html.includes('syncSeparatorPreview'), 'Legacy inline separator Mutation
 assert(!/<style>[\s\S]*separator-size-demo/.test(html), 'Legacy inline separator CSS must be removed.');
 assert(html.includes('viewport-fit=cover'), 'The HTML viewport must support device safe areas.');
 assert(html.includes('aria-live="polite"'), 'The UI must expose a polite live region.');
-assert((html.match(/<select id="(?:newTag|destinationTag|discohookTag)" multiple size="5">/g) || []).length === 3, 'All Web Builder forum tag pickers must support up to five selections.');
+assert((html.match(/<select id="(?:newTag|destinationTag|builderImportTag|discohookTag)" multiple size="5">/g) || []).length === 4, 'All Web Builder forum tag pickers must support up to five selections.');
+assert(html.includes('id="importBuilderBtn"') && html.includes('id="builderImportFile"') && html.includes('id="builderImportForm"'), 'Web Builder must expose Builder JSON file import controls.');
 
 const js162 = read('web/v162.js');
+assert(js162.includes('els.importBuilderBtn'), 'The responsive app menu must include Builder JSON import.');
 for (const marker of [
   'v162OpenPublishReview',
   'v162OfferRecovery',
@@ -108,6 +110,8 @@ assert(server.includes('WEB_SCRIPT_FILES') && server.includes('WEB_STYLE_FILES')
 assert(server.includes('WEB_FEATURES'), 'Server must use the current feature registry.');
 assert(server.includes('fetchActiveThreads') && server.includes('fetchArchived'), 'Destination API must expose active and archived forum posts.');
 assert(server.includes("'forum-post'"), 'Health metadata must advertise existing forum post support.');
+assert(server.includes("url.pathname === '/api/import/builder'") && server.includes('parseBuilderDefinition'), 'Server must accept exported Builder JSON as a new draft.');
+assert(appJs.includes("api('/api/import/builder'") && appJs.includes('MAX_BUILDER_IMPORT_BYTES'), 'Web Builder must submit Builder JSON files through the round-trip import endpoint.');
 assert(appJs.includes('tagIds') && appJs.includes("channelType==='thread'"), 'Web Builder must submit multiple tags and render existing forum post destinations.');
 assert(!quickJs.includes('tagId:'), 'Quick Announcement drafts must preserve all selected forum tags.');
 assert(!fs.existsSync(path.join(root, 'src/web/serverV15.js')), 'The obsolete serverV15 wrapper must be removed.');

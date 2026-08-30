@@ -13,6 +13,8 @@ export const WEB_FEATURES = Object.freeze([
   'undo-redo',
   'revision-history',
   'discohook-import',
+  'builder-json-roundtrip-import',
+  'download-button-migration',
   'media-gallery',
   'thumbnail',
   'smart-youtube',

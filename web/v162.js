@@ -214,7 +214,7 @@ function v162EnsureAppMenu() {
   const host = menu.querySelector('.v162-app-menu-actions');
   const identityButton = document.getElementById('v131IdentityBtn');
   const logout = actions.querySelector('a[href="/logout"]') || document.querySelector('a[href="/logout"]');
-  [els.refreshBtn, els.importDiscohookBtn, identityButton, logout].filter(Boolean).forEach((node) => {
+  [els.refreshBtn, els.importBuilderBtn, els.importDiscohookBtn, identityButton, logout].filter(Boolean).forEach((node) => {
     node.classList.add('v162-menu-action');
     if (node.parentElement !== host) host.append(node);
   });

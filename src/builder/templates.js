@@ -612,10 +612,10 @@ export function createBuilderTemplate(templateKey = 'blank', title = 'Informatio
       block('heading', { level: 1, emoji: '📚', title, subtitle: 'Categorized TBC WeakAuras and strings with live Discord timestamps.' }),
       container("Addons & UI", 0x2ECC71, [
         block('text', { content: "## [TBC ICON] **TBC Addons & UI**\n•⠀**MerfinUI_v7.80.zip** - <t:1787937777:R>\n•⠀**TBC_AddOns.zip** - <t:1787431373:R>" }),
-        addTemplateLinkSelector(builder, "Addons & UI", [
-          { label: "MerfinUI_v7.80.zip", url: "https://www.dropbox.com/scl/fi/2sx0bomph34xh6hq99xho/MerfinUI_v7.80.zip?rlkey=gzw6rck42839nrsb90lzzy1qu&st=lllsikp9&dl=1" },
-          { label: "TBC_AddOns.zip", url: "https://www.dropbox.com/scl/fi/puepp3wzbvcmzgcjj5rfq/TBC_AddOns.zip?rlkey=ru73nnr0l1mrstysyiopjhflg&st=cvglobg4&e=3&dl=1" }
-        ])
+        block('button_row', { buttons: [
+          { label: "Download MerfinUI_v7.80.zip", url: "https://www.dropbox.com/scl/fi/2sx0bomph34xh6hq99xho/MerfinUI_v7.80.zip?rlkey=gzw6rck42839nrsb90lzzy1qu&st=lllsikp9&dl=1" },
+          { label: "Download TBC_AddOns.zip", url: "https://www.dropbox.com/scl/fi/puepp3wzbvcmzgcjj5rfq/TBC_AddOns.zip?rlkey=ru73nnr0l1mrstysyiopjhflg&st=cvglobg4&e=3&dl=1" }
+        ] })
       ]),
       container("Anchors & Strings", 0x5865F2, [
         block('text', { content: "## [TBC ICON] **TBC Anchors & Strings**\n•⠀**Anchors UI FHD** - <t:1783789927:R>\n•⠀**Anchors UI QHD** - <t:1783789826:R>\n•⠀**Raid Anchors** - <t:1787997850:R>" }),
