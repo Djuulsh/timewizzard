@@ -1,0 +1,64 @@
+/* Quick Announcement templates + New Draft desktop polish. */
+
+/* The dialog itself must not become a second scroll container. Keep scrolling
+   inside the form only when the template catalogue actually exceeds viewport. */
+@media(min-width:961px){
+  #newDraftDialog{
+    overflow:hidden!important;
+    max-height:calc(100dvh - 32px)!important
+  }
+  #newDraftDialog>#newDraftForm{
+    max-height:calc(100dvh - 32px)!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    scrollbar-gutter:auto!important
+  }
+}
+
+/* Template badges use one exact typographic box. Category and layout badges may
+   change colour, but not font metrics, line-height, padding or vertical size. */
+.v150-template-badges{
+  align-items:center!important;
+  gap:5px!important
+}
+.v150-template-badges i{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  box-sizing:border-box!important;
+  height:17px!important;
+  min-height:17px!important;
+  margin:0!important;
+  padding:0 6px!important;
+  border-radius:999px!important;
+  font-family:inherit!important;
+  font-style:normal!important;
+  font-size:7px!important;
+  font-weight:850!important;
+  line-height:1!important;
+  letter-spacing:.05em!important;
+  text-transform:uppercase!important;
+  white-space:nowrap!important
+}
+.v150-template-badges i.container,
+.v150-template-badges i.plain{
+  font:inherit;
+  font-style:normal!important;
+  font-size:7px!important;
+  font-weight:850!important;
+  line-height:1!important;
+  letter-spacing:.05em!important;
+  text-transform:uppercase!important
+}
+
+/* The three fast-use templates are intentionally prominent in Recommended. */
+.v150-template-grid [data-v140-template="quick_announcement"],
+.v150-template-grid [data-v140-template="quick_announcement_image"],
+.v150-template-grid [data-v140-template="quick_announcement_action"]{
+  border-color:rgba(88,101,242,.34)
+}
+.v150-template-grid [data-v140-template="quick_announcement"] .v150-template-icon,
+.v150-template-grid [data-v140-template="quick_announcement_image"] .v150-template-icon,
+.v150-template-grid [data-v140-template="quick_announcement_action"] .v150-template-icon{
+  background:rgba(88,101,242,.09)
+}
