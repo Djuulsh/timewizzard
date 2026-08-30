@@ -107,6 +107,7 @@ for (const marker of [
   '.v150-template-badges i',
   'height:17px!important'
 ]) assert(quickCss.includes(marker), `Quick Announcement stylesheet is missing ${marker}.`);
+assert(quickCss.includes('#newDraftForm #newForum') && quickCss.includes('height:36px') && quickCss.includes('#newDraftForm #newTag'), 'New Draft destination and tag controls must keep compact heights.');
 
 const server = read('src/web/server.js');
 assert(server.includes("url.pathname === '/api/preview'"), 'Server must expose canonical preview validation.');
@@ -118,6 +119,7 @@ assert(server.includes("url.pathname === '/api/import/builder'") && server.inclu
 assert(appJs.includes("api('/api/import/builder'") && appJs.includes('MAX_BUILDER_IMPORT_BYTES'), 'Web Builder must submit Builder JSON files through the round-trip import endpoint.');
 assert(appJs.includes('messageLayout') && !appJs.includes('updateMessageLayout'), 'The editor may preview a saved message layout but must only change it from Publish/Republish review.');
 assert(appJs.includes('tagIds') && appJs.includes("channelType==='thread'"), 'Web Builder must submit multiple tags and render existing forum post destinations.');
+assert(appJs.includes("tagLabel?.classList.toggle('hidden',!isForum)") && appJs.includes('new-draft-no-tags'), 'Forum tag controls must be hidden unless the selected destination is a forum channel.');
 assert(appJs.includes('Destination staged. Use Republish to apply it.') && appJs.includes('pendingDestination'), 'Published destination changes must be presented as staged until Republish.');
 const destinationRoute = server.slice(server.indexOf('const destinationMatch'), server.indexOf('const profileMatch'));
 assert(destinationRoute.includes('pendingDestination') && !destinationRoute.includes('recreateManagedPost'), 'Changing Destination must only stage state and must not create Discord content.');
