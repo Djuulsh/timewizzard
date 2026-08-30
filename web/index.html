@@ -48,19 +48,6 @@
               <div id="editorMeta" class="meta" aria-live="polite"></div>
               <label class="accent-control">Accent <input id="postAccent" type="color" value="#f1c40f"></label>
             </div>
-            <div class="message-layout-control">
-              <label>Message split
-                <select id="messageSplitMode">
-                  <option value="auto">Automatic (fewest messages)</option>
-                  <option value="per_block">One message per top-level block</option>
-                  <option value="target">Choose exact number</option>
-                </select>
-              </label>
-              <label id="messageTargetWrap" class="hidden">Number of messages
-                <input id="messageTargetCount" type="number" min="1" max="75" step="1" value="2">
-              </label>
-              <small id="messageSplitHint" aria-live="polite">Discord limits determine the minimum.</small>
-            </div>
           </div>
           <div class="editor-actions" aria-label="Post actions">
             <button id="undoBtn" class="btn ghost" type="button" title="Undo">↶ Undo</button>

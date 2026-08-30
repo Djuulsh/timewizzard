@@ -337,6 +337,7 @@ export async function recreateManagedPost({ client, post, store, destination = n
         : [...(post.appliedTagIds ?? [])]
       : []
   };
+  delete source.pendingDestination;
 
   const oldTarget = structuredClone(post);
   const recreated = await publishToDestination({

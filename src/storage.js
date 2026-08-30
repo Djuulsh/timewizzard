@@ -198,7 +198,8 @@ function revisionPayload(entity) {
     destinationChannelId: entity?.destinationChannelId ?? null,
     forumId: entity?.forumId ?? null,
     forumChannelId: entity?.forumChannelId ?? null,
-    appliedTagIds: [...(entity?.appliedTagIds ?? [])]
+    appliedTagIds: [...(entity?.appliedTagIds ?? [])],
+    pendingDestination: entity?.pendingDestination ? structuredClone(entity.pendingDestination) : null
   };
 }
 

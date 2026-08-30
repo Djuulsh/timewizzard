@@ -363,7 +363,7 @@ function v162CanonicalStatus(text, stateName = '') {
   node.className = `v162-canonical-state ${stateName}`.trim();
 }
 
-async function v162ValidateCanonicalPayload() {
+async function v162ValidateCanonicalPayload(messageLayout = null) {
   if (!state.entity || !state.scope || !state.entity.builder?.blocks?.length) {
     v162CanonicalStatus('Add content to validate');
     return null;
@@ -371,25 +371,23 @@ async function v162ValidateCanonicalPayload() {
   const sequence = ++v162Ui.canonicalSequence;
   v162CanonicalStatus('Validating Discord payload…', 'pending');
   try {
+    const builder = structuredClone(state.entity.builder);
+    if (messageLayout) builder.messageLayout = structuredClone(messageLayout);
     const data = await api('/api/preview', {
       method: 'POST',
       body: {
         title: state.entity.title,
-        builder: state.entity.builder,
+        builder,
         mentionPolicy: state.entity.mentionPolicy || null,
         scope: state.scope
       }
     });
     if (sequence !== v162Ui.canonicalSequence) return null;
     const messages = Number(data.stats?.messageCount || data.payloads?.length || 0);
-    const minimum = Number(data.stats?.automaticMessageCount || messages);
-    const maximum = Number(data.stats?.maximumMessageCount || messages);
-    if (els.messageSplitHint) els.messageSplitHint.textContent = `Validated: ${messages} message${messages === 1 ? '' : 's'} · allowed range for exact split: ${minimum}-${maximum}.`;
     v162CanonicalStatus(`Discord payload valid · ${messages} message${messages === 1 ? '' : 's'}`, messages > 1 ? 'warning' : 'valid');
     return data;
   } catch (error) {
     if (sequence !== v162Ui.canonicalSequence) return null;
-    if (els.messageSplitHint) els.messageSplitHint.textContent = error.message;
     v162CanonicalStatus(`Discord validation: ${error.message}`, 'error');
     return { error };
   }
@@ -427,7 +425,7 @@ function v162PublishWarnings(stats) {
 }
 
 function v162DestinationLabel() {
-  const id = state.entity?.destinationChannelId || state.entity?.forumChannelId || state.entity?.forumId || '';
+  const id = state.entity?.pendingDestination?.destinationChannelId || state.entity?.destinationChannelId || state.entity?.forumChannelId || state.entity?.forumId || '';
   const name = state.bootstrap?.entities?.channels?.[id] || state.destinations?.find?.((item) => item.id === id)?.name;
   return name ? `#${name}` : id ? `Channel ${id}` : 'No destination';
 }
@@ -444,6 +442,19 @@ function v162EnsurePublishDialog() {
         <div><h2>Review before publishing</h2><p>Timewizzard validates the same Components V2 payload that will be sent to Discord.</p></div>
         <button type="button" class="icon-btn" data-v162-publish="cancel" aria-label="Close">×</button>
       </div>
+      <div class="v162-publish-options">
+        <label>Message split
+          <select data-v162-publish-layout>
+            <option value="auto">Automatic (fewest messages)</option>
+            <option value="per_block">One message per top-level block</option>
+            <option value="target">Choose exact number</option>
+          </select>
+        </label>
+        <label class="hidden" data-v162-publish-target-wrap>Number of messages
+          <input data-v162-publish-target type="number" min="1" max="75" step="1" value="2">
+        </label>
+        <small data-v162-publish-layout-hint aria-live="polite">Discord limits determine the minimum.</small>
+      </div>
       <div class="v162-dialog-body" id="v162PublishReviewBody"></div>
       <div class="dialog-actions">
         <button type="button" class="btn ghost" data-v162-publish="cancel">Cancel</button>
@@ -453,33 +464,62 @@ function v162EnsurePublishDialog() {
   document.body.append(dialog);
   dialog.querySelectorAll('[data-v162-publish="cancel"]').forEach((button) => button.addEventListener('click', () => dialog.close()));
   dialog.querySelector('[data-v162-publish="confirm"]')?.addEventListener('click', async () => {
+    const messageLayout = v162ReadPublishMessageLayout(dialog);
+    if (JSON.stringify(state.entity.builder.messageLayout || { mode: 'auto' }) !== JSON.stringify(messageLayout)) {
+      state.entity.builder.messageLayout = messageLayout;
+      state.dirty = true;
+    }
     dialog.close();
     await publishCurrent();
+  });
+  dialog.querySelector('[data-v162-publish-layout]')?.addEventListener('change', () => {
+    v162SyncPublishLayoutControls(dialog);
+    v162RefreshPublishReview(dialog).catch((error) => toast(error.message, 'error'));
+  });
+  dialog.querySelector('[data-v162-publish-target]')?.addEventListener('change', () => {
+    v162SyncPublishLayoutControls(dialog);
+    v162RefreshPublishReview(dialog).catch((error) => toast(error.message, 'error'));
   });
   return dialog;
 }
 
-async function v162OpenPublishReview() {
-  if (!state.entity || !state.scope) return;
-  const dialog = v162EnsurePublishDialog();
+function v162ReadPublishMessageLayout(dialog) {
+  const mode = dialog.querySelector('[data-v162-publish-layout]')?.value || 'auto';
+  const targetCount = Math.max(1, Math.min(75, Number.parseInt(dialog.querySelector('[data-v162-publish-target]')?.value, 10) || 2));
+  return mode === 'target' ? { mode, targetCount } : { mode };
+}
+
+function v162SyncPublishLayoutControls(dialog) {
+  const layout = v162ReadPublishMessageLayout(dialog);
+  const target = dialog.querySelector('[data-v162-publish-target]');
+  if (target) target.value = String(layout.targetCount || 2);
+  dialog.querySelector('[data-v162-publish-target-wrap]')?.classList.toggle('hidden', layout.mode !== 'target');
+}
+
+async function v162RefreshPublishReview(dialog) {
   const body = dialog.querySelector('#v162PublishReviewBody');
   const confirm = dialog.querySelector('[data-v162-publish="confirm"]');
-  const deleted = discordState()?.status === 'deleted';
+  const hint = dialog.querySelector('[data-v162-publish-layout-hint]');
+  const messageLayout = v162ReadPublishMessageLayout(dialog);
   if (confirm) {
     confirm.disabled = true;
-    confirm.textContent = deleted ? 'Re-create' : 'Publish';
+    confirm.textContent = state.scope.kind === 'd' ? 'Publish' : 'Republish';
   }
   if (body) body.innerHTML = '<div class="v162-review-loading">Validating Discord payload…</div>';
-  dialog.showModal();
 
-  const validation = await v162ValidateCanonicalPayload();
+  const validation = await v162ValidateCanonicalPayload(messageLayout);
   if (!dialog.open) return;
   if (validation?.error) {
+    if (hint) hint.textContent = validation.error.message;
     if (body) body.innerHTML = `<div class="v162-review-error"><strong>Cannot publish yet</strong><span>${escapeHtml(validation.error.message)}</span></div>`;
     return;
   }
 
   const stats = validation?.stats || {};
+  const messages = Number(stats.messageCount || validation.payloads?.length || 0);
+  const minimum = Number(stats.automaticMessageCount || messages);
+  const maximum = Number(stats.maximumMessageCount || messages);
+  if (hint) hint.textContent = `Validated: ${messages} message${messages === 1 ? '' : 's'} · allowed exact range: ${minimum}-${maximum}.`;
   const warnings = v162PublishWarnings(stats);
   const mentionText = state.entity?.mentionPolicy?.mode === 'selected' ? 'Selected users / roles may ping' : 'Display only · no ping';
   if (body) {
@@ -498,6 +538,20 @@ async function v162OpenPublishReview() {
       </section>`;
   }
   if (confirm) confirm.disabled = false;
+}
+
+async function v162OpenPublishReview() {
+  if (!state.entity || !state.scope) return;
+  clearTimeout(v162Ui.canonicalTimer);
+  const dialog = v162EnsurePublishDialog();
+  const layout = state.entity.builder.messageLayout || { mode: 'auto' };
+  const mode = dialog.querySelector('[data-v162-publish-layout]');
+  const target = dialog.querySelector('[data-v162-publish-target]');
+  if (mode) mode.value = layout.mode || 'auto';
+  if (target) target.value = String(layout.targetCount || 2);
+  v162SyncPublishLayoutControls(dialog);
+  dialog.showModal();
+  await v162RefreshPublishReview(dialog);
 }
 
 function v162PatchDialogFocus() {
@@ -524,7 +578,7 @@ function v162BindGlobalEvents() {
   els.publishBtn?.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (discordState()?.status === 'deleted' && discordState()?.reason === 'destination_missing') {
+    if (discordState()?.status === 'deleted' && discordState()?.reason === 'destination_missing' && !state.entity?.pendingDestination) {
       openDestinationDialog();
       return;
     }

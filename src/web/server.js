@@ -94,7 +94,7 @@ async function readJsonBody(request, maxBytes = 1_500_000) {
 
 function isPostModified(post) {
   if (!post?.publishedBuilder) return false;
-  return post.title !== post.publishedTitle || JSON.stringify(post.builder) !== JSON.stringify(post.publishedBuilder);
+  return Boolean(post.pendingDestination) || post.title !== post.publishedTitle || JSON.stringify(post.builder) !== JSON.stringify(post.publishedBuilder);
 }
 
 function entityId(entity, kind) {
@@ -110,6 +110,7 @@ function entitySummary(entity, kind, store) {
     modified: kind === 'p' ? isPostModified(entity) : true,
     destinationType: entity.destinationType || 'forum',
     destinationChannelId: getDestinationChannelId(entity),
+    pendingDestination: entity.pendingDestination ?? null,
     discordState: kind === 'p' ? entity.discordState ?? { status: 'unknown' } : null,
     revisionCount: store.listRevisions(kind, id).length,
     updatedAt: entity.updatedAt ?? null,
@@ -624,15 +625,22 @@ export function createWebServer({ client, store, config }) {
       }
 
       const refreshed = await refreshManagedPostState({ client, post: resolved.entity, store });
-      const destinationId = body.destinationId ? String(body.destinationId) : null;
+      const pendingDestination = refreshed.pendingDestination ?? null;
+      const destinationId = body.destinationId
+        ? String(body.destinationId)
+        : pendingDestination?.destinationChannelId
+          ? String(pendingDestination.destinationChannelId)
+          : null;
       const destination = destinationId ? await client.channels.fetch(destinationId) : null;
-      const wantsRecreate = operation === 'recreate' || refreshed.discordState?.status === 'deleted' || Boolean(destination);
+      const wantsRecreate = operation === 'recreate' || refreshed.discordState?.status === 'deleted' || Boolean(destination) || Boolean(pendingDestination);
       let post;
       if (wantsRecreate) {
         if (destination) {
           const tagIds = body.tagIds !== undefined || body.tagId !== undefined
             ? normalizeTagIds(body.tagIds ?? body.tagId)
-            : [...(refreshed.appliedTagIds ?? [])];
+            : pendingDestination
+              ? [...(pendingDestination.appliedTagIds ?? [])]
+              : [...(refreshed.appliedTagIds ?? [])];
           const destinationError = validateDestination(destination, tagIds);
           if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
           post = await recreateManagedPost({ client, post: refreshed, store, destination, tagIds, removeOld: true });
@@ -657,8 +665,15 @@ export function createWebServer({ client, store, config }) {
       const destinationError = validateDestination(destination, tagIds);
       if (destinationError) throw Object.assign(new Error(destinationError), { statusCode: 400 });
       if (kind === 'p') {
-        const moved = await recreateManagedPost({ client, post: resolved.entity, store, destination, tagIds, removeOld: true });
-        json(response, 200, { scope: { kind: 'p', id: moved.builderId }, entity: moved });
+        const type = destinationTypeForChannel(destination);
+        const pendingDestination = {
+          destinationType: type,
+          destinationChannelId: destination.id,
+          forumId: destination.id,
+          appliedTagIds: type === 'forum' ? tagIds : []
+        };
+        const saved = await saveEntity(store, kind, { ...resolved.entity, pendingDestination }, 'stage-destination');
+        json(response, 200, { scope: { kind: 'p', id: saved.builderId }, entity: saved, pending: true });
       } else {
         const type = destinationTypeForChannel(destination);
         const saved = await saveEntity(store, kind, { ...resolved.entity, forumId: destination.id, destinationType: type, destinationChannelId: destination.id, appliedTagIds: type === 'forum' ? tagIds : [] }, 'change-destination');
