@@ -32,6 +32,7 @@ assert(!/<style>[\s\S]*separator-size-demo/.test(html), 'Legacy inline separator
 assert(html.includes('viewport-fit=cover'), 'The HTML viewport must support device safe areas.');
 assert(html.includes('aria-live="polite"'), 'The UI must expose a polite live region.');
 assert((html.match(/<select id="(?:newTag|destinationTag|builderImportTag|discohookTag)" multiple size="5">/g) || []).length === 4, 'All Web Builder forum tag pickers must support up to five selections.');
+assert(/Forum tags \(up to 5\)<select id="newTag"[\s\S]*?<\/select><small class="tag-picker-help">/.test(html), 'New Draft destination and forum tag controls must align before the tag helper text.');
 assert(html.includes('id="importBuilderBtn"') && html.includes('id="builderImportFile"') && html.includes('id="builderImportForm"'), 'Web Builder must expose Builder JSON file import controls.');
 assert(!html.includes('id="messageSplitMode"') && !html.includes('id="messageTargetCount"'), 'Message split controls must not remain in the main editor.');
 
