@@ -31,6 +31,7 @@ const TYPE_INFO = {
   open: ['🔘', 'Open + ephemeral'],
   link: ['🔗', 'Link button'],
   select: ['🔽', 'Select + ephemeral'],
+  string_select: ['🧵', 'String Select + ephemeral'],
   profile_select: ['🎮', 'MerfinUI class/resolution select'],
   profile_open_list: ['📋', 'MerfinUI Open list (legacy)']
 };
@@ -146,7 +147,7 @@ function blockSummary(block) {
   if (block.type === 'separator') return `Spacing ${block.spacing === 1 ? 'small' : 'large'}`;
   if (block.type === 'open') return clean(block.text).slice(0, 80) || 'Open row';
   if (block.type === 'link') return clean(block.text).slice(0, 80) || 'Link row';
-  if (block.type === 'select') return `${block.options?.length || 0} options · ${block.placeholder || 'Choose…'}`;
+  if (block.type === 'select' || block.type === 'string_select') return `${block.options?.length || 0} options · ${block.placeholder || 'Choose…'}`;
   if (block.type === 'profile_select') return block.placeholder || 'Choose class and resolution…';
   if (block.type === 'profile_open_list') return '18 class/resolution rows';
   return block.type;
@@ -365,6 +366,8 @@ function addBlock(type) {
     const actionId = shortId(4);
     block = { id: shortId(3), type, placeholder: 'Choose an option…', options: [{ label: 'Option 1', actionId }] };
     builder.actions[actionId] = { id: actionId, type: 'ephemeral_text', title: 'Option 1', content: 'Ephemeral response…', children: [], presentation: 'buttons' };
+  } else if (type === 'string_select') {
+    block = { id: shortId(3), type, placeholder: 'Choose a string…', options: [{ id: shortId(4), label: 'Option 1', content: 'Private string response…' }] };
   } else if (type === 'profile_select') block = { id: shortId(3), type, placeholder: 'Choose class and resolution…' };
   else if (type === 'profile_open_list') block = { id: shortId(3), type };
   else return;
@@ -550,6 +553,11 @@ function renderInspector() {
     bindInput($('#iPlaceholder',els.inspector),(e)=>{block.placeholder=e.target.value;markDirty();}); $$('.option-card',els.inspector).forEach((card)=>{const i=Number(card.dataset.optionIndex), option=block.options[i], action=state.entity.builder.actions[option.actionId]; bindInput($('[data-option-label]',card),(e)=>{option.label=e.target.value;action.title=e.target.value;markDirty();}); bindInput($('[data-option-response]',card),(e)=>{action.content=e.target.value;markDirty();}); $('[data-remove-option]',card).addEventListener('click',()=>{if(block.options.length<=1)return toast('A select must contain at least one option.','error');pushUndo();const [removed]=block.options.splice(i,1);removeActionTree(removed.actionId);markDirty();renderInspector();}); bindNestedEditor(action,`nested${i}`); });
     bind('#addOptionBtn','click',()=>{if(block.options.length>=25)return;pushUndo();const actionId=shortId(4),number=block.options.length+1;block.options.push({label:`Option ${number}`,actionId});state.entity.builder.actions[actionId]={id:actionId,type:'ephemeral_text',title:`Option ${number}`,content:'Ephemeral response…',children:[],presentation:'buttons'};markDirty();renderInspector();}); return;
   }
+  if (block.type === 'string_select') {
+    const rows=(block.options||[]).map((option,index)=>`<div class="option-card" data-option-index="${index}"><div class="option-row"><input data-option-label value="${escapeAttr(option.label)}" maxlength="100"><textarea data-option-response rows="3">${escapeHtml(option.content||'')}</textarea><button class="mini-btn" type="button" data-remove-option>×</button></div></div>`).join('');
+    els.inspector.innerHTML=`<div class="inspector-card"><h3>🧵 String Select + ephemeral</h3><p>Hver option har sin egen stabile, private string.</p><label>Placeholder<input id="iPlaceholder" maxlength="150" value="${escapeAttr(block.placeholder||'')}"></label><div id="optionRows">${rows}</div><button id="addOptionBtn" type="button" class="btn ghost" ${block.options.length>=25?'disabled':''}>+ Option</button></div>`;
+    bindInput($('#iPlaceholder',els.inspector),(e)=>{block.placeholder=e.target.value;markDirty();}); $('.option-card',els.inspector).forEach((card)=>{const i=Number(card.dataset.optionIndex), option=block.options[i];bindInput($('[data-option-label]',card),(e)=>{option.label=e.target.value;markDirty();});bindInput($('[data-option-response]',card),(e)=>{option.content=e.target.value;markDirty();});$('[data-remove-option]',card).addEventListener('click',()=>{if(block.options.length<=1)return toast('A String Select must contain at least one option.','error');pushUndo();block.options.splice(i,1);markDirty();renderInspector();});});bind('#addOptionBtn','click',()=>{if(block.options.length>=25)return;pushUndo();const number=block.options.length+1;block.options.push({id:shortId(4),label:`Option ${number}`,content:'Private string response…'});markDirty();renderInspector();});return;
+  }
   if (block.type === 'profile_select' || block.type === 'profile_open_list') {
     const placeholder=block.type==='profile_select'?`<label>Placeholder<input id="iPlaceholder" maxlength="150" value="${escapeAttr(block.placeholder||'Choose class and resolution…')}"></label>`:'<p>This legacy block renders 18 Open rows and may split over multiple messages.</p>';
     const chips=(state.bootstrap?.classes||[]).flatMap((wowClass)=>(state.bootstrap?.resolutions||[]).map((resolution)=>{const status=state.bootstrap?.profileStatus?.[wowClass.key]?.[resolution.key];return `<button type="button" class="profile-chip" data-profile="${wowClass.key}:${resolution.key}">${escapeHtml(wowClass.name)} — ${escapeHtml(resolution.name)}<span>${status?.exists?`✅ ${status.length.toLocaleString()} chars`:'❌ Missing'}</span></button>`;})).join('');
@@ -567,13 +575,13 @@ function renderPreviewBlock(block) {
   if(block.type==='separator')return block.divider===false?'<div style="height:10px"></div>':'<hr class="preview-separator">';
   if(block.type==='open')return `<div class="preview-block preview-row"><div>${renderMarkdown(block.text)}</div><button class="mock-btn">${escapeHtml(block.label||'Open')}</button></div>`;
   if(block.type==='link')return `<div class="preview-block preview-row"><div>${renderMarkdown(block.text)}</div><button class="mock-btn">${escapeHtml(block.label||'Open')}</button></div>`;
-  if(block.type==='select')return `<select class="preview-select" disabled><option>${escapeHtml(block.placeholder||'Choose an option…')}</option>${(block.options||[]).map((option)=>`<option>${escapeHtml(option.label)}</option>`).join('')}</select>`;
+  if(block.type==='select'||block.type==='string_select')return `<select class="preview-select" disabled><option>${escapeHtml(block.placeholder||'Choose an option…')}</option>${(block.options||[]).map((option)=>`<option>${escapeHtml(option.label)}</option>`).join('')}</select>`;
   if(block.type==='profile_select')return `<select class="preview-select" disabled><option>${escapeHtml(block.placeholder||'Choose class and resolution…')}</option>${profileSelectOptions()}</select>`;
   if(block.type==='profile_open_list')return (state.bootstrap?.classes||[]).flatMap((wowClass)=>(state.bootstrap?.resolutions||[]).map((resolution)=>`<div class="preview-block preview-row"><div>🔗 • <strong>${escapeHtml(wowClass.name)} — ${escapeHtml(resolution.name)}</strong></div><button class="mock-btn">Open</button></div>`)).join('');
   return '';
 }
 function textDisplayCount(value){return String(value||'').split(/\r?\n/).filter((line)=>line.trim()===QUOTE_ESCAPE).length+1;}
-function unitList(block){const textLength=(value)=>String(value||'').length;if(block.type==='text')return [{count:textDisplayCount(block.content),text:textLength(block.content)}];if(block.type==='image'||block.type==='gallery'||block.type==='separator')return[{count:1,text:0}];if(block.type==='thumbnail'||block.type==='open'||block.type==='link')return[{count:3,text:textLength(block.text)}];if(block.type==='select'||block.type==='profile_select')return[{count:2,text:0}];if(block.type==='profile_open_list')return Array.from({length:18},()=>({count:3,text:30}));return[{count:1,text:0}];}
+function unitList(block){const textLength=(value)=>String(value||'').length;if(block.type==='text')return [{count:textDisplayCount(block.content),text:textLength(block.content)}];if(block.type==='image'||block.type==='gallery'||block.type==='separator')return[{count:1,text:0}];if(block.type==='thumbnail'||block.type==='open'||block.type==='link')return[{count:3,text:textLength(block.text)}];if(block.type==='select'||block.type==='string_select'||block.type==='profile_select')return[{count:2,text:0}];if(block.type==='profile_open_list')return Array.from({length:18},()=>({count:3,text:30}));return[{count:1,text:0}];}
 function liveStats(){const blocks=state.entity?.builder?.blocks||[];if(!blocks.length)return{messages:0,components:0,text:0};const units=blocks.flatMap(unitList);let messages=1,currentCount=1,currentText=0,components=0,text=0;for(const unit of units){if(currentCount+unit.count>40||currentText+unit.text>4000){messages+=1;currentCount=1;currentText=0;}currentCount+=unit.count;currentText+=unit.text;components+=unit.count;text+=unit.text;}return{messages,components,text};}
 function renderPreview(){if(!state.entity){els.previewContent.className='discord-container empty-preview';els.previewContent.textContent='Select a post to preview.';els.previewStats.textContent='—';return;}const stats=liveStats();els.previewContent.className='discord-container';els.previewContent.style.setProperty('--preview-accent',colorHex(state.entity.builder.accentColor));els.previewContent.innerHTML=state.entity.builder.blocks.map(renderPreviewBlock).join('')||'<div class="empty-preview">Add a block to start.</div>';els.previewStats.textContent=`${state.entity.builder.blocks.length} blocks · ${stats.messages} msg`;els.previewStats.className=`pill ${stats.messages>1?'warn':'good'}`;const old=$('.preview-warning',els.previewContent.parentElement);if(old)old.remove();if(stats.messages>1){const warning=document.createElement('div');warning.className='preview-warning';warning.textContent=`Discord limits will split this layout across approximately ${stats.messages} messages.`;els.previewContent.parentElement.append(warning);}}
 
