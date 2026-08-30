@@ -29,6 +29,27 @@ function futureEpoch(minutesFromNow) {
   return Math.floor(Date.now() / 1000) + Math.round(minutesFromNow * 60);
 }
 
+function addTemplateLinkSelector(builder, label, entries) {
+  const options = entries.map((entry) => {
+    const actionId = makeShortId(4);
+    builder.actions[actionId] = {
+      id: actionId,
+      type: 'ephemeral_text',
+      title: entry,
+      content: `**${entry}**\n[Indsæt link](https://example.com)`,
+      children: [],
+      presentation: 'buttons'
+    };
+    return { label: entry, actionId };
+  });
+
+  return block('select', {
+    placeholder: `Vælg ${label}…`,
+    options
+  });
+}
+
+
 export const POST_TEMPLATES = [
   { name: 'Blank post', value: 'blank', category: 'Basic', icon: '📄', featured: true, description: 'A completely plain Discord post with no container.' },
   { name: 'Simple announcement', value: 'announcement_simple', category: 'Basic', icon: '📢', featured: true, description: 'Heading, text and separator without an embed/container.' },
@@ -70,6 +91,7 @@ export const POST_TEMPLATES = [
   { name: 'Live stream', value: 'stream_live', category: 'Media', icon: '🔴', description: 'Live-stream announcement with video, status and watch buttons.' },
 
   { name: 'MerfinUI — compact select', value: 'merfin_select', category: 'Special', icon: '🎮', description: 'Class/resolution profile dropdown.' },
+  { name: 'MerfinUI — TBC WeakAuras library', value: 'merfin_tbc_weakauras', category: 'Special', icon: '📚', featured: true, description: 'Categorized TBC WeakAuras library with live timestamps and editable link menus.' },
   { name: 'MerfinUI — profile list', value: 'merfin_open_list', category: 'Special', icon: '📋', description: 'Compact profile overview without legacy Open buttons.' }
 ];
 
@@ -588,6 +610,45 @@ export function createBuilderTemplate(templateKey = 'blank', title = 'Informatio
       }),
       block('button_row', { buttons: [{ label: 'Stream page', url: 'https://example.com/live' }, { label: 'Community', url: 'https://example.com/community' }] })
     ]));
+    return builder;
+  }
+
+  if (templateKey === 'merfin_tbc_weakauras') {
+    builder.blocks.push(
+      block('heading', { level: 1, emoji: '📚', title, subtitle: 'Categorized TBC WeakAuras and strings with live Discord timestamps.' }),
+      container("Anchors & Strings", 0x5865F2, [
+        block('text', { content: "## [TBC ICON] **TBC Anchors & Strings**\n•⠀**Anchors UI FHD** - <t:1783789927:R>\n•⠀**Anchors UI QHD** - <t:1783789826:R>\n•⠀**Raid Anchors** - <t:1787997850:R>" }),
+        addTemplateLinkSelector(builder, "Anchors & Strings", ["**Anchors UI FHD**","**Anchors UI QHD**","**Raid Anchors**"])
+      ]),
+      container("ElvUI Replacements", 0x3498DB, [
+        block('text', { content: "## [TBC ICON] **TBC ElvUI Replacements**\n•⠀Experience Bar (Luxthos) - <t:1783745720:R>\n•⠀Show Action Bar in Vehicle - <t:1783745753:R>\n•⠀UF Cast Bar - <t:1783790060:R>\n•⠀Unit Frames Indicators - <t:1783745829:R>" }),
+        addTemplateLinkSelector(builder, "ElvUI Replacements", ["Experience Bar (Luxthos)","Show Action Bar in Vehicle","UF Cast Bar","Unit Frames Indicators"])
+      ]),
+      container("Classpacks", 0x9B59B6, [
+        block('text', { content: "## [TBC ICON] **TBC Classpacks**\n•⠀[DRUID ICON] Druid (FHD) - <t:1784864812:R>\n•⠀[DRUID ICON] Druid (QHD) - <t:1784864736:R>\n•⠀[HUNTER ICON] Hunter (FHD) - <t:1787100059:R>\n•⠀[HUNTER ICON] Hunter (QHD) - <t:1787100119:R>\n•⠀[HUNTER ICON] Hunter Clickable Aspects - <t:1783744655:R>\n•⠀[HUNTER ICON] Hunter Easy Pet - <t:1784866606:R>\n•⠀[MAGE ICON] Mage (FHD) - <t:1784864492:R>\n•⠀[MAGE ICON] Mage (QHD) - <t:1784864450:R>\n•⠀[MAGE ICON] Mage Portals - <t:1783744866:R>\n•⠀[PALADIN ICON] Paladin - Clickable Auras - <t:1783824946:R>\n•⠀[PALADIN ICON] Paladin (FHD) - <t:1787532169:R>\n•⠀[PALADIN ICON] Paladin (QHD) - <t:1787532329:R>\n•⠀[PALADIN ICON] Paladin Easy PallyPower - <t:1783745116:R>\n•⠀[PRIEST ICON] Priest (FHD) - <t:1784864253:R>\n•⠀[PRIEST ICON] Priest (QHD) - <t:1784864195:R>\n•⠀[ROGUE ICON] Rogue (FHD) - <t:1784864123:R>\n•⠀[ROGUE ICON] Rogue (QHD) - <t:1784864058:R>\n•⠀[SHAMAN ICON] Shaman (FHD) - <t:1787530708:R>\n•⠀[SHAMAN ICON] Shaman (QHD) - <t:1787528765:R>\n•⠀[SHAMAN ICON] Shaman Smart Totems - <t:1783745467:R>\n•⠀[WARLOCK ICON] Warlock (FHD) - <t:1784863782:R>\n•⠀[WARLOCK ICON] Warlock (QHD) - <t:1784863676:R>\n•⠀[WARRIOR ICON] Warrior (FHD) - <t:1787527667:R>\n•⠀[WARRIOR ICON] Warrior (QHD) - <t:1787527330:R>" }),
+        addTemplateLinkSelector(builder, "Classpacks", ["Druid (FHD)","Druid (QHD)","Hunter (FHD)","Hunter (QHD)","Hunter Clickable Aspects","Hunter Easy Pet","Mage (FHD)","Mage (QHD)","Mage Portals","Paladin - Clickable Auras","Paladin (FHD)","Paladin (QHD)","Paladin Easy PallyPower","Priest (FHD)","Priest (QHD)","Rogue (FHD)","Rogue (QHD)","Shaman (FHD)","Shaman (QHD)","Shaman Smart Totems","Warlock (FHD)","Warlock (QHD)","Warrior (FHD)","Warrior (QHD)"])
+      ]),
+      container("General Auras", 0x2ECC71, [
+        block('text', { content: "## [TBC ICON] **TBC General Auras**\n•⠀Auction Helper - <t:1783745908:R>\n•⠀Auction Helper Materials - <t:1783745958:R>\n•⠀Auto Role - <t:1783746001:R>\n•⠀BiS Helper - <t:1783746092:R>\n•⠀Center Texture - <t:1783746141:R>\n•⠀Consumables Bar - <t:1787830947:R>\n•⠀Dropdown Lists - <t:1786727869:R>\n•⠀Eat & Drink Buttons - <t:1783746474:R>\n•⠀Equipped Items - <t:1783746514:R>\n•⠀Extra Sounds - <t:1783746585:R>\n•⠀GCD History - <t:1783746623:R>\n•⠀Interrupted on Nameplate - <t:1783746677:R>\n•⠀Nan Shield - <t:1783746881:R>\n•⠀Player CC Icon - <t:1783746915:R>\n•⠀Player Level - <t:1783746963:R>\n•⠀Range Indicator - <t:1783747002:R>\n•⠀Reminders - <t:1787440616:R>\n•⠀Target Threat - <t:1783789730:R>\n•⠀Threat Difference - <t:1783747164:R>\n•⠀Time To Die - <t:1783789189:R>" }),
+        addTemplateLinkSelector(builder, "General Auras", ["Auction Helper","Auction Helper Materials","Auto Role","BiS Helper","Center Texture","Consumables Bar","Dropdown Lists","Eat & Drink Buttons","Equipped Items","Extra Sounds","GCD History","Interrupted on Nameplate","Nan Shield","Player CC Icon","Player Level","Range Indicator","Reminders","Target Threat","Threat Difference","Time To Die"])
+      ]),
+      container("Additional Auras", 0x1ABC9C, [
+        block('text', { content: "## [TBC ICON] **TBC Additional Auras**\n•⠀Auto Bijou - <t:1783743423:R>\n•⠀Auto Invite (NoM0Re) - <t:1783743477:R>\n•⠀Auto Vendor Buyer - <t:1783743543:R>\n•⠀Cursor Aim - <t:1783743595:R>\n•⠀Cursor Aim_Cast_GCD - <t:1783743645:R>\n•⠀Cursor Aim_Cast_GCD (Hide on MB Down) - <t:1783743712:R>\n•⠀Escape Items and Consumables - <t:1783743780:R>\n•⠀Escape Items Autoswap - <t:1783743851:R>\n•⠀Healers Mana - <t:1783743911:R>\n•⠀Loot Widget - <t:1787999837:R>\n•⠀Set Equipper - <t:1783744031:R>\n•⠀Stats - <t:1783744085:R>" }),
+        addTemplateLinkSelector(builder, "Additional Auras", ["Auto Bijou","Auto Invite (NoM0Re)","Auto Vendor Buyer","Cursor Aim","Cursor Aim_Cast_GCD","Cursor Aim_Cast_GCD (Hide on MB Down)","Escape Items and Consumables","Escape Items Autoswap","Healers Mana","Loot Widget","Set Equipper","Stats"])
+      ]),
+      container("Raid & Dungeon Auras", 0xE67E22, [
+        block('text', { content: "## [TBC ICON] **TBC Raid & Dungeon Auras**\n•⠀Dungeon Pack - <t:1787997456:R>\n•⠀Magtheridon Cube Assigner - <t:1783747467:R>\n•⠀T4 Raid Pack (Mag, Gruul, Kara) - <t:1787998645:R>\n•⠀T5 Raid Pack - <t:1787998346:R>\n•⠀T6 Assignments - <t:1787830952:R>\n•⠀T6 Raidpack - <t:1788059449:R>" }),
+        addTemplateLinkSelector(builder, "Raid & Dungeon Auras", ["Dungeon Pack","Magtheridon Cube Assigner","T4 Raid Pack (Mag, Gruul, Kara)","T5 Raid Pack","T6 Assignments","T6 Raidpack"])
+      ]),
+      container("Raid Additionals", 0xE74C3C, [
+        block('text', { content: "## [TBC ICON] **TBC Raid Additionals**\n•⠀Combat Timers - <t:1783747755:R>\n•⠀Drums Debuff - <t:1783747792:R>\n•⠀Jewelcrafting Necks - <t:1784266704:R>\n•⠀Loot Everything (Clickable) - <t:1783747914:R>\n•⠀Paladin Auras - <t:1783747950:R>\n•⠀Pull & Break Timers - <t:1784293622:R>\n•⠀Raid Buffs HUD - <t:1785820406:R>\n•⠀Raid Prep - <t:1783747511:R>\n•⠀Release Button Hider - <t:1783748064:R>\n•⠀Resurrection Cast - <t:1783748100:R>\n•⠀Summon Alert Overlay - <t:1783748144:R>\n•⠀T5-T6 Trash Requirements - <t:1783748180:R>\n•⠀Target Raid Debuffs - <t:1787997579:R>\n•⠀Totems & Aura Range Tracker - <t:1783748286:R>\n•⠀Who Died Warning - <t:1783748447:R>" }),
+        addTemplateLinkSelector(builder, "Raid Additionals", ["Combat Timers","Drums Debuff","Jewelcrafting Necks","Loot Everything (Clickable)","Paladin Auras","Pull & Break Timers","Raid Buffs HUD","Raid Prep","Release Button Hider","Resurrection Cast","Summon Alert Overlay","T5-T6 Trash Requirements","Target Raid Debuffs","Totems & Aura Range Tracker","Who Died Warning"])
+      ]),
+      container("Raid Cooldowns", 0xF1C40F, [
+        block('text', { content: "## [TBC ICON] **TBC Raid Cooldowns**\n•⠀Raid Cooldowns Frontend (RCD) - <t:1786690247:R>" }),
+        addTemplateLinkSelector(builder, "Raid Cooldowns", ["Raid Cooldowns Frontend (RCD)"])
+      ])
+    );
     return builder;
   }
 
