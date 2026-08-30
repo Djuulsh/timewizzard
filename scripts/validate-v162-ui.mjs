@@ -15,8 +15,8 @@ assert(pkg.version === VERSION, 'package.json must match src/version.js.');
 
 for (const file of WEB_SCRIPT_FILES) assert(fs.existsSync(path.join(root, 'web', file)), `Missing Web Builder script: ${file}`);
 for (const file of WEB_STYLE_FILES) assert(fs.existsSync(path.join(root, 'web', file)), `Missing Web Builder stylesheet: ${file}`);
-assert(WEB_SCRIPT_FILES.at(-1) === 'v163.js', 'v163.js must be the final Web Builder script.');
-assert(WEB_STYLE_FILES.at(-1) === 'v163.css', 'v163.css must be the final Web Builder stylesheet.');
+assert(WEB_SCRIPT_FILES.at(-1) === 'quickAnnouncements.js', 'Quick Announcement controller must be the final Web Builder script.');
+assert(WEB_STYLE_FILES.at(-1) === 'quickAnnouncements.css', 'Quick Announcement polish must be the final Web Builder stylesheet.');
 assert(new Set(WEB_FEATURES).size === WEB_FEATURES.length, 'Web feature registry contains duplicates.');
 
 const html = read('web/index.html');
@@ -70,6 +70,24 @@ for (const marker of [
   'z-index:500!important',
   '[data-v162-posts-nav]{display:none!important}'
 ]) assert(css163.includes(marker), `v163.css is missing compact editor contract: ${marker}.`);
+
+const quickJs = read('web/quickAnnouncements.js');
+for (const marker of [
+  'quick_announcement',
+  'quick_announcement_image',
+  'quick_announcement_action',
+  'createQuickAnnouncementDraft',
+  'quickAnnouncementBuilder'
+]) assert(quickJs.includes(marker), `Quick Announcement controller is missing ${marker}.`);
+
+const quickCss = read('web/quickAnnouncements.css');
+for (const marker of [
+  '#newDraftDialog',
+  'overflow:hidden!important',
+  'scrollbar-gutter:auto!important',
+  '.v150-template-badges i',
+  'height:17px!important'
+]) assert(quickCss.includes(marker), `Quick Announcement stylesheet is missing ${marker}.`);
 
 const server = read('src/web/server.js');
 assert(server.includes("url.pathname === '/api/preview'"), 'Server must expose canonical preview validation.');
