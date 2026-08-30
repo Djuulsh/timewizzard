@@ -4,7 +4,7 @@ import { SMART_BLOCK_TYPES, isSmartBlockType, validateSmartBlock } from './smart
 import { youtubeVideoId } from './youtube.js';
 
 const ALLOWED_CONTENT_TYPES = new Set([
-  'text', 'image', 'gallery', 'thumbnail', 'separator', 'youtube', 'open', 'link', 'select', 'profile_select', 'profile_open_list',
+  'text', 'image', 'gallery', 'thumbnail', 'separator', 'youtube', 'open', 'link', 'select', 'string_select', 'profile_select', 'profile_open_list',
   ...SMART_BLOCK_TYPES
 ]);
 
@@ -78,6 +78,18 @@ function validateContentBlock(block, actions) {
 
   if (block.type === 'open' && !block.actionId) throw new Error('Open-block mangler actionId.');
   if (block.type === 'profile_select' && String(block.placeholder ?? '').length > 150) throw new Error('MerfinUI select placeholder er over 150 tegn.');
+
+  if (block.type === 'string_select') {
+    if (!Array.isArray(block.options) || block.options.length < 1 || block.options.length > 25) throw new Error('String Select skal have 1-25 options.');
+    if (String(block.placeholder ?? '').length > 150) throw new Error('String Select placeholder er over 150 tegn.');
+    const ids = new Set();
+    for (const option of block.options) {
+      if (!option.id || ids.has(option.id) || !String(option.label ?? '').trim() || String(option.label).length > 100 || !String(option.content ?? '').trim()) throw new Error('String Select-option mangler ID, label eller tekst.');
+      if (String(option.content).length > 60_000) throw new Error('En String Select-tekst er over 60000 tegn.');
+      if (String(option.description ?? '').length > 100) throw new Error('String Select-option description er over 100 tegn.');
+      ids.add(option.id);
+    }
+  }
 
   if (block.type === 'select') {
     if (!Array.isArray(block.options) || block.options.length < 1 || block.options.length > 25) throw new Error('Select-block skal have 1-25 options.');
