@@ -83,6 +83,8 @@ function v1519EnsureMarkdownToolbar() {
 function v1519ToolbarAnchor(field) {
   const factCell = field.closest('.v1513-fact-value-cell');
   if (factCell) return field.closest('label') || factCell;
+  const optionRow = field.closest('.option-row');
+  if (optionRow) return optionRow;
   const grouped = field.closest('.v154-heading-primary-grid, .v150-inline-fields, .v150-triple-fields');
   if (grouped) return grouped;
   return field.closest('label') || field.closest('.v153-textarea-shell') || field;
