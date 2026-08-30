@@ -64,6 +64,7 @@ import {
 import { parseStrictHexColor, validateBuilder } from './builder/validate.js';
 import {
   buildGenericActionReply,
+  buildStringSelectReply,
   resolveGenericAction,
   resolveStringSelect
 } from './builder/actions.js';
@@ -816,7 +817,7 @@ export class BotController {
           await interaction.reply({ content: 'Denne string findes ikke længere.', flags: MessageFlags.Ephemeral });
           return;
         }
-        await interaction.reply(buildGenericActionReply(resolved.action));
+        await interaction.reply(buildStringSelectReply(resolved.option));
         return;
       }
       if (value?.startsWith('action:')) {

@@ -6,6 +6,7 @@ import { BUILDER_SCHEMA_VERSION, normalizeBuilderStructure } from './builder/sch
 
 const CURRENT_VERSION = 5;
 const MAX_REVISIONS = 30;
+const MAX_REVISION_STORAGE_BYTES = 20_000_000;
 
 function createDefaultProfiles() {
   const profiles = {};
@@ -119,15 +120,28 @@ function migratePublishedState(post, builder, builderId) {
 function normalizeRevisions(revisions) {
   const next = {};
   for (const [key, list] of Object.entries(revisions && typeof revisions === 'object' ? revisions : {})) {
-    next[key] = (Array.isArray(list) ? list : []).map((revision) => {
+    next[key] = compactRevisionHistory((Array.isArray(list) ? list : []).map((revision) => {
       const copy = structuredClone(revision);
       if (copy?.snapshot?.builder?.blocks && copy?.snapshot?.builder?.actions) {
         copy.snapshot.builder = normalizeBuilderStructure(copy.snapshot.builder, { preserveLegacyAppearance: true });
       }
       return copy;
-    }).slice(0, MAX_REVISIONS);
+    }));
   }
   return next;
+}
+
+export function compactRevisionHistory(revisions) {
+  const compact = [];
+  let totalBytes = 0;
+  for (const revision of revisions.slice(0, MAX_REVISIONS)) {
+    const bytes = Buffer.byteLength(JSON.stringify(revision), 'utf8');
+    if (compact.length && totalBytes + bytes > MAX_REVISION_STORAGE_BYTES) break;
+    compact.push(revision);
+    totalBytes += bytes;
+    if (totalBytes >= MAX_REVISION_STORAGE_BYTES) break;
+  }
+  return compact;
 }
 
 function mergeDefaults(data) {
@@ -263,7 +277,7 @@ export class JsonStore {
     const key = revisionKey(kind, id);
     const list = this.data.revisions[key] ?? [];
     list.unshift(makeRevision(previous, reason));
-    this.data.revisions[key] = list.slice(0, MAX_REVISIONS);
+    this.data.revisions[key] = compactRevisionHistory(list);
   }
 
   async save() {

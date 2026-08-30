@@ -1,4 +1,5 @@
 import { MessageFlags } from 'discord.js';
+import { safeFileName } from '../utils.js';
 
 function getEntity(store, kind, id) {
   if (kind === 'd') return store.getDraft(id);
@@ -103,6 +104,20 @@ export function buildGenericActionReply(action, context = {}) {
   return ephemeralTextPayload(action, context);
 }
 
+export function buildStringSelectReply(option) {
+  const label = String(option?.label ?? 'string').trim() || 'string';
+  const content = String(option?.content ?? '');
+  return {
+    content: `**${label}**\nYour selected string is attached as a UTF-8 TXT file.`,
+    flags: MessageFlags.Ephemeral,
+    allowedMentions: { parse: [] },
+    files: [{
+      attachment: Buffer.from(content, 'utf8'),
+      name: `${safeFileName(label).slice(0, 80)}.txt`
+    }]
+  };
+}
+
 export function resolveStringSelect(store, kind, id, blockId, optionId) {
   const entity = getEntity(store, kind, id);
   if (!entity?.builder) return null;
@@ -113,15 +128,5 @@ export function resolveStringSelect(store, kind, id, blockId, optionId) {
   if (block?.type !== 'string_select') return null;
   const option = (block.options ?? []).find((candidate) => candidate.id === optionId);
   if (!option || !String(option.content ?? '').trim()) return null;
-  return {
-    entity,
-    action: {
-      id: `string:${blockId}:${optionId}`,
-      type: 'ephemeral_text',
-      title: option.label,
-      content: option.content,
-      children: [],
-      presentation: 'buttons'
-    }
-  };
+  return { entity, option: structuredClone(option) };
 }

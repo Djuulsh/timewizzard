@@ -1,5 +1,7 @@
 export const DEFAULT_ACCENT_COLOR = 0xF1C40F;
 export const MAX_PROFILE_FILE_BYTES = 1_000_000;
+export const MAX_STRING_SELECT_CONTENT_LENGTH = 200_000;
+export const MAX_WEB_JSON_BODY_BYTES = 20_000_000;
 export const MAX_ROWS_PER_MESSAGE = 10;
 
 export const WOW_CLASSES = [

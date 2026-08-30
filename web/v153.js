@@ -161,7 +161,7 @@ function v153MoveMarkdownToolbars() {
 
 function v153TextareaLimit(textarea) {
   if (!textarea) return null;
-  if (textarea.maxLength > 0 && textarea.maxLength < 100_000) return textarea.maxLength;
+  if (textarea.maxLength > 0) return textarea.maxLength;
   if (V153_TEXT_LIMITS[textarea.id]) return V153_TEXT_LIMITS[textarea.id];
   if (textarea.matches('[data-nested-content], [data-option-response]')) return 3700;
   return null;

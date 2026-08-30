@@ -94,6 +94,10 @@ textarea { resize: vertical; line-height: 1.45; }
 .option-card { border: 1px solid var(--line-soft); border-radius: 8px; padding: 8px; margin: 8px 0; background: #161920; }
 .option-row { display: grid; grid-template-columns: minmax(100px,.6fr) minmax(170px,1.4fr) 28px; gap: 6px; align-items: start; margin-bottom: 7px; }
 .option-row textarea { min-height: 64px; }
+.string-option-content { min-width: 0; }
+.string-option-content textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.string-option-meta { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 5px; color: var(--muted); font-size: 10px; }
+.string-import-btn { white-space: nowrap; }
 .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
 .profile-chip { border: 1px solid var(--line); background: #11141a; color: var(--text); border-radius: 7px; padding: 7px; text-align: left; cursor: pointer; font-size: 10px; }
 .profile-chip:hover { border-color: var(--accent); }
@@ -185,4 +189,5 @@ input[type="checkbox"] { width: auto; }
 @media (max-width: 560px) {
   .option-row { grid-template-columns: minmax(0, 1fr) 28px; }
   .option-row [data-option-response] { grid-column: 1 / -1; min-width: 0; }
+  .option-row .string-option-content { grid-column: 1 / -1; min-width: 0; }
 }

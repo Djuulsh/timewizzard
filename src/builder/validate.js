@@ -1,4 +1,5 @@
 import { isPublicHttpUrl } from '../utils.js';
+import { MAX_STRING_SELECT_CONTENT_LENGTH } from '../constants.js';
 import { normalizeBuilderStructure, totalBuilderBlocks, walkBuilderBlocks } from './schema.js';
 import { SMART_BLOCK_TYPES, isSmartBlockType, validateSmartBlock } from './smartBlocks.js';
 import { youtubeVideoId } from './youtube.js';
@@ -85,7 +86,9 @@ function validateContentBlock(block, actions) {
     const ids = new Set();
     for (const option of block.options) {
       if (!option.id || ids.has(option.id) || !String(option.label ?? '').trim() || String(option.label).length > 100 || !String(option.content ?? '').trim()) throw new Error('String Select-option mangler ID, label eller tekst.');
-      if (String(option.content).length > 60_000) throw new Error('En String Select-tekst er over 60000 tegn.');
+      if (String(option.content).length > MAX_STRING_SELECT_CONTENT_LENGTH) {
+        throw new Error(`En String Select-tekst er over ${MAX_STRING_SELECT_CONTENT_LENGTH} tegn.`);
+      }
       if (String(option.description ?? '').length > 100) throw new Error('String Select-option description er over 100 tegn.');
       ids.add(option.id);
     }

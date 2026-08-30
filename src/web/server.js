@@ -4,7 +4,7 @@ import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { ChannelFlags, ChannelType } from 'discord.js';
-import { WOW_CLASSES, RESOLUTIONS, findClass, findResolution } from '../constants.js';
+import { MAX_WEB_JSON_BODY_BYTES, WOW_CLASSES, RESOLUTIONS, findClass, findResolution } from '../constants.js';
 import { createBuilderTemplate, POST_TEMPLATES } from '../builder/templates.js';
 import { makeShortId } from '../builder/ids.js';
 import { buildBuilderPayloads, getBuilderStats } from '../builder/render.js';
@@ -347,7 +347,7 @@ export function createWebServer({ client, store, config }) {
     }
 
     if (url.pathname === '/api/preview' && method === 'POST') {
-      const body = await readJsonBody(request);
+      const body = await readJsonBody(request, MAX_WEB_JSON_BODY_BYTES);
       const title = String(body.title ?? 'Preview').trim().slice(0, 100) || 'Preview';
       const builder = validateBuilder(body.builder);
       const previewScope = {
@@ -484,7 +484,7 @@ export function createWebServer({ client, store, config }) {
         return;
       }
       if (method === 'PUT') {
-        const body = await readJsonBody(request);
+        const body = await readJsonBody(request, MAX_WEB_JSON_BODY_BYTES);
         const title = String(body.title ?? resolved.entity.title).trim();
         if (!title || title.length > 100) throw Object.assign(new Error('Titel skal være 1-100 tegn.'), { statusCode: 400 });
         const saved = await saveEntity(store, kind, { ...structuredClone(resolved.entity), title, builder: validateBuilder(body.builder ?? resolved.entity.builder) }, 'web-save');

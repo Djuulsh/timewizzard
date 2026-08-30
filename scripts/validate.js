@@ -8,7 +8,7 @@ import {
   makeThumbnailBlock,
   makeYoutubeBlock
 } from '../src/builder/blocks.js';
-import { buildGenericActionReply } from '../src/builder/actions.js';
+import { buildGenericActionReply, buildStringSelectReply } from '../src/builder/actions.js';
 import { allowedMentionsFor, buildBuilderPayloads, getBuilderStats, MULTILINE_QUOTE_ESCAPE } from '../src/builder/render.js';
 import { normalizeBuilderStructure } from '../src/builder/schema.js';
 import { SMART_BLOCK_TYPES } from '../src/builder/smartBlocks.js';
@@ -17,6 +17,8 @@ import { canonicalYoutubeUrl, youtubeThumbnailUrl, youtubeVideoId } from '../src
 import { validateBuilder } from '../src/builder/validate.js';
 import { VERSION } from '../src/version.js';
 import { convertDiscohook } from '../src/discohook.js';
+import { MAX_STRING_SELECT_CONTENT_LENGTH, MAX_WEB_JSON_BODY_BYTES } from '../src/constants.js';
+import { compactRevisionHistory } from '../src/storage.js';
 
 function makeEntity(id, title, builder, extra = {}) {
   return { id, title, builder, ...extra };
@@ -173,6 +175,35 @@ addActionResult(selectBuilder, makeSelectBlock({
 }));
 validateBuilder(selectBuilder);
 
+const longString = 'W'.repeat(100_000);
+const stringBuilder = createBuilderTemplate('blank', 'Long String Select');
+stringBuilder.blocks.push({
+  id: 'string01',
+  type: 'string_select',
+  placeholder: 'Vælg en fil…',
+  options: [{ id: 'option01', label: 'Raid Setup / FHD', content: longString }]
+});
+validateBuilder(stringBuilder);
+const stringReply = buildStringSelectReply(stringBuilder.blocks[0].options[0]);
+if (stringReply.files?.[0]?.attachment?.toString('utf8') !== longString) throw new Error('100000-tegns String Select blev ikke leveret intakt som TXT.');
+if (stringReply.files[0].name !== 'raid-setup-fhd.txt') throw new Error('String Select TXT-filnavnet blev ikke afledt korrekt fra option-navnet.');
+if (stringReply.content !== '**Raid Setup / FHD**\nYour selected string is attached as a UTF-8 TXT file.') throw new Error('String Select TXT reply must be written in English.');
+const oversizedStringBuilder = structuredClone(stringBuilder);
+oversizedStringBuilder.blocks[0].options[0].content = 'W'.repeat(MAX_STRING_SELECT_CONTENT_LENGTH + 1);
+try {
+  validateBuilder(oversizedStringBuilder);
+  throw new Error('String Select accepterede mere end 200000 tegn.');
+} catch (error) {
+  if (!String(error.message).includes('200000')) throw error;
+}
+if (MAX_STRING_SELECT_CONTENT_LENGTH !== 200_000 || MAX_WEB_JSON_BODY_BYTES !== 20_000_000) throw new Error('String Select size contracts are incorrect.');
+const largeRevisionContent = 'R'.repeat(6_000_000);
+const compactedRevisions = compactRevisionHistory(Array.from({ length: 6 }, (_, index) => ({
+  id: `large-${index}`,
+  snapshot: { builder: { blocks: [{ type: 'string_select', options: [{ content: largeRevisionContent }] }] } }
+})));
+if (compactedRevisions.length !== 3) throw new Error('Large String Select revision history was not reduced to stay below 20 MB.');
+
 const imported = convertDiscohook({
   content: '# Imported plain root',
   embeds: [
@@ -203,6 +234,7 @@ console.log(`All ${SMART_BLOCK_TYPES.length} v1.5 smart block types validate and
 console.log('Quote escape split validation passed.');
 console.log('Gallery + thumbnail validation passed.');
 console.log('Nested ephemeral action validation passed.');
+console.log('100000-character String Select TXT delivery validation passed.');
 console.log('DiscoHook nested container import validation passed.');
 console.log('Safe mention validation passed.');
 if (VERSION !== '1.6.4') throw new Error('Runtime version is not v1.6.4.');
