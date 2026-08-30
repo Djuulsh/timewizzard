@@ -54,13 +54,20 @@ function ephemeralTextPayload(action, context) {
   };
 }
 
+function walkBlocks(blocks, callback) {
+  for (const block of blocks ?? []) {
+    callback(block);
+    if (block.type === 'container') walkBlocks(block.children, callback);
+  }
+}
+
 function actionRoots(entity, blockId = null) {
-  const blocks = blockId ? entity.builder.blocks.filter((block) => block.id === blockId) : entity.builder.blocks;
   const roots = [];
-  for (const block of blocks) {
+  walkBlocks(entity.builder.blocks, (block) => {
+    if (blockId && block.id !== blockId) return;
     if (block.actionId) roots.push(block.actionId);
     for (const option of block.options ?? []) if (option.actionId) roots.push(option.actionId);
-  }
+  });
   return roots;
 }
 
@@ -94,4 +101,27 @@ export function resolveGenericAction(store, kind, id, actionId, blockId = null) 
 export function buildGenericActionReply(action, context = {}) {
   if (action.type !== 'ephemeral_text') throw new Error(`Ukendt action-type: ${action.type}`);
   return ephemeralTextPayload(action, context);
+}
+
+export function resolveStringSelect(store, kind, id, blockId, optionId) {
+  const entity = getEntity(store, kind, id);
+  if (!entity?.builder) return null;
+  let block = null;
+  walkBlocks(entity.builder.blocks, (candidate) => {
+    if (candidate.id === blockId) block = candidate;
+  });
+  if (block?.type !== 'string_select') return null;
+  const option = (block.options ?? []).find((candidate) => candidate.id === optionId);
+  if (!option || !String(option.content ?? '').trim()) return null;
+  return {
+    entity,
+    action: {
+      id: `string:${blockId}:${optionId}`,
+      type: 'ephemeral_text',
+      title: option.label,
+      content: option.content,
+      children: [],
+      presentation: 'buttons'
+    }
+  };
 }
