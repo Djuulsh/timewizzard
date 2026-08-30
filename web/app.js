@@ -1,7 +1,6 @@
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
-
 const state = {
   bootstrap: null,
   destinations: null,
@@ -19,11 +18,9 @@ const state = {
   inputCheckpoint: null
 };
 
-
 const els = Object.fromEntries([
   'identity','entityList','entityCount','entitySearch','emptyState','editor','postTitle','postAccent','editorMeta','dirtyBadge','blockList','inspector','previewContent','previewStats','saveBtn','publishBtn','cloneBtn','exportBtn','deleteBtn','refreshBtn','newDraftBtn','undoBtn','redoBtn','destinationBtn','historyBtn','orphanBanner','newDraftDialog','newDraftForm','newTitle','newForum','newTag','newTemplate','destinationDialog','destinationForm','destinationSelect','destinationTag','destinationHint','historyDialog','historyList','discohookDialog','discohookForm','discohookTitle','discohookDestination','discohookTag','discohookJson','importDiscohookBtn','profileDialog','profileForm','profileDialogTitle','profileDialogMeta','profileText','clearProfileBtn','toastHost'
 ].map((id) => [id, document.getElementById(id)]));
-
 
 const TYPE_INFO = {
   text: ['📝', 'Text / Markdown'],
@@ -39,9 +36,7 @@ const TYPE_INFO = {
   profile_open_list: ['📋', 'MerfinUI Open list (legacy)']
 };
 
-
 const QUOTE_ESCAPE = '\\>>>';
-
 
 function toast(message, type = '') {
   const node = document.createElement('div');
@@ -50,7 +45,6 @@ function toast(message, type = '') {
   els.toastHost.append(node);
   setTimeout(() => node.remove(), 4500);
 }
-
 
 async function api(url, options = {}) {
   const request = { credentials: 'same-origin', ...options };
@@ -68,7 +62,6 @@ async function api(url, options = {}) {
   return data;
 }
 
-
 function escapeHtml(value) {
   return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
@@ -79,7 +72,6 @@ function shortId(bytes = 3) {
 }
 function colorHex(value) { return `#${Number(value || 0).toString(16).padStart(6, '0').slice(-6)}`; }
 function actionFor(block) { return block?.actionId ? state.entity?.builder?.actions?.[block.actionId] : null; }
-
 
 function snapshot() {
   if (!state.entity) return null;
@@ -129,7 +121,6 @@ function endInputEdit() {
   state.inputCheckpoint = null;
 }
 
-
 function referencedActionIds(block) {
   const ids = [];
   if (block?.actionId) ids.push(block.actionId);
@@ -147,7 +138,6 @@ function removeActionTree(actionId) {
   for (const id of collectActionTreeIds(actionId)) delete state.entity.builder.actions[id];
 }
 
-
 function blockSummary(block) {
   const clean = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
   if (block.type === 'text') return clean(block.content).slice(0, 80) || 'Empty text';
@@ -163,14 +153,12 @@ function blockSummary(block) {
   return block.type;
 }
 
-
 function markDirty() {
   if (!state.entity) return;
   state.dirty = true;
   renderEditorMeta();
   renderPreview();
 }
-
 
 function discordState() { return state.scope?.kind === 'p' ? state.entity?.discordState ?? { status: 'unknown' } : null; }
 function renderEditorMeta() {
@@ -192,7 +180,6 @@ function renderEditorMeta() {
   renderUndoRedo();
 }
 
-
 async function refreshBootstrap({ keepSelection = true } = {}) {
   const previous = keepSelection && state.scope ? { ...state.scope } : null;
   state.bootstrap = await api('/api/bootstrap');
@@ -203,7 +190,6 @@ async function refreshBootstrap({ keepSelection = true } = {}) {
     if (exists) await loadEntity(previous.kind, previous.id, { skipDirtyCheck: true });
   }
 }
-
 
 function renderEntityList() {
   if (!state.bootstrap) return;
@@ -230,7 +216,6 @@ function renderEntityList() {
   posts.length ? posts.forEach(add) : els.entityList.insertAdjacentHTML('beforeend', '<div class="entity-card">No published posts</div>');
 }
 
-
 async function loadEntity(kind, id, { skipDirtyCheck = false } = {}) {
   if (!skipDirtyCheck && state.dirty && !confirm('You have unsaved changes. Discard them and open another post?')) return;
   const data = await api(`/api/entities/${kind}/${encodeURIComponent(id)}`);
@@ -251,14 +236,12 @@ async function loadEntity(kind, id, { skipDirtyCheck = false } = {}) {
   renderAll();
 }
 
-
 function renderAll() {
   renderEditorMeta();
   renderBlockList();
   renderInspector();
   renderPreview();
 }
-
 
 function renderBlockList() {
   if (!state.entity) return;
@@ -282,7 +265,6 @@ function renderBlockList() {
     els.blockList.append(card);
   });
 }
-
 
 function beginPointerDrag(event, blockId, card) {
   if (event.pointerType === 'mouse') return;
@@ -311,7 +293,6 @@ function beginPointerDrag(event, blockId, card) {
   document.addEventListener('pointercancel', end);
 }
 
-
 function reorderBlock(sourceId, targetId, after, rerender = true) {
   if (!sourceId || sourceId === targetId || !state.entity) return;
   const blocks = state.entity.builder.blocks;
@@ -326,7 +307,6 @@ function reorderBlock(sourceId, targetId, after, rerender = true) {
   markDirty();
   if (rerender) { renderBlockList(); renderInspector(); }
 }
-
 
 function cloneActionTree(actionId, seen = new Map()) {
   if (seen.has(actionId)) return seen.get(actionId);
@@ -366,7 +346,6 @@ function deleteBlock(blockId) {
   markDirty(); renderBlockList(); renderInspector();
 }
 
-
 function addBlock(type) {
   if (!state.entity) return;
   if (state.entity.builder.blocks.length >= 25) return toast('The builder can contain at most 25 blocks.', 'error');
@@ -397,7 +376,6 @@ function addBlock(type) {
   markDirty(); renderBlockList(); renderInspector();
 }
 
-
 function selectedBlock() { return state.entity?.builder?.blocks?.find((block) => block.id === state.selectedBlockId) || null; }
 function bind(selector, event, callback, root = els.inspector) { const node = $(selector, root); if (node) node.addEventListener(event, callback); return node; }
 function bindInput(node, onInput) {
@@ -407,12 +385,10 @@ function bindInput(node, onInput) {
   node?.addEventListener('blur', endInputEdit);
 }
 
-
 function toolbarHtml(targetId) {
   const actions = [['bold','B'],['italic','I'],['underline','U'],['strike','S'],['h1','H1'],['h2','H2'],['h3','H3'],['subtext','-#'],['quote','>'],['multiquote','>>>'],['quoteexit','Exit >>>'],['ul','•'],['ol','1.'],['code','`code`'],['codeblock','```'],['link','Link'],['spoiler','Spoiler']];
   return `<div class="markdown-toolbar" data-toolbar-for="${targetId}">${actions.map(([action,label]) => `<button type="button" class="toolbar-btn" data-md="${action}">${escapeHtml(label)}</button>`).join('')}</div>`;
 }
-
 
 function applyMarkdownAction(textarea, action) {
   if (!textarea) return;
@@ -441,7 +417,6 @@ function bindToolbar(root = els.inspector) {
     $$('[data-md]', toolbar).forEach((button) => button.addEventListener('click', () => applyMarkdownAction(target, button.dataset.md)));
   });
 }
-
 
 function resolveName(kind, id) {
   const map = state.bootstrap?.entities?.[kind] || {};
@@ -484,7 +459,6 @@ function renderInline(text) {
   return out.replace(/\uE000(\d+)\uE001/g, (_, index) => tokens[Number(index)] ?? '');
 }
 
-
 function renderMarkdown(content) {
   const lines = String(content || '').split(/\r?\n/); const html = []; let multiQuote = false;
   for (let index = 0; index < lines.length; index += 1) {
@@ -510,14 +484,12 @@ function renderMarkdown(content) {
   return html.join('');
 }
 
-
 function markdownReferenceHtml() {
   const rows = [
     ['# Heading','# Heading'],['## Heading','## Heading'],['### Heading','### Heading'],['-# Subtext','-# Subtext'],['**Bold**','**Bold**'],['*Italic*','*Italic*'],['__Underline__','__Underline__'],['~~Strike~~','~~Strike~~'],['||Spoiler||','||Spoiler||'],['`inline code`','`inline code`'],['> Quote','> Quote'],['- Bullet','- Bullet'],['1. Ordered','1. Ordered'],['[Link](https://example.com)','[Link](https://example.com)'],['>>> Multi-line\ncontinues\n\\>>>\nNormal text','>>> Multi-line\ncontinues\n\\>>>\nNormal text']
   ];
   return `<details class="markdown-help"><summary>Discord Markdown reference · syntax + result</summary><div class="markdown-help-content"><div class="markdown-example-list">${rows.map(([raw,example]) => `<div class="markdown-example"><code>${escapeHtml(raw)}</code><div class="markdown-result">${renderMarkdown(example)}</div></div>`).join('')}</div><p class="markdown-help-note"><b>${escapeHtml(QUOTE_ESCAPE)}</b> on its own line is a Timewizzard escape marker. It splits the Text Display so a Discord <code>&gt;&gt;&gt;</code> multi-line quote ends and following text renders normally.</p></div></details>`;
 }
-
 
 function nestedEditorHtml(action, prefix) {
   const children = action?.children || [];
@@ -538,13 +510,11 @@ function bindNestedEditor(action, prefix) {
   });
 }
 
-
 function renderInspector() {
   const block = selectedBlock();
   if (!block) { els.inspector.className = 'inspector-placeholder'; els.inspector.textContent = state.entity?.builder?.blocks?.length ? 'Select a block to edit it.' : 'Add a block to start building.'; return; }
   els.inspector.className = 'inspector-form';
   const info = TYPE_INFO[block.type] || ['▫️', block.type];
-
 
   if (block.type === 'text') {
     els.inspector.innerHTML = `<div class="inspector-card"><h3>${info[0]} ${info[1]}</h3>${toolbarHtml('iContent')}<label>Discord Markdown<textarea id="iContent" rows="12">${escapeHtml(block.content)}</textarea></label>${markdownReferenceHtml()}</div>`;
@@ -586,7 +556,7 @@ function renderInspector() {
   if (block.type === 'string_select') {
     const rows=(block.options||[]).map((option,index)=>`<div class="option-card" data-option-index="${index}"><div class="option-row"><input data-option-label value="${escapeAttr(option.label)}" maxlength="100"><textarea data-option-response rows="3">${escapeHtml(option.content||'')}</textarea><button class="mini-btn" type="button" data-remove-option>×</button></div></div>`).join('');
     els.inspector.innerHTML=`<div class="inspector-card"><h3>🧵 String Select + ephemeral</h3><p>Hver option har sin egen stabile, private string.</p><label>Placeholder<input id="iPlaceholder" maxlength="150" value="${escapeAttr(block.placeholder||'')}"></label><div id="optionRows">${rows}</div><button id="addOptionBtn" type="button" class="btn ghost" ${block.options.length>=25?'disabled':''}>+ Option</button></div>`;
-    bindInput($('#iPlaceholder',els.inspector),(e)=>{block.placeholder=e.target.value;markDirty();}); $('.option-card',els.inspector).forEach((card)=>{const i=Number(card.dataset.optionIndex), option=block.options[i];bindInput($('[data-option-label]',card),(e)=>{option.label=e.target.value;markDirty();});bindInput($('[data-option-response]',card),(e)=>{option.content=e.target.value;markDirty();});$('[data-remove-option]',card).addEventListener('click',()=>{if(block.options.length<=1)return toast('A String Select must contain at least one option.','error');pushUndo();block.options.splice(i,1);markDirty();renderInspector();});});bind('#addOptionBtn','click',()=>{if(block.options.length>=25)return;pushUndo();const number=block.options.length+1;block.options.push({id:shortId(4),label:`Option ${number}`,content:'Private string response…'});markDirty();renderInspector();});return;
+    bindInput($('#iPlaceholder',els.inspector),(e)=>{block.placeholder=e.target.value;markDirty();}); $$('.option-card',els.inspector).forEach((card)=>{const i=Number(card.dataset.optionIndex), option=block.options[i];bindInput($('[data-option-label]',card),(e)=>{option.label=e.target.value;markDirty();});bindInput($('[data-option-response]',card),(e)=>{option.content=e.target.value;markDirty();});$('[data-remove-option]',card).addEventListener('click',()=>{if(block.options.length<=1)return toast('A String Select must contain at least one option.','error');pushUndo();block.options.splice(i,1);markDirty();renderInspector();});});bind('#addOptionBtn','click',()=>{if(block.options.length>=25)return;pushUndo();const number=block.options.length+1;block.options.push({id:shortId(4),label:`Option ${number}`,content:'Private string response…'});markDirty();renderInspector();});return;
   }
   if (block.type === 'profile_select' || block.type === 'profile_open_list') {
     const placeholder=block.type==='profile_select'?`<label>Placeholder<input id="iPlaceholder" maxlength="150" value="${escapeAttr(block.placeholder||'Choose class and resolution…')}"></label>`:'<p>This legacy block renders 18 Open rows and may split over multiple messages.</p>';
@@ -595,7 +565,6 @@ function renderInspector() {
   }
   els.inspector.innerHTML=`<div class="inspector-placeholder">No inspector for ${escapeHtml(block.type)}</div>`;
 }
-
 
 function profileSelectOptions() { return (state.bootstrap?.classes||[]).flatMap((wowClass)=>(state.bootstrap?.resolutions||[]).map((resolution)=>`<option>${escapeHtml(wowClass.name)} — ${escapeHtml(resolution.name)}</option>`)).join(''); }
 function renderPreviewBlock(block) {
@@ -616,13 +585,11 @@ function unitList(block){const textLength=(value)=>String(value||'').length;if(b
 function liveStats(){const blocks=state.entity?.builder?.blocks||[];if(!blocks.length)return{messages:0,components:0,text:0};const units=blocks.flatMap(unitList);let messages=1,currentCount=1,currentText=0,components=0,text=0;for(const unit of units){if(currentCount+unit.count>40||currentText+unit.text>4000){messages+=1;currentCount=1;currentText=0;}currentCount+=unit.count;currentText+=unit.text;components+=unit.count;text+=unit.text;}return{messages,components,text};}
 function renderPreview(){if(!state.entity){els.previewContent.className='discord-container empty-preview';els.previewContent.textContent='Select a post to preview.';els.previewStats.textContent='—';return;}const stats=liveStats();els.previewContent.className='discord-container';els.previewContent.style.setProperty('--preview-accent',colorHex(state.entity.builder.accentColor));els.previewContent.innerHTML=state.entity.builder.blocks.map(renderPreviewBlock).join('')||'<div class="empty-preview">Add a block to start.</div>';els.previewStats.textContent=`${state.entity.builder.blocks.length} blocks · ${stats.messages} msg`;els.previewStats.className=`pill ${stats.messages>1?'warn':'good'}`;const old=$('.preview-warning',els.previewContent.parentElement);if(old)old.remove();if(stats.messages>1){const warning=document.createElement('div');warning.className='preview-warning';warning.textContent=`Discord limits will split this layout across approximately ${stats.messages} messages.`;els.previewContent.parentElement.append(warning);}}
 
-
 async function saveCurrent({silent=false}={}){if(!state.entity||!state.scope)return null;state.entity.title=els.postTitle.value.trim();if(!state.entity.title){toast('The post title cannot be empty.','error');return null;}try{const data=await api(`/api/entities/${state.scope.kind}/${encodeURIComponent(state.scope.id)}`,{method:'PUT',body:{title:state.entity.title,builder:state.entity.builder}});state.scope=data.scope;state.entity=data.entity;state.stats=data.stats;state.revisions=data.revisions||state.revisions;state.dirty=false;state.undoStack=[];state.redoStack=[];renderAll();await refreshBootstrap({keepSelection:false});renderEntityList();if(!silent)toast('Saved.','success');return data;}catch(error){toast(error.message,'error');return null;}}
 async function publishCurrent(){if(!state.entity||!state.scope)return;if(state.dirty&&!await saveCurrent({silent:true}))return;const deleted=discordState()?.status==='deleted';if(deleted&&discordState()?.reason==='destination_missing'){openDestinationDialog();return;}els.publishBtn.disabled=true;const original=els.publishBtn.textContent;els.publishBtn.textContent=deleted?'Re-creating…':'Publishing…';try{const operation=deleted?'recreate':'publish';const data=await api(`/api/entities/${state.scope.kind}/${encodeURIComponent(state.scope.id)}/${operation}`,{method:'POST',body:{}});state.scope=data.scope;state.entity=data.entity;state.stats=data.stats;state.revisions=data.revisions||[];state.dirty=false;toast(deleted?'Re-created on Discord.':'Published to Discord.','success');await refreshBootstrap({keepSelection:false});renderEntityList();renderAll();}catch(error){if(/destination/i.test(error.message)&&deleted)openDestinationDialog();toast(error.message,'error');}finally{els.publishBtn.disabled=false;els.publishBtn.textContent=original;renderEditorMeta();}}
 async function cloneCurrent(){if(!state.entity||!state.scope)return;if(state.dirty&&!await saveCurrent({silent:true}))return;try{const data=await api(`/api/entities/${state.scope.kind}/${encodeURIComponent(state.scope.id)}/clone`,{method:'POST',body:{}});toast('Cloned to a new draft.','success');await refreshBootstrap({keepSelection:false});await loadEntity(data.scope.kind,data.scope.id,{skipDirtyCheck:true});}catch(error){toast(error.message,'error');}}
 async function deleteCurrent(){if(!state.entity||!state.scope)return;const label=state.scope.kind==='p'?'This removes the Builder record and deletes Discord content when it still exists.':'This deletes the draft.';if(!confirm(`${label}\n\nDelete “${state.entity.title}”?`))return;try{await api(`/api/entities/${state.scope.kind}/${encodeURIComponent(state.scope.id)}`,{method:'DELETE'});toast('Deleted.','success');state.scope=null;state.entity=null;state.stats=null;state.dirty=false;state.selectedBlockId=null;els.editor.classList.add('hidden');els.emptyState.classList.remove('hidden');renderPreview();await refreshBootstrap({keepSelection:false});}catch(error){toast(error.message,'error');}}
 function exportCurrent(){if(!state.entity)return;const definition={format:'timewizzard-builder',version:2,title:state.entity.title,builder:state.entity.builder};const blob=new Blob([`${JSON.stringify(definition,null,2)}\n`],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${state.entity.title.replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()||'post'}-builder.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-
 
 async function ensureDestinations(){if(!state.destinations)state.destinations=await api('/api/destinations');return state.destinations;}
 function destinationOptionHtml(destination){const icon=destination.channelType==='forum'?'📋':destination.channelType==='announcement'?'📢':'#️⃣';return `<option value="${destination.id}">${icon} ${escapeHtml(destination.name)}</option>`;}
@@ -630,23 +597,18 @@ function updateTagSelect(selectEl,tagEl){const destination=state.destinations?.f
 async function openNewDraftDialog(){try{await ensureDestinations();els.newForum.innerHTML=state.destinations.map(destinationOptionHtml).join('');els.newTemplate.innerHTML=(state.bootstrap?.templates||[]).map((template)=>`<option value="${escapeAttr(template.value)}">${escapeHtml(template.name)}</option>`).join('');els.newTitle.value='';updateTagSelect(els.newForum,els.newTag);els.newDraftDialog.showModal();}catch(error){toast(error.message,'error');}}
 async function createDraft(event){event.preventDefault();const destination=state.destinations?.find((item)=>item.id===els.newForum.value);if(destination?.requireTag&&!els.newTag.value)return toast('This forum requires a tag.','error');try{const data=await api('/api/drafts',{method:'POST',body:{title:els.newTitle.value.trim(),destinationId:els.newForum.value,tagId:els.newTag.value||null,template:els.newTemplate.value}});els.newDraftDialog.close();await refreshBootstrap({keepSelection:false});await loadEntity(data.scope.kind,data.scope.id,{skipDirtyCheck:true});toast('Draft created.','success');}catch(error){toast(error.message,'error');}}
 
-
 async function openDestinationDialog(){if(!state.entity)return;try{await ensureDestinations();els.destinationSelect.innerHTML=state.destinations.map(destinationOptionHtml).join('');const current=state.entity.destinationChannelId||state.entity.forumChannelId||state.entity.forumId;if(current&&state.destinations.some((item)=>item.id===current))els.destinationSelect.value=current;updateTagSelect(els.destinationSelect,els.destinationTag);if(state.entity.appliedTagIds?.[0])els.destinationTag.value=state.entity.appliedTagIds[0];els.destinationHint.textContent=state.scope.kind==='p'?'Applying a destination to a published post creates the replacement first, then cleans the old Discord target. Builder ID stays stable.':'Draft destination changes without publishing.';els.destinationDialog.showModal();}catch(error){toast(error.message,'error');}}
 async function applyDestination(event){event.preventDefault();try{if(state.dirty&&!await saveCurrent({silent:true}))return;const data=await api(`/api/entities/${state.scope.kind}/${encodeURIComponent(state.scope.id)}/destination`,{method:'PUT',body:{destinationId:els.destinationSelect.value,tagId:els.destinationTag.value||null}});els.destinationDialog.close();state.scope=data.scope||state.scope;state.entity=data.entity;state.dirty=false;toast(state.scope.kind==='p'?'Post moved/re-created.':'Destination updated.','success');await refreshBootstrap({keepSelection:false});await loadEntity(state.scope.kind,state.scope.id,{skipDirtyCheck:true});}catch(error){toast(error.message,'error');}}
-
 
 function openHistory(){if(!state.entity)return;const revisions=state.revisions||[];els.historyList.innerHTML=revisions.length?revisions.map((revision)=>`<div class="history-item"><div><strong>${new Date(revision.createdAt).toLocaleString()}</strong><small>${escapeHtml(revision.reason||'save')}</small></div><button type="button" class="btn ghost" data-restore-revision="${revision.id}">Restore</button></div>`).join(''):'<div class="dialog-note">No saved revisions yet.</div>';$$('[data-restore-revision]',els.historyList).forEach((button)=>button.addEventListener('click',()=>restoreRevision(button.dataset.restoreRevision)));els.historyDialog.showModal();}
 async function restoreRevision(revisionId){if(!confirm('Restore this saved revision? Current saved state will be added to history first.'))return;try{const data=await api(`/api/entities/${state.scope.kind}/${encodeURIComponent(state.scope.id)}/revisions/${encodeURIComponent(revisionId)}/restore`,{method:'POST',body:{}});state.entity=data.entity;state.scope=data.scope;state.revisions=data.revisions||[];state.dirty=false;state.undoStack=[];state.redoStack=[];els.historyDialog.close();els.postTitle.value=state.entity.title;els.postAccent.value=colorHex(state.entity.builder.accentColor);renderAll();toast('Revision restored. Publish when ready.','success');}catch(error){toast(error.message,'error');}}
 
-
 async function openDiscohookDialog(){try{await ensureDestinations();els.discohookDestination.innerHTML=state.destinations.map(destinationOptionHtml).join('');updateTagSelect(els.discohookDestination,els.discohookTag);els.discohookJson.value='';els.discohookTitle.value='';els.discohookDialog.showModal();}catch(error){toast(error.message,'error');}}
 async function importDiscohook(event){event.preventDefault();let payload;try{payload=JSON.parse(els.discohookJson.value);}catch{return toast('Invalid JSON.','error');}try{const data=await api('/api/import/discohook',{method:'POST',body:{title:els.discohookTitle.value.trim()||null,destinationId:els.discohookDestination.value,tagId:els.discohookTag.value||null,payload}});els.discohookDialog.close();await refreshBootstrap({keepSelection:false});await loadEntity(data.scope.kind,data.scope.id,{skipDirtyCheck:true});if(data.warnings?.length)toast(`Imported with ${data.warnings.length} warning(s).`,'');else toast('DiscoHook imported.','success');}catch(error){toast(error.message,'error');}}
-
 
 async function openProfile(classKey,resolutionKey){try{const wowClass=state.bootstrap.classes.find((item)=>item.key===classKey);const resolution=state.bootstrap.resolutions.find((item)=>item.key===resolutionKey);const data=await api(`/api/profiles/${classKey}/${resolutionKey}`);state.profileTarget={classKey,resolutionKey};els.profileDialogTitle.textContent=`${wowClass?.name||classKey} — ${resolution?.name||resolutionKey}`;els.profileDialogMeta.textContent=data.value?`${data.length.toLocaleString()} characters currently saved`:'No TXT value saved yet';els.profileText.value=data.value||'';els.clearProfileBtn.disabled=!data.value;els.profileDialog.showModal();}catch(error){toast(error.message,'error');}}
 async function saveProfile(event){event.preventDefault();if(!state.profileTarget)return;const value=els.profileText.value;if(!value.trim())return toast('TXT content cannot be empty. Use Clear instead.','error');try{const{classKey,resolutionKey}=state.profileTarget;const data=await api(`/api/profiles/${classKey}/${resolutionKey}`,{method:'PUT',body:{value}});state.bootstrap.profileStatus[classKey][resolutionKey]={exists:true,length:data.length};els.profileDialog.close();renderInspector();toast(`Profile saved (${data.length.toLocaleString()} characters).`,'success');}catch(error){toast(error.message,'error');}}
 async function clearProfile(){if(!state.profileTarget||!confirm('Clear this saved profile TXT?'))return;try{const{classKey,resolutionKey}=state.profileTarget;await api(`/api/profiles/${classKey}/${resolutionKey}`,{method:'DELETE'});state.bootstrap.profileStatus[classKey][resolutionKey]={exists:false,length:0};els.profileText.value='';els.profileDialogMeta.textContent='No TXT value saved yet';els.clearProfileBtn.disabled=true;renderInspector();toast('Profile cleared.','success');}catch(error){toast(error.message,'error');}}
-
 
 els.entitySearch.addEventListener('input',(event)=>{state.search=event.target.value;renderEntityList();});
 bindInput(els.postTitle,(event)=>{if(!state.entity)return;state.entity.title=event.target.value;markDirty();renderEntityList();});
@@ -656,6 +618,5 @@ els.newForum.addEventListener('change',()=>updateTagSelect(els.newForum,els.newT
 $$('[data-action="new-draft"]').forEach((button)=>button.addEventListener('click',openNewDraftDialog));$$('[data-close-dialog]').forEach((button)=>button.addEventListener('click',()=>document.getElementById(button.dataset.closeDialog)?.close()));$$('[data-add]').forEach((button)=>button.addEventListener('click',()=>addBlock(button.dataset.add)));
 document.addEventListener('keydown',(event)=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();if(state.dirty)saveCurrent();}else if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'&&!event.shiftKey&&document.activeElement?.tagName!=='TEXTAREA'&&document.activeElement?.tagName!=='INPUT'){event.preventDefault();undo();}else if((event.ctrlKey||event.metaKey)&&((event.shiftKey&&event.key.toLowerCase()==='z')||event.key.toLowerCase()==='y')&&document.activeElement?.tagName!=='TEXTAREA'&&document.activeElement?.tagName!=='INPUT'){event.preventDefault();redo();}});
 window.addEventListener('beforeunload',(event)=>{if(!state.dirty)return;event.preventDefault();event.returnValue='';});
-
 
 try{await refreshBootstrap({keepSelection:false});renderUndoRedo();}catch(error){toast(error.message,'error');}
