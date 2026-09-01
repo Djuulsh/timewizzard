@@ -20,6 +20,7 @@ Timewizzard creates, previews, publishes and maintains structured information po
 - Configurable Discord message splitting in the Publish/Republish review: automatic, one message per top-level block/container, or an exact valid message count.
 - Discord OAuth access control for the Web Builder.
 - Discord message context action: right-click a managed post and choose **Apps → Edit in Web Builder** to open that exact post.
+- Optional GIPHY Search/Trending picker with up to 50 results per request and a matching **View more on GIPHY** link for Image/Banner, Thumbnail and Gallery URL fields.
 
 ## Long String Select TXT delivery
 
@@ -104,6 +105,14 @@ Additional variables required for the Web Builder:
 DISCORD_CLIENT_SECRET=...
 PUBLIC_BASE_URL=https://YOUR-SERVICE.up.railway.app
 ```
+
+Optional GIPHY integration:
+
+```env
+GIPHY_API_KEY=...
+```
+
+Create a Web API key in the [GIPHY Developer Dashboard](https://developers.giphy.com/). GIPHY requires Search and Trending requests to run client-side, so the key is supplied to authenticated Web Builder clients. The picker displays the required **Powered by GIPHY** attribution. Beta keys are subject to GIPHY's current API limits.
 
 `PUBLIC_BASE_URL` must not have a trailing slash. Add this redirect URL in the Discord Developer Portal:
 

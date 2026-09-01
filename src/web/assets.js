@@ -23,6 +23,7 @@ export const WEB_SCRIPT_FILES = Object.freeze([
   'v1519.js',
   'v162.js',
   'v163.js',
+  'giphyPicker.js',
   'quickAnnouncements.js'
 ]);
 
@@ -50,5 +51,6 @@ export const WEB_STYLE_FILES = Object.freeze([
   'v1519.css',
   'v162.css',
   'v163.css',
+  'giphyPicker.css',
   'quickAnnouncements.css'
 ]);

@@ -19,6 +19,7 @@ export const WEB_FEATURES = Object.freeze([
   'configurable-message-splitting',
   'media-gallery',
   'thumbnail',
+  'giphy-image-picker',
   'smart-youtube',
   'nested-ephemeral',
   'bot-identity',

@@ -50,6 +50,12 @@ Plain content and colored Containers can coexist in one post. The Web Builder su
 
 Preview elements can be selected to open their associated block in the Inspector. Markdown tools, emoji/mention pickers, timestamps, inline validation and character counters help keep content compatible with Discord.
 
+### GIPHY images
+
+When `GIPHY_API_KEY` is configured, **Search GIPHY** appears beside Image/Banner and Thumbnail URL fields, with a compact GIPHY button for every Gallery item. The dialog shows up to 50 trending GIFs or search results per API call and automatically inserts the selected direct GIF URL. **View more on GIPHY** opens GIPHY with the current search without loading another page through the bot's API key. If alt text is empty, the GIPHY result title is used as a starting point.
+
+Create a Web API key at [GIPHY Developers](https://developers.giphy.com/) and add it as a Railway variable. GIPHY requires client-side API calls and visible **Powered by GIPHY** attribution; the picker handles both requirements.
+
 ## Publish and Message split
 
 The Publish/Republish dialog validates the real Discord payload and shows the destination, message count, blocks, components, mention behavior and warnings.

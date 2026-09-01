@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added a client-side GIPHY Search/Trending picker for Image/Banner, Thumbnail and Gallery URL fields, including up to 50 results per request, a **View more on GIPHY** link that preserves the current search, automatic direct-GIF URL insertion, accessible selection controls and required **Powered by GIPHY** attribution.
+- Added optional `GIPHY_API_KEY` configuration and GIPHY availability reporting in bootstrap and `/health`.
+
 ## 1.7.0
 
 ### v1.7.0 — Publishing safety, flexible destinations and context editing

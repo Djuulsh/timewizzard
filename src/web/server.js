@@ -379,6 +379,12 @@ export function createWebServer({ client, store, config }) {
         bot: client.user?.tag ?? null,
         botIdentity,
         guild: guild ? { id: guild.id, name: guild.name } : { id: config.guildId, name: null },
+        giphy: {
+          enabled: Boolean(config.giphyApiKey),
+          apiKey: config.giphyApiKey || null,
+          rating: 'pg-13',
+          limit: 50
+        },
         templates: POST_TEMPLATES,
         classes: WOW_CLASSES.map((item) => ({ key: item.key, name: item.name, emojiName: item.emojiName, emojiId: item.emojiId })),
         resolutions: RESOLUTIONS.map((item) => ({ key: item.key, name: item.name })),
@@ -723,6 +729,7 @@ export function createWebServer({ client, store, config }) {
       if (url.pathname === '/health') {
         json(response, client.isReady() ? 200 : 503, {
           ok: client.isReady(), version: VERSION, bot: client.user?.tag ?? null, webBuilder: config.webEnabled,
+          giphy: Boolean(config.giphyApiKey),
           oauthLoginPath: '/auth/discord', builderPath: '/builder', supportedDestinations: ['forum', 'forum-post', 'text', 'announcement'],
           features: WEB_FEATURES,
           uptimeSeconds: Math.floor(process.uptime())
@@ -731,6 +738,7 @@ export function createWebServer({ client, store, config }) {
       }
       if (url.pathname === '/app.css') { await serveCombinedFiles(response, WEB_STYLE_FILES, 'text/css; charset=utf-8'); return; }
       if (url.pathname === '/app.js') { await serveCombinedFiles(response, WEB_SCRIPT_FILES, 'text/javascript; charset=utf-8'); return; }
+      if (url.pathname === '/powered-by-giphy.png') { await serveFile(response, 'powered-by-giphy.png', 'image/png'); return; }
       if (url.pathname === '/auth/discord') { await beginOAuth(response, url); return; }
       if (url.pathname === '/auth/discord/callback') { await finishOAuth(request, response, url); return; }
       if (url.pathname === '/logout') {

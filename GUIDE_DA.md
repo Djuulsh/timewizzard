@@ -50,6 +50,12 @@ Plain indhold og farvede Containers kan blandes i samme opslag. Web Builderen un
 
 Preview-elementer kan vælges direkte for at åbne den tilhørende blok i Inspector. Markdown-værktøjer, emoji/mention-vælgere, timestamps, inline-validering og tegnoptællere hjælper med Discord-kompatibelt indhold.
 
+### GIPHY-billeder
+
+Når `GIPHY_API_KEY` er konfigureret, vises **Search GIPHY** ved URL-felterne i Image/Banner og Thumbnail samt en kompakt GIPHY-knap ved hvert Gallery-element. Dialogen viser op til 50 trending GIFs eller søgeresultater pr. API-kald og indsætter automatisk den valgte direkte GIF-URL. **View more on GIPHY** åbner GIPHY med den aktuelle søgning uden at hente endnu en side gennem botens API-nøgle. Hvis alt-teksten er tom, bruges GIPHY-resultatets titel som udgangspunkt.
+
+Opret en Web API-nøgle på [GIPHY Developers](https://developers.giphy.com/) og tilføj den som Railway-variabel. GIPHY kræver klient-side API-kald og synlig **Powered by GIPHY**-attribution; begge dele håndteres af vælgeren.
+
 ## Publish og Message split
 
 Publish/Republish-dialogen validerer den rigtige Discord-payload og viser destination, antal beskeder, blocks, komponenter, mentions og advarsler.

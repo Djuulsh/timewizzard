@@ -51,9 +51,12 @@ for (const file of WEB_SCRIPT_FILES) assert(fs.existsSync(path.join(root, 'web',
 for (const file of WEB_STYLE_FILES) assert(fs.existsSync(path.join(root, 'web', file)), `Missing Web Builder stylesheet: ${file}`);
 assert(WEB_SCRIPT_FILES.at(-1) === 'quickAnnouncements.js', 'Quick Announcement controller must be the final Web Builder script.');
 assert(WEB_STYLE_FILES.at(-1) === 'quickAnnouncements.css', 'Quick Announcement polish must be the final Web Builder stylesheet.');
+assert(WEB_SCRIPT_FILES.at(-2) === 'giphyPicker.js', 'GIPHY picker must load after the shared Inspector layers and before final branding.');
+assert(WEB_STYLE_FILES.at(-2) === 'giphyPicker.css', 'GIPHY picker styles must load immediately before final branding polish.');
 assert(new Set(WEB_FEATURES).size === WEB_FEATURES.length, 'Web feature registry contains duplicates.');
 assert(WEB_FEATURES.includes('template-catalog-36') && !WEB_FEATURES.includes('template-catalog-38'), 'Feature registry template count must match the validated catalogue.');
 assert(WEB_FEATURES.includes('message-context-webbuilder-edit'), 'Feature registry must advertise message context editing.');
+assert(WEB_FEATURES.includes('giphy-image-picker'), 'Feature registry must advertise GIPHY image selection.');
 
 const html = read('web/index.html');
 assert(!html.includes('v1.3.1'), 'The HTML shell must not expose the legacy v1.3.1 version.');
@@ -108,6 +111,37 @@ assert(js153.includes('if (textarea.maxLength > 0) return textarea.maxLength;'),
 const appJs = read('web/app.js');
 assert(appJs.includes('maxlength="${MAX_STRING_SELECT_CONTENT_LENGTH}"'), 'String Select textarea must expose its 200000-character limit to the shared counter.');
 assert(!appJs.includes('data-string-count'), 'String Select must not render a duplicate character counter.');
+
+const giphyJs = read('web/giphyPicker.js');
+for (const marker of [
+  'api.giphy.com/v1/gifs/search',
+  'api.giphy.com/v1/gifs/trending',
+  'Powered by GIPHY',
+  '/powered-by-giphy.png',
+  'images.downsized_medium?.url',
+  'giphyEnhanceInspector',
+  "block.type === 'image' || block.type === 'thumbnail'",
+  "block.type === 'gallery'",
+  'result.analytics?.onload?.url',
+  'result.analytics?.onclick?.url',
+  "parsed.searchParams.set('customer_id'",
+  "parsed.searchParams.set('ts'",
+  'giphyViewMoreLink',
+  'https://giphy.com/search/${encodeURIComponent(normalized)}',
+  'View more on GIPHY'
+]) assert(giphyJs.includes(marker), `GIPHY picker is missing contract: ${marker}.`);
+const giphyCss = read('web/giphyPicker.css');
+for (const marker of ['.giphy-picker-dialog', '.giphy-picker-results', 'grid-auto-rows:max-content', '.giphy-result', 'min-height:176px', '.giphy-view-more', '@media(max-width:720px)', '@media(prefers-reduced-motion:reduce)']) {
+  assert(giphyCss.includes(marker), `GIPHY picker stylesheet is missing ${marker}.`);
+}
+const configSource = read('src/config.js');
+const serverSource = read('src/web/server.js');
+assert(configSource.includes('GIPHY_API_KEY') && configSource.includes('giphyApiKey'), 'Runtime config must expose optional GIPHY_API_KEY.');
+assert(serverSource.includes('apiKey: config.giphyApiKey || null') && serverSource.includes('giphy: Boolean(config.giphyApiKey)'), 'Bootstrap and health must report GIPHY configuration.');
+assert(serverSource.includes('limit: 50') && giphyJs.includes('Number(config.limit) || 50'), 'The GIPHY picker must request the beta-key maximum of 50 results per API call.');
+assert(serverSource.includes("serveFile(response, 'powered-by-giphy.png', 'image/png')") && fs.existsSync(path.join(root, 'web', 'powered-by-giphy.png')), 'The official Powered by GIPHY logo must be served locally.');
+assert(read('.env.example').includes('GIPHY_API_KEY=') && read('.env.local.example').includes('GIPHY_API_KEY='), 'Environment examples must document GIPHY_API_KEY.');
+assert(read('GUIDE_DA.md').includes('### GIPHY-billeder') && read('GUIDE_EN.md').includes('### GIPHY images'), 'Both operating guides must document the GIPHY picker.');
 
 const css163 = read('web/v163.css');
 for (const marker of [
