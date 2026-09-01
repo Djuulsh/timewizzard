@@ -4,6 +4,9 @@
 
 - Added a client-side GIPHY Search/Trending picker for Image/Banner, Thumbnail and Gallery URL fields, including up to 50 results per request, a **View more on GIPHY** link that preserves the current search, automatic direct-GIF URL insertion, accessible selection controls and required **Powered by GIPHY** attribution.
 - Added optional `GIPHY_API_KEY` configuration and GIPHY availability reporting in bootstrap and `/health`.
+- Added comma-separated `EDITOR_ROLE_IDS` authorization for Discord commands, editor interactions, context-menu editing and Web Builder OAuth, while retaining server owner, Administrator and Manage Server access.
+- Added complete Discord member fetching for Web Builder `@` mentions through the privileged Server Members Intent, with cache reuse and a safe limited-cache fallback.
+- Replaced the 103-item standard emoji subset with a lazy-loaded Emoji 17 library containing more than 3,900 base and skin-tone entries, combined with all configured-guild emojis and served with gzip, browser caching, category filters, keyword search and incremental rendering.
 
 ## 1.7.0
 

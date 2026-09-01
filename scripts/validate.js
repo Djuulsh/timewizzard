@@ -24,8 +24,11 @@ import { destinationTypeForChannel, normalizeTagIds, validateDestination } from 
 import { commands } from '../src/commands.js';
 import { createManagedPost } from '../src/postService.js';
 import { BotController, buildHelpContent, buildWebBuilderOverview } from '../src/controller.js';
-import { builderReturnPath } from '../src/web/server.js';
+import { builderReturnPath, discordOAuthScopes } from '../src/web/server.js';
 import { BUILDER_EXPORT_FORMAT, BUILDER_EXPORT_VERSION, MAX_BUILDER_IMPORT_BYTES, exportDefinition, parseBuilderDefinition, readBuilderAttachment } from '../src/builder/io.js';
+import { hasConfiguredEditorRole, hasEditorAccess, parseEditorRoleIds } from '../src/access.js';
+import { fetchGuildMembers } from '../src/discordMembers.js';
+import { DEFAULT_EMOJIS, DEFAULT_EMOJI_DATA_VERSION, buildDefaultEmojiData } from '../src/emojiData.js';
 
 function makeEntity(id, title, builder, extra = {}) {
   return { id, title, builder, ...extra };
@@ -35,6 +38,66 @@ function addActionResult(builder, result, target = builder.blocks) {
   target.push(result.block);
   for (const action of result.actions ?? []) builder.actions[action.id] = action;
   return result;
+}
+
+const editorRoleId = '123456789012345678';
+const secondEditorRoleId = '987654321098765432';
+const parsedEditorRoles = parseEditorRoleIds(` ${editorRoleId},${secondEditorRoleId},${editorRoleId} `);
+if (parsedEditorRoles.length !== 2 || parsedEditorRoles[0] !== editorRoleId || parsedEditorRoles[1] !== secondEditorRoleId) {
+  throw new Error('EDITOR_ROLE_IDS must parse comma-separated IDs, trim whitespace and remove duplicates.');
+}
+if (parseEditorRoleIds('').length !== 0) throw new Error('An empty EDITOR_ROLE_IDS value must disable role-based access cleanly.');
+let invalidEditorRolesRejected = false;
+try { parseEditorRoleIds('not-a-role'); } catch { invalidEditorRolesRejected = true; }
+if (!invalidEditorRolesRejected) throw new Error('Invalid EDITOR_ROLE_IDS values must fail startup validation.');
+const roleMember = { roles: [editorRoleId] };
+if (!hasConfiguredEditorRole(roleMember, parsedEditorRoles)) throw new Error('Configured editor roles must match Discord API member role arrays.');
+if (!hasConfiguredEditorRole({ roles: { cache: new Map([[editorRoleId, {}]]) } }, parsedEditorRoles)) throw new Error('Configured editor roles must match discord.js GuildMember role caches.');
+if (!hasEditorAccess({ guildId: 'guild', memberPermissions: { has: () => false }, member: roleMember }, parsedEditorRoles)) throw new Error('A configured editor role must grant interaction access.');
+if (hasEditorAccess({ guildId: 'guild', memberPermissions: { has: () => false }, member: { roles: [] } }, parsedEditorRoles)) throw new Error('Unconfigured roles must not grant interaction access.');
+if (discordOAuthScopes([]) !== 'identify guilds' || discordOAuthScopes(parsedEditorRoles) !== 'identify guilds guilds.members.read') {
+  throw new Error('Web Builder OAuth must request member-role access only when editor roles are configured.');
+}
+
+let memberFetchCalls = 0;
+const fetchedMembers = new Map([
+  ['member-1', { id: 'member-1' }],
+  ['member-2', { id: 'member-2' }]
+]);
+const memberFetchGuild = {
+  memberCount: 2,
+  members: {
+    cache: new Map([['member-1', { id: 'member-1' }]]),
+    fetch: async () => {
+      memberFetchCalls += 1;
+      return fetchedMembers;
+    }
+  }
+};
+if (await fetchGuildMembers(memberFetchGuild) !== fetchedMembers || memberFetchCalls !== 1) {
+  throw new Error('Incomplete Discord member caches must be fetched once.');
+}
+memberFetchGuild.members.cache = fetchedMembers;
+if (await fetchGuildMembers(memberFetchGuild) !== fetchedMembers || memberFetchCalls !== 1) {
+  throw new Error('Complete Discord member caches must be reused without another API request.');
+}
+
+const defaultEmojiCategories = new Set(DEFAULT_EMOJIS.map((item) => item.category));
+if (DEFAULT_EMOJI_DATA_VERSION !== '17.0.0' || DEFAULT_EMOJIS.length < 3_900 || new Set(DEFAULT_EMOJIS.map((item) => item.emoji)).size !== DEFAULT_EMOJIS.length) {
+  throw new Error('The complete Emoji 17 default library must contain at least 3,900 unique base and skin-tone entries.');
+}
+for (const category of ['faces', 'people', 'nature', 'food', 'travel', 'activities', 'objects', 'symbols', 'flags']) {
+  if (!defaultEmojiCategories.has(category)) throw new Error(`Default emoji library is missing category: ${category}.`);
+}
+if (!DEFAULT_EMOJIS.some((item) => item.emoji === '😀') || !DEFAULT_EMOJIS.some((item) => item.emoji === '🏋🏿‍♂️')) {
+  throw new Error('Default emoji library must include base and complex skin-tone emoji sequences.');
+}
+const normalizedEmojiFixture = buildDefaultEmojiData([
+  { group: 1, unicode: '👋', label: 'waving hand', tags: ['hello'], skins: [{ group: 1, unicode: '👋🏽', label: 'waving hand: medium skin tone' }] },
+  { group: 2, unicode: '🏽', label: 'medium skin tone' }
+]);
+if (normalizedEmojiFixture.length !== 2 || !normalizedEmojiFixture[0].search.includes('hello') || normalizedEmojiFixture.some((item) => item.emoji === '🏽')) {
+  throw new Error('Default emoji normalization must retain searchable variations and omit standalone components.');
 }
 
 const webBuilderOverview = buildWebBuilderOverview();
@@ -84,6 +147,29 @@ await contextController.handle({
 const contextEditUrl = contextReply?.components?.[0]?.components?.[0]?.data?.url;
 if (contextEditUrl !== 'https://timewizzard.example/builder?kind=p&id=builder-context' || !contextReply?.content?.includes('Context post')) {
   throw new Error('Message context action must return a direct link to the selected managed post.');
+}
+let editorRoleContextReply = null;
+const editorRoleContextController = new BotController({
+  client: null,
+  store: { getPost: (id) => managedPostMatchesMessage(contextPost, id) ? contextPost : null, getPostKey: () => contextPost.builderId },
+  config: { guildId: 'guild-context', editorRoleIds: [editorRoleId], webEnabled: true, publicBaseUrl: 'https://timewizzard.example' }
+});
+await editorRoleContextController.handle({
+  guildId: 'guild-context',
+  commandName: 'Edit in Web Builder',
+  targetMessage: { id: 'starter-message' },
+  memberPermissions: { has: () => false },
+  member: { roles: [editorRoleId] },
+  isAutocomplete: () => false,
+  isButton: () => false,
+  isStringSelectMenu: () => false,
+  isModalSubmit: () => false,
+  isMessageContextMenuCommand: () => true,
+  isChatInputCommand: () => false,
+  reply: async (payload) => { editorRoleContextReply = payload; }
+});
+if (editorRoleContextReply?.components?.[0]?.components?.[0]?.data?.url !== 'https://timewizzard.example/builder?kind=p&id=builder-context') {
+  throw new Error('A configured editor role must be allowed to use the message context editor action.');
 }
 
 const plainBuilder = createBuilderTemplate('announcement_simple', 'Plain announcement');

@@ -7,9 +7,12 @@ Timewizzard bygger og vedligeholder Discord Components V2-opslag i forum-, tekst
 ## Adgang og tilladelser
 
 - Timewizzard kører aktuelt i single-server mode via `GUILD_ID`.
-- Brugeren skal have **Manage Server** (`ManageGuild`), Administrator eller være serverejer.
+- Brugeren skal være serverejer, have Administrator/**Manage Server** (`ManageGuild`) eller have en rolle angivet i `EDITOR_ROLE_IDS`.
+- Flere editor-roller angives kommasepareret i Railway og lokalt, eksempelvis `EDITOR_ROLE_IDS=123456789012345678,987654321098765432`.
+- Rollen skal også tillades under **Server Settings → Integrations → Timewizzard**, så Discord viser kommandoerne for rollen.
 - Botten skal kunne se destinationen, sende beskeder og læse beskedhistorik.
 - Nye forum-posts kræver **Create Public Threads**. Arkiverede eller låste posts kan også kræve **Manage Threads**.
+- `@`-vælgerens komplette medlemsliste kræver **Server Members Intent** under **Discord Developer Portal → Bot → Privileged Gateway Intents** samt en genstart eller redeploy af botten.
 
 ## Normal arbejdsgang
 
@@ -24,7 +27,7 @@ Timewizzard bygger og vedligeholder Discord Components V2-opslag i forum-, tekst
 
 Højreklik på startbeskeden eller en fortsættelsesbesked i et publiceret Timewizzard-opslag, og vælg **Apps → Edit in Web Builder**. Botten kontrollerer, at beskeden tilhører et administreret opslag, og sender et privat link, som åbner præcis dette opslag efter Discord OAuth.
 
-Funktionen kræver **Manage Server** og vises kun på den server, hvor Timewizzard-kommandoerne er registreret. Almindelige beskeder, som ikke tilhører et Timewizzard-opslag, kan ikke åbnes som Builder-data.
+Funktionen kræver **Manage Server** eller en konfigureret editor-rolle og vises kun på den server, hvor Timewizzard-kommandoerne er registreret. Almindelige beskeder, som ikke tilhører et Timewizzard-opslag, kan ikke åbnes som Builder-data.
 
 ## Create draft
 
@@ -49,6 +52,10 @@ Desktop understøtter drag-and-drop. På touch-enheder bruges tap-to-move. Undo/
 Plain indhold og farvede Containers kan blandes i samme opslag. Web Builderen understøtter blandt andet Text, Heading, Image, Thumbnail, Separator, Callout, Checklist, Steps, Facts, Button Row, Event, Countdown, Code, Progress, Gallery, YouTube, selects og nested ephemeral actions.
 
 Preview-elementer kan vælges direkte for at åbne den tilhørende blok i Inspector. Markdown-værktøjer, emoji/mention-vælgere, timestamps, inline-validering og tegnoptællere hjælper med Discord-kompatibelt indhold.
+
+### Guild- og standard-emojis
+
+**Discord Insert → Emojis** samler alle custom emojis fra den konfigurerede guild med det komplette lokalt hostede Emoji 17-standardbibliotek. Vælg **Guild** eller **Default**, søg på navn og relaterede ord, eller filtrér efter kategori. Biblioteket indeholder også hudfarvevariationer og indlæses først, når emoji-vælgeren bruges. Store resultater vises trinvist med **Show more** for at holde Builderen hurtig. Standard-emojis kræver ingen ekstra Discord-permission; guild-emojis hentes fra den server, botten er forbundet til.
 
 ### GIPHY-billeder
 
@@ -92,7 +99,7 @@ Kendte legacy-selects til `MerfinUI_v7.80.zip` og `TBC_AddOns.zip` migreres til 
 
 ## Lokal udvikling
 
-Kopiér `.env.local.example` til `.env.local`, tilføj lokale Discord/OAuth-værdier og kør:
+Kopiér `.env.local.example` til `.env.local`, tilføj lokale Discord/OAuth-værdier og eventuelle kommaseparerede `EDITOR_ROLE_IDS`, og kør:
 
 ```bash
 npm ci

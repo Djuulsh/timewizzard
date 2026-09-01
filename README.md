@@ -21,6 +21,7 @@ Timewizzard creates, previews, publishes and maintains structured information po
 - Discord OAuth access control for the Web Builder.
 - Discord message context action: right-click a managed post and choose **Apps → Edit in Web Builder** to open that exact post.
 - Optional GIPHY Search/Trending picker with up to 50 results per request and a matching **View more on GIPHY** link for Image/Banner, Thumbnail and Gallery URL fields.
+- Combined emoji picker with every custom emoji from the configured guild and the complete locally hosted Emoji 17 default Unicode library, including skin-tone variations, categories, search, favorites and recent items.
 
 ## Long String Select TXT delivery
 
@@ -74,7 +75,17 @@ bot
 applications.commands
 ```
 
-Timewizzard slash commands require the invoking member to have **Manage Server** (`ManageGuild`). The server owner and members with Administrator also satisfy this requirement. The channel must not deny the member the **Use Application Commands** permission.
+Timewizzard accepts the server owner, members with Administrator or **Manage Server** (`ManageGuild`), and members whose role ID is listed in `EDITOR_ROLE_IDS`. The same access rule protects slash commands, editor buttons/modals, **Apps → Edit in Web Builder** and Web Builder OAuth login. The channel must not deny the member the **Use Application Commands** permission.
+
+To use existing Discord roles without granting Manage Server, enable Developer Mode, copy each role ID and configure a comma-separated list:
+
+```env
+EDITOR_ROLE_IDS=123456789012345678,987654321098765432
+```
+
+Role IDs are stable when a role is renamed. After changing the variable, restart locally or redeploy Railway. Because the commands retain **Manage Server** as their safe Discord default, also open **Server Settings → Integrations → Timewizzard** and explicitly allow each editor role for the app or relevant commands. This Discord permission controls command visibility; `EDITOR_ROLE_IDS` is the bot's matching server-side authorization. When editor roles are configured, Web Builder OAuth additionally requests Discord's `guilds.members.read` scope to verify only the signed-in user's roles in the configured server.
+
+The Web Builder's people mention picker fetches the complete server member list. Enable **Server Members Intent** under **Discord Developer Portal → Bot → Privileged Gateway Intents** before starting the bot. The runtime requests `GatewayIntentBits.GuildMembers`; without the Developer Portal toggle Discord rejects the Gateway connection. After enabling it, restart or redeploy the bot and hard-refresh the Web Builder.
 
 The bot needs **View Channel**, **Send Messages**, **Send Messages in Threads** and **Read Message History** in every destination. It also needs **Create Public Threads** when Timewizzard creates a new forum post. Publishing into an archived forum post automatically attempts to reopen it; locked posts additionally require **Manage Threads**.
 
@@ -104,6 +115,12 @@ Additional variables required for the Web Builder:
 ```env
 DISCORD_CLIENT_SECRET=...
 PUBLIC_BASE_URL=https://YOUR-SERVICE.up.railway.app
+```
+
+Optional editor roles, shared by Discord commands and Web Builder login:
+
+```env
+EDITOR_ROLE_IDS=123456789012345678,987654321098765432
 ```
 
 Optional GIPHY integration:
@@ -143,7 +160,7 @@ Install the exact dependency versions recorded in `package-lock.json`:
 npm ci
 ```
 
-Copy `.env.local.example` to `.env.local`, insert the local Discord values and add this OAuth redirect in the Discord Developer Portal:
+Copy `.env.local.example` to `.env.local`, insert the local Discord values, add the same comma-separated `EDITOR_ROLE_IDS` used for local testing, and add this OAuth redirect in the Discord Developer Portal:
 
 ```text
 http://127.0.0.1:3000/auth/discord/callback
@@ -186,6 +203,7 @@ The response includes the live bot state, authoritative runtime version, Web Bui
   "ok": true,
   "version": "1.7.0",
   "webBuilder": true,
+  "editorRolesConfigured": 2,
   "oauthLoginPath": "/auth/discord",
   "builderPath": "/builder",
   "supportedDestinations": ["forum", "forum-post", "text", "announcement"]
@@ -215,7 +233,7 @@ The response includes the live bot state, authoritative runtime version, Web Bui
 
 `/webbuilder` returns a private, versioned launch panel with links to the OAuth-protected Builder and both operating guides. The current feature summary covers staged destinations, Publish/Republish review, configurable message splitting, JSON round trips, long TXT delivery and direct ZIP download buttons.
 
-For an existing published post, right-click its starter message or any Timewizzard continuation message and choose **Apps → Edit in Web Builder**. The bot verifies that the message belongs to a managed post, checks **Manage Server**, and returns a private deep link. The selected post opens automatically after Discord OAuth.
+For an existing published post, right-click its starter message or any Timewizzard continuation message and choose **Apps → Edit in Web Builder**. The bot verifies that the message belongs to a managed post, checks Manage Server or the configured editor roles, and returns a private deep link. The selected post opens automatically after Discord OAuth.
 
 ## Deleted Discord targets
 

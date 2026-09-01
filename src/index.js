@@ -7,6 +7,7 @@ import {
   Routes
 } from 'discord.js';
 import { commands } from './commands.js';
+import { hasEditorAccess } from './access.js';
 import { config } from './config.js';
 import { BotController } from './controller.js';
 import { installDestinationSupport } from './destinationSupport.js';
@@ -27,7 +28,7 @@ installV158Support(BotController);
 const store = new JsonStore(path.join(config.dataDir, 'store.json'));
 await store.init();
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 const controller = new BotController({ client, store, config });
 
 const statusCommand = {
@@ -63,6 +64,13 @@ client.once(Events.ClientReady, async (readyClient) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isChatInputCommand() && interaction.commandName === 'status') {
+    if (!hasEditorAccess(interaction, config.editorRoleIds)) {
+      await interaction.reply({
+        content: 'Du skal have **Administrer server** eller en konfigureret Timewizzard editor-rolle for at bruge denne kommando.',
+        ephemeral: true
+      });
+      return;
+    }
     await interaction.reply({
       content: [
         '**Timewizzard Info Bot**',
@@ -70,6 +78,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         `Bot: ${client.user?.tag ?? 'starter...'}`,
         `Guild: ${config.guildId}`,
         `Web Builder: ${config.webEnabled ? '✅ enabled' : '❌ disabled'}`,
+        `Editor roles: ${config.editorRoleIds.length}`,
         config.webEnabled ? `Builder: ${config.publicBaseUrl}/builder` : null,
         `Storage: ${path.join(config.dataDir, 'store.json')}`
       ].filter(Boolean).join('\n'),

@@ -3,8 +3,11 @@ import http from 'node:http';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 import { ChannelFlags, ChannelType } from 'discord.js';
+import { hasConfiguredEditorRole } from '../access.js';
 import { MAX_WEB_JSON_BODY_BYTES, WOW_CLASSES, RESOLUTIONS, findClass, findResolution } from '../constants.js';
+import { DEFAULT_EMOJIS, DEFAULT_EMOJI_DATA_VERSION } from '../emojiData.js';
 import { createBuilderTemplate, POST_TEMPLATES } from '../builder/templates.js';
 import { makeShortId } from '../builder/ids.js';
 import { parseBuilderDefinition } from '../builder/io.js';
@@ -25,6 +28,7 @@ import {
   validateDestination
 } from '../destinations.js';
 import { convertDiscohook } from '../discohook.js';
+import { fetchGuildMembers } from '../discordMembers.js';
 import { normalizeGeneratedString } from '../utils.js';
 import {
   buildDiscordPickerData,
@@ -42,6 +46,13 @@ const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const MANAGE_GUILD = 0x20n;
 const ADMINISTRATOR = 0x8n;
+const DEFAULT_EMOJI_BODY = Buffer.from(JSON.stringify({ version: DEFAULT_EMOJI_DATA_VERSION, emojis: DEFAULT_EMOJIS }));
+const DEFAULT_EMOJI_GZIP_BODY = gzipSync(DEFAULT_EMOJI_BODY);
+const DEFAULT_EMOJI_ETAG = `"emoji-${DEFAULT_EMOJI_DATA_VERSION}-${DEFAULT_EMOJI_BODY.length}"`;
+
+export function discordOAuthScopes(editorRoleIds = []) {
+  return editorRoleIds?.length ? 'identify guilds guilds.members.read' : 'identify guilds';
+}
 
 function json(response, status, data, headers = {}) {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers });
@@ -56,6 +67,25 @@ function text(response, status, body, contentType = 'text/plain; charset=utf-8',
 function redirect(response, location, headers = {}) {
   response.writeHead(302, { location, 'cache-control': 'no-store', ...headers });
   response.end();
+}
+
+function serveDefaultEmojis(request, response) {
+  if (request.headers['if-none-match'] === DEFAULT_EMOJI_ETAG) {
+    response.writeHead(304, { etag: DEFAULT_EMOJI_ETAG, 'cache-control': 'private, max-age=86400', vary: 'accept-encoding' });
+    response.end();
+    return;
+  }
+  const useGzip = String(request.headers['accept-encoding'] ?? '').includes('gzip');
+  const body = useGzip ? DEFAULT_EMOJI_GZIP_BODY : DEFAULT_EMOJI_BODY;
+  response.writeHead(200, {
+    'content-type': 'application/json; charset=utf-8',
+    'content-length': body.length,
+    'cache-control': 'private, max-age=86400',
+    etag: DEFAULT_EMOJI_ETAG,
+    vary: 'accept-encoding',
+    ...(useGzip ? { 'content-encoding': 'gzip' } : {})
+  });
+  response.end(body);
 }
 
 function parseCookies(request) {
@@ -191,11 +221,11 @@ async function listDestinations(client, guildId) {
 
 async function previewEntities(client, guildId, session) {
   const guild = await client.guilds.fetch(guildId);
-  const [channels, roles] = await Promise.all([guild.channels.fetch(), guild.roles.fetch()]);
+  const [channels, roles, members] = await Promise.all([guild.channels.fetch(), guild.roles.fetch(), fetchGuildMembers(guild)]);
   const users = {};
   users[session.user.id] = session.user.username;
   if (client.user) users[client.user.id] = client.user.username;
-  for (const member of guild.members.cache.values()) users[member.id] = member.displayName || member.user?.username || member.id;
+  for (const member of members.values()) users[member.id] = member.displayName || member.user?.username || member.id;
   return {
     channels: Object.fromEntries([...channels.values()].filter(Boolean).map((channel) => [channel.id, channel.name])),
     roles: Object.fromEntries([...roles.values()].filter(Boolean).map((role) => [role.id, role.name])),
@@ -292,7 +322,7 @@ export function createWebServer({ client, store, config }) {
     url.searchParams.set('client_id', config.clientId);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('redirect_uri', redirectUri);
-    url.searchParams.set('scope', 'identify guilds');
+    url.searchParams.set('scope', discordOAuthScopes(config.editorRoleIds));
     url.searchParams.set('state', state);
     redirect(response, url.toString());
   }
@@ -319,9 +349,13 @@ export function createWebServer({ client, store, config }) {
     }
     const token = await tokenResponse.json();
     const headers = { authorization: `Bearer ${token.access_token}` };
-    const [userResponse, guildsResponse] = await Promise.all([
+    const memberResponsePromise = config.editorRoleIds?.length
+      ? fetch(`https://discord.com/api/v10/users/@me/guilds/${config.guildId}/member`, { headers })
+      : Promise.resolve(null);
+    const [userResponse, guildsResponse, memberResponse] = await Promise.all([
       fetch('https://discord.com/api/v10/users/@me', { headers }),
-      fetch('https://discord.com/api/v10/users/@me/guilds', { headers })
+      fetch('https://discord.com/api/v10/users/@me/guilds', { headers }),
+      memberResponsePromise
     ]);
     if (!userResponse.ok || !guildsResponse.ok) {
       text(response, 502, 'Discord OAuth profile lookup failed.');
@@ -331,9 +365,16 @@ export function createWebServer({ client, store, config }) {
     const guilds = await guildsResponse.json();
     const guild = guilds.find((item) => item.id === config.guildId);
     const permissions = guild ? BigInt(guild.permissions ?? '0') : 0n;
-    const allowed = Boolean(guild && (guild.owner || (permissions & MANAGE_GUILD) || (permissions & ADMINISTRATOR)));
+    const privileged = Boolean(guild && (guild.owner || (permissions & MANAGE_GUILD) || (permissions & ADMINISTRATOR)));
+    let editorRoleAllowed = false;
+    if (guild && !privileged && memberResponse?.ok) {
+      editorRoleAllowed = hasConfiguredEditorRole(await memberResponse.json(), config.editorRoleIds);
+    } else if (guild && !privileged && memberResponse && memberResponse.status !== 404) {
+      console.warn(`Discord OAuth member role lookup failed with HTTP ${memberResponse.status}.`);
+    }
+    const allowed = Boolean(guild && (privileged || editorRoleAllowed));
     if (!allowed) {
-      text(response, 403, 'Du skal have Administrer server for at bruge Web Builder.');
+      text(response, 403, 'Du skal have Administrer server eller en konfigureret Timewizzard editor-rolle for at bruge Web Builder.');
       return;
     }
 
@@ -422,6 +463,11 @@ export function createWebServer({ client, store, config }) {
 
     if (url.pathname === '/api/discord-picker' && method === 'GET') {
       json(response, 200, await buildDiscordPickerData({ client, guildId: config.guildId, store, session }));
+      return;
+    }
+
+    if (url.pathname === '/api/default-emojis' && method === 'GET') {
+      serveDefaultEmojis(request, response);
       return;
     }
 
@@ -730,6 +776,7 @@ export function createWebServer({ client, store, config }) {
         json(response, client.isReady() ? 200 : 503, {
           ok: client.isReady(), version: VERSION, bot: client.user?.tag ?? null, webBuilder: config.webEnabled,
           giphy: Boolean(config.giphyApiKey),
+          editorRolesConfigured: config.editorRoleIds?.length ?? 0,
           oauthLoginPath: '/auth/discord', builderPath: '/builder', supportedDestinations: ['forum', 'forum-post', 'text', 'announcement'],
           features: WEB_FEATURES,
           uptimeSeconds: Math.floor(process.uptime())

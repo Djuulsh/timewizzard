@@ -2,7 +2,7 @@
 // This file is concatenated after app.js by the web server so it can reuse the
 // existing Builder state and helpers without duplicating the v1.3 editor.
 
-const V131_UNICODE_EMOJIS = [
+const V131_FALLBACK_UNICODE_EMOJIS = [
   ['😀','grinning','faces'],['😃','smiley','faces'],['😄','smile','faces'],['😁','grin','faces'],['😂','joy','faces'],['🤣','rofl','faces'],['😊','blush','faces'],['😍','heart eyes','faces'],['🥰','love','faces'],['😘','kiss','faces'],['😎','sunglasses','faces'],['🤩','star struck','faces'],['🥳','party','faces'],['🤔','thinking','faces'],['🫡','salute','faces'],['😴','sleep','faces'],['😭','cry','faces'],['😡','angry','faces'],['🤯','mind blown','faces'],['😈','devil','faces'],
   ['👍','thumbs up','hands'],['👎','thumbs down','hands'],['👏','clap','hands'],['🙌','raised hands','hands'],['🤝','handshake','hands'],['🙏','pray','hands'],['💪','muscle','hands'],['👌','ok','hands'],['✌️','peace','hands'],['🤞','fingers crossed','hands'],['👀','eyes','hands'],['🫶','heart hands','hands'],
   ['❤️','red heart','hearts'],['🧡','orange heart','hearts'],['💛','yellow heart','hearts'],['💚','green heart','hearts'],['💙','blue heart','hearts'],['💜','purple heart','hearts'],['🖤','black heart','hearts'],['🤍','white heart','hearts'],['💔','broken heart','hearts'],
@@ -14,15 +14,20 @@ const V131_UNICODE_EMOJIS = [
 ].map(([emoji, name, category]) => ({ id: `u:${emoji}`, emoji, name, category, insert: emoji, custom: false }));
 
 const V131_EMOJI_SOURCES = [
-  ['all','Alle'],['discord','🙂 Discord'],['server','🟣 Server'],['favorites','★ Favoritter'],['recent','🕘 Seneste']
+  ['all','All'],['discord','🙂 Default'],['server','🟣 Guild'],['favorites','★ Favorites'],['recent','🕘 Recent']
 ];
 const V131_EMOJI_CATEGORIES = [
-  ['all','Alle'],['faces','😀'],['hands','👋'],['hearts','❤️'],['gaming','🎮'],['food','🍭'],['tools','🛠️'],['symbols','🔣']
+  ['all','All'],['faces','😀'],['people','👋'],['nature','🐻'],['food','🍕'],['travel','🚗'],['activities','⚽'],['objects','💡'],['symbols','🔣'],['flags','🏁']
 ];
+const V131_EMOJI_PAGE_SIZE = 240;
+const V131_FALLBACK_CATEGORY_MAP = Object.freeze({ hands: 'people', hearts: 'faces', gaming: 'activities', tools: 'objects' });
 
 const v131State = {
   pickerData: null,
   pickerLoadedAt: 0,
+  defaultEmojis: null,
+  defaultEmojiVersion: null,
+  defaultEmojiPromise: null,
   pickerTargetId: null,
   pickerTab: 'people',
   pickerSearch: '',
@@ -30,6 +35,7 @@ const v131State = {
   autocomplete: null,
   emojiSource: 'all',
   emojiCategory: 'all',
+  emojiVisibleLimit: V131_EMOJI_PAGE_SIZE,
   pickerSelectionStart: null,
   pickerSelectionEnd: null
 };
@@ -70,6 +76,42 @@ async function v131LoadPickerData(force = false) {
   v131State.pickerData = await api('/api/discord-picker');
   v131State.pickerLoadedAt = Date.now();
   return v131State.pickerData;
+}
+
+function v131FallbackDefaultEmojis() {
+  return V131_FALLBACK_UNICODE_EMOJIS.map((item) => ({
+    ...item,
+    category: V131_FALLBACK_CATEGORY_MAP[item.category] || item.category,
+    search: item.name
+  }));
+}
+
+async function v131LoadDefaultEmojis() {
+  if (v131State.defaultEmojis) return v131State.defaultEmojis;
+  if (v131State.defaultEmojiPromise) return v131State.defaultEmojiPromise;
+  v131State.defaultEmojiPromise = api('/api/default-emojis').then((data) => {
+    const emojis = (data.emojis ?? []).map((item) => ({
+      id: `u:${item.emoji}`,
+      emoji: String(item.emoji ?? ''),
+      name: String(item.name ?? ''),
+      category: String(item.category ?? ''),
+      search: String(item.search ?? item.name ?? ''),
+      insert: String(item.emoji ?? ''),
+      custom: false
+    })).filter((item) => item.emoji && item.name && item.category);
+    if (emojis.length < 1_000) throw new Error('The default emoji library is incomplete.');
+    v131State.defaultEmojis = emojis;
+    v131State.defaultEmojiVersion = String(data.version ?? 'unknown');
+    return emojis;
+  }).catch((error) => {
+    console.warn('Could not load the complete default emoji library; using the compact fallback:', error);
+    v131State.defaultEmojis = v131FallbackDefaultEmojis();
+    v131State.defaultEmojiVersion = 'fallback';
+    return v131State.defaultEmojis;
+  }).finally(() => {
+    v131State.defaultEmojiPromise = null;
+  });
+  return v131State.defaultEmojiPromise;
 }
 
 function v131InsertAtCursor(target, text, replaceRange = null, { focus = true } = {}) {
@@ -158,8 +200,20 @@ function v131EnsureUi() {
       </div>`;
     document.body.append(dialog);
     dialog.querySelectorAll('[data-v131-close]').forEach((node) => node.addEventListener('click', () => dialog.close()));
-    dialog.querySelectorAll('[data-v131-tab]').forEach((node) => node.addEventListener('click', () => { v131State.pickerTab = node.dataset.v131Tab; v131RenderPicker(); }));
-    dialog.querySelector('#v131PickerSearch').addEventListener('input', (event) => { v131State.pickerSearch = event.target.value; v131RenderPicker(); });
+    dialog.querySelectorAll('[data-v131-tab]').forEach((node) => node.addEventListener('click', async () => {
+      v131State.pickerTab = node.dataset.v131Tab;
+      v131State.emojiVisibleLimit = V131_EMOJI_PAGE_SIZE;
+      v131RenderPicker();
+      if (v131State.pickerTab === 'emojis') {
+        await v131LoadDefaultEmojis();
+        v131RenderPicker();
+      }
+    }));
+    dialog.querySelector('#v131PickerSearch').addEventListener('input', (event) => {
+      v131State.pickerSearch = event.target.value;
+      v131State.emojiVisibleLimit = V131_EMOJI_PAGE_SIZE;
+      v131RenderPicker();
+    });
     dialog.querySelector('#v131MentionMode').addEventListener('change', (event) => v131SaveMentionPolicy({ ...v131State.mentionPolicy, mode: event.target.value }).catch((error) => toast(error.message, 'error')));
     dialog.addEventListener('close', () => {
       const target = document.getElementById(v131State.pickerTargetId);
@@ -231,6 +285,7 @@ async function v131OpenPicker(targetId) {
   v131EnsureUi();
   v131State.pickerTargetId = targetId;
   v131State.pickerSearch = '';
+  v131State.emojiVisibleLimit = V131_EMOJI_PAGE_SIZE;
   const target = document.getElementById(targetId);
   v131State.pickerSelectionStart = target?.selectionStart ?? 0;
   v131State.pickerSelectionEnd = target?.selectionEnd ?? v131State.pickerSelectionStart;
@@ -238,6 +293,7 @@ async function v131OpenPicker(targetId) {
   dialog.querySelector('#v131PickerSearch').value = '';
   try {
     await v131LoadPickerData();
+    if (v131State.pickerTab === 'emojis') await v131LoadDefaultEmojis();
     v131State.mentionPolicy = v131NormalizePolicy(state?.entity?.mentionPolicy);
     if (v131CurrentScope()) {
       const scope = v131CurrentScope();
@@ -252,7 +308,7 @@ async function v131OpenPicker(targetId) {
 
 function v131ItemMatches(item, query) {
   if (!query) return true;
-  return `${item.name || ''} ${item.title || ''} ${item.id || ''} ${item.kind || ''}`.toLowerCase().includes(query);
+  return `${item.name || ''} ${item.title || ''} ${item.id || ''} ${item.kind || ''} ${item.search || ''}`.toLowerCase().includes(query);
 }
 
 function v131InsertAndClose(value, keepOpen = true) {
@@ -362,7 +418,7 @@ function v131RenderPicker() {
     list.innerHTML = items.map((item) => `<div class="v131-picker-row"><button type="button" class="v131-picker-main" data-v131-insert="${escapeAttr(item.insert)}"><span class="v131-row-icon">💬</span><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.destinationType)}${item.deleted ? ' · deleted on Discord' : ''}</small></span></button>${item.url ? `<button type="button" class="v131-open-mini" data-v131-open="${escapeAttr(item.url)}">↗</button>` : ''}</div>`).join('');
   } else if (v131State.pickerTab === 'emojis') {
     const custom = data.emojis.map((item) => ({ ...item, source: 'server', category: 'server', custom: true }));
-    const discord = V131_UNICODE_EMOJIS.map((item) => ({ ...item, source: 'discord' }));
+    const discord = (v131State.defaultEmojis || v131FallbackDefaultEmojis()).map((item) => ({ ...item, source: 'discord' }));
     const all = [...custom, ...discord];
     const recent = v131EmojiHistory();
     const favorites = v131EmojiFavorites();
@@ -380,17 +436,28 @@ function v131RenderPicker() {
       const ar = recent.indexOf(a.id); const br = recent.indexOf(b.id); if (ar >= 0 || br >= 0) return (ar < 0 ? 999 : ar) - (br < 0 ? 999 : br);
       return String(a.name).localeCompare(String(b.name));
     });
-    hint.textContent = `${custom.length} server emojis · ${discord.length} Discord emojis. Click as many as you want; the picker stays open.`;
-    list.innerHTML = `${v131EmojiFilterHtml()}${items.length ? `<div class="v131-emoji-grid">${items.map((item) => `<div class="v131-emoji-cell"><button type="button" class="v131-emoji-main" data-v131-emoji-id="${escapeAttr(item.id)}" data-v131-insert="${escapeAttr(item.insert)}" title="${escapeAttr(item.name)}">${item.custom ? `<img src="${escapeAttr(item.url)}" alt="${escapeAttr(item.name)}">` : `<span>${item.emoji}</span>`}<small>:${escapeHtml(item.name)}:</small></button><button type="button" class="v131-star${favorites.includes(item.id) ? ' active' : ''}" data-v131-favorite="${escapeAttr(item.id)}">${favorites.includes(item.id) ? '★' : '☆'}</button></div>`).join('')}</div>` : '<div class="v131-empty-filter">No emojis match this filter.</div>'}`;
+    const visibleItems = items.slice(0, v131State.emojiVisibleLimit);
+    const remaining = items.length - visibleItems.length;
+    const libraryStatus = v131State.defaultEmojiVersion === 'fallback' ? ' · compact fallback active' : '';
+    hint.textContent = `${custom.length} guild emojis · ${discord.length} default emojis${libraryStatus}. Showing ${visibleItems.length} of ${items.length} matches.`;
+    list.innerHTML = `${v131EmojiFilterHtml()}${items.length ? `<div class="v131-emoji-grid">${visibleItems.map((item) => `<div class="v131-emoji-cell"><button type="button" class="v131-emoji-main" data-v131-emoji-id="${escapeAttr(item.id)}" data-v131-insert="${escapeAttr(item.insert)}" title="${escapeAttr(item.name)}">${item.custom ? `<img src="${escapeAttr(item.url)}" alt="${escapeAttr(item.name)}">` : `<span>${item.emoji}</span>`}<small>:${escapeHtml(item.name)}:</small></button><button type="button" class="v131-star${favorites.includes(item.id) ? ' active' : ''}" data-v131-favorite="${escapeAttr(item.id)}">${favorites.includes(item.id) ? '★' : '☆'}</button></div>`).join('')}</div>${remaining > 0 ? `<button type="button" class="btn ghost v131-emoji-more" data-v131-emoji-more>Show ${Math.min(V131_EMOJI_PAGE_SIZE, remaining)} more · ${remaining} remaining</button>` : ''}` : '<div class="v131-empty-filter">No emojis match this filter.</div>'}`;
     list.querySelectorAll('[data-v131-emoji-source]').forEach((node) => node.addEventListener('click', () => {
       v131State.emojiSource = node.dataset.v131EmojiSource;
       if (!['all', 'discord'].includes(v131State.emojiSource)) v131State.emojiCategory = 'all';
+      v131State.emojiVisibleLimit = V131_EMOJI_PAGE_SIZE;
       v131RenderPicker();
     }));
     list.querySelectorAll('[data-v131-emoji-category]').forEach((node) => node.addEventListener('click', () => {
       v131State.emojiCategory = node.dataset.v131EmojiCategory;
+      v131State.emojiVisibleLimit = V131_EMOJI_PAGE_SIZE;
       v131RenderPicker();
     }));
+    list.querySelector('[data-v131-emoji-more]')?.addEventListener('click', () => {
+      const scrollTop = list.scrollTop;
+      v131State.emojiVisibleLimit += V131_EMOJI_PAGE_SIZE;
+      v131RenderPicker();
+      requestAnimationFrame(() => { list.scrollTop = scrollTop; });
+    });
   }
 
   list.querySelectorAll('[data-v131-insert]').forEach((node) => node.addEventListener('click', () => {
@@ -447,7 +514,10 @@ async function v131AutocompleteFor(textarea) {
   if (!match) return v131AutocompleteClose();
   const trigger = match[1];
   const term = match[2].toLowerCase();
-  try { await v131LoadPickerData(); } catch { return; }
+  try {
+    await v131LoadPickerData();
+    if (trigger === ':') await v131LoadDefaultEmojis();
+  } catch { return; }
   let values = [];
   if (trigger === '@') values = [
     ...v131State.pickerData.users.map((item) => ({ label: `@${item.name}`, insert: `<@${item.id}>`, icon: '👤' })),
@@ -456,9 +526,9 @@ async function v131AutocompleteFor(textarea) {
   else if (trigger === '#') values = v131State.pickerData.channels.map((item) => ({ label: `#${item.name}`, insert: item.insert, icon: '#' }));
   else values = [
     ...v131State.pickerData.emojis.map((item) => ({ label: `:${item.name}:`, insert: item.insert, iconUrl: item.url })),
-    ...V131_UNICODE_EMOJIS.map((item) => ({ label: `:${item.name}:`, insert: item.insert, icon: item.emoji }))
+    ...(v131State.defaultEmojis || v131FallbackDefaultEmojis()).map((item) => ({ label: `:${item.name}:`, insert: item.insert, icon: item.emoji, search: item.search }))
   ];
-  values = values.filter((item) => item.label.toLowerCase().includes(term)).slice(0, 8);
+  values = values.filter((item) => `${item.label} ${item.search || ''}`.toLowerCase().includes(term)).slice(0, 8);
   if (!values.length) return v131AutocompleteClose();
   let pop = document.getElementById('v131Autocomplete');
   if (!pop) { pop = document.createElement('div'); pop.id = 'v131Autocomplete'; pop.className = 'v131-autocomplete'; document.body.append(pop); }

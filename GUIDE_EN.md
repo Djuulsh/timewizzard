@@ -7,9 +7,12 @@ Timewizzard builds and maintains Discord Components V2 information posts in foru
 ## Access and permissions
 
 - Timewizzard currently operates in single-server mode through `GUILD_ID`.
-- The user needs **Manage Server** (`ManageGuild`), Administrator, or server ownership.
+- The user must own the server, have Administrator/**Manage Server** (`ManageGuild`), or have a role listed in `EDITOR_ROLE_IDS`.
+- Configure multiple editor roles as a comma-separated Railway/local value, for example `EDITOR_ROLE_IDS=123456789012345678,987654321098765432`.
+- Also allow the role under **Server Settings → Integrations → Timewizzard** so Discord exposes the commands to that role.
 - The bot needs permission to view the destination, send messages and read message history.
 - Creating forum posts requires **Create Public Threads**. Archived or locked posts may also require **Manage Threads**.
+- The `@` picker's complete member list requires **Server Members Intent** under **Discord Developer Portal → Bot → Privileged Gateway Intents** and a bot restart or redeploy.
 
 ## Normal workflow
 
@@ -24,7 +27,7 @@ Timewizzard builds and maintains Discord Components V2 information posts in foru
 
 Right-click the starter message or any continuation message in a published Timewizzard post, then choose **Apps → Edit in Web Builder**. The bot verifies that the message belongs to a managed post and returns a private link that opens that exact post after Discord OAuth.
 
-The action requires **Manage Server** and is available only in the server where Timewizzard commands are registered. Ordinary messages that do not belong to a Timewizzard post cannot be opened as Builder data.
+The action requires **Manage Server** or a configured editor role and is available only in the server where Timewizzard commands are registered. Ordinary messages that do not belong to a Timewizzard post cannot be opened as Builder data.
 
 ## Create draft
 
@@ -49,6 +52,10 @@ Desktop supports drag-and-drop. Touch devices use tap-to-move. Undo/Redo, revisi
 Plain content and colored Containers can coexist in one post. The Web Builder supports Text, Heading, Image, Thumbnail, Separator, Callout, Checklist, Steps, Facts, Button Row, Event, Countdown, Code, Progress, Gallery, YouTube, selects and nested ephemeral actions.
 
 Preview elements can be selected to open their associated block in the Inspector. Markdown tools, emoji/mention pickers, timestamps, inline validation and character counters help keep content compatible with Discord.
+
+### Guild and default emojis
+
+**Discord Insert → Emojis** combines every custom emoji from the configured guild with the complete locally hosted Emoji 17 default library. Select **Guild** or **Default**, search by name and related terms, or filter by category. The library also includes skin-tone variations and is loaded only when the emoji picker is used. Large result sets are rendered incrementally through **Show more** to keep the Builder responsive. Default emojis require no additional Discord permission; guild emojis are fetched from the server connected to the bot.
 
 ### GIPHY images
 
@@ -92,7 +99,7 @@ Known legacy selectors for `MerfinUI_v7.80.zip` and `TBC_AddOns.zip` migrate to 
 
 ## Local development
 
-Copy `.env.local.example` to `.env.local`, add local Discord/OAuth values and run:
+Copy `.env.local.example` to `.env.local`, add local Discord/OAuth values and any comma-separated `EDITOR_ROLE_IDS`, then run:
 
 ```bash
 npm ci

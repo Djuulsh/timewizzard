@@ -12,12 +12,13 @@ const assert = (condition, message) => { if (!condition) throw new Error(message
 assert(VERSION === '1.7.0', 'The authoritative version must be 1.7.0.');
 const pkg = JSON.parse(read('package.json'));
 assert(pkg.version === VERSION, 'package.json must match src/version.js.');
+assert(pkg.dependencies?.['emojibase-data'] === '17.0.0', 'The complete default emoji library must use the pinned Emoji 17 dataset.');
 
 const readme = read('README.md');
 assert(readme.startsWith(`# Timewizzard Info Bot v${VERSION}`), 'README heading must match the authoritative runtime version.');
 assert(readme.includes(`> Current release: **v${VERSION}**`), 'README current release must match the authoritative runtime version.');
 assert(readme.includes('200,000 characters') && readme.includes('package-lock.json'), 'README must document long TXT delivery and reproducible installs.');
-assert(readme.includes('single-server mode') && readme.includes('Manage Server'), 'README must document the current Discord guild and permission model.');
+assert(readme.includes('single-server mode') && readme.includes('Manage Server') && readme.includes('EDITOR_ROLE_IDS=123456789012345678,987654321098765432'), 'README must document the current Discord guild and editor-role permission model.');
 assert(readme.includes('storage schema is v6') && readme.includes('staged') && readme.includes('Publish/Republish review'), 'README must document the current storage and safe publishing workflow.');
 assert(readme.includes('[`GUIDE_EN.md`](GUIDE_EN.md)') && readme.includes('[`GUIDE_DA.md`](GUIDE_DA.md)'), 'README must link both operating guides.');
 
@@ -31,6 +32,7 @@ for (const [name, guide] of [['Danish', guideDa], ['English', guideEn]]) {
   }
 }
 assert(guideDa.includes('GUIDE_EN.md') && guideEn.includes('GUIDE_DA.md'), 'The operating guides must cross-link.');
+assert(guideDa.includes('EDITOR_ROLE_IDS') && guideEn.includes('EDITOR_ROLE_IDS'), 'Both operating guides must document editor roles.');
 assert(read('DISCORD_MARKDOWN.md').startsWith(`# Discord Markdown in Timewizzard v${VERSION}`), 'Markdown reference heading must match the current version.');
 assert(read('UPLOAD_TO_GITHUB_DA.md').includes('Historisk dokument') && read('UPLOAD_TO_GITHUB_DA.md').includes(`aktuelle v${VERSION}`), 'Legacy upload documentation must be historical and point to the current release.');
 assert(read('UPGRADE_v1.2_DA.md').includes('Historisk migrationsreference') && read('UPGRADE_v1.2_DA.md').includes(`aktuelle v${VERSION}`), 'Legacy migration documentation must be historical and point to the current release.');
@@ -39,7 +41,13 @@ const changelog = read('CHANGELOG.md');
 assert(changelog.includes('## 1.7.0') && changelog.includes('Publishing safety, flexible destinations and context editing'), 'Changelog must cover the current release documentation and publishing flow.');
 const controller = read('src/controller.js');
 assert(controller.includes("from './version.js'") && controller.includes('buildWebBuilderOverview') && controller.includes('GUIDE_EN.md'), 'Discord help responses must use the current version and link the English guide.');
+assert(controller.includes('this.hasEditorAccess(interaction)') && !controller.includes('hasAdminPermission(interaction)'), 'Discord editor interactions must use the shared role-aware access gate.');
 assert(!controller.includes('Shrouded Web Builder v1.2.1') && !controller.includes('Shrouded Info Bot v1.2.1'), 'Discord responses must not contain obsolete branding or versions.');
+const indexSource = read('src/index.js');
+assert(indexSource.includes('GatewayIntentBits.GuildMembers'), 'The Discord client must request the enabled Server Members Intent.');
+const memberSource = read('src/discordMembers.js');
+assert(memberSource.includes('guild.members.fetch()') && memberSource.includes('cached.size >= guild.memberCount'), 'Complete member fetching must reuse a complete cache and fetch an incomplete one.');
+assert(read('src/web/v131.js').includes('fetchGuildMembers(guild)') && read('src/web/server.js').includes('fetchGuildMembers(guild)'), 'All Web Builder member sources must use complete guild member fetching.');
 const currentDiscordSupport = read('src/v158Support.js');
 assert(currentDiscordSupport.includes('buildWebBuilderOverview()') && currentDiscordSupport.includes('buildHelpContent()'), 'The installed Discord compatibility layer must use the current Web Builder and help responses.');
 assert(!read('src/nativeV13Support.js').includes('prototype.showHelp') && !read('src/nativeV14Support.js').includes('prototype.showHelp'), 'Legacy support layers must not override the current help response.');
@@ -56,6 +64,8 @@ assert(WEB_STYLE_FILES.at(-2) === 'giphyPicker.css', 'GIPHY picker styles must l
 assert(new Set(WEB_FEATURES).size === WEB_FEATURES.length, 'Web feature registry contains duplicates.');
 assert(WEB_FEATURES.includes('template-catalog-36') && !WEB_FEATURES.includes('template-catalog-38'), 'Feature registry template count must match the validated catalogue.');
 assert(WEB_FEATURES.includes('message-context-webbuilder-edit'), 'Feature registry must advertise message context editing.');
+assert(WEB_FEATURES.includes('complete-member-mention-picker'), 'Feature registry must advertise complete member mentions.');
+assert(WEB_FEATURES.includes('guild-and-default-emoji-picker'), 'Feature registry must advertise guild and default emoji selection.');
 assert(WEB_FEATURES.includes('giphy-image-picker'), 'Feature registry must advertise GIPHY image selection.');
 
 const html = read('web/index.html');
@@ -111,6 +121,10 @@ assert(js153.includes('if (textarea.maxLength > 0) return textarea.maxLength;'),
 const appJs = read('web/app.js');
 assert(appJs.includes('maxlength="${MAX_STRING_SELECT_CONTENT_LENGTH}"'), 'String Select textarea must expose its 200000-character limit to the shared counter.');
 assert(!appJs.includes('data-string-count'), 'String Select must not render a duplicate character counter.');
+const discordPickerJs = read('web/v131.js');
+for (const marker of ['/api/default-emojis', 'v131LoadDefaultEmojis', "['discord','🙂 Default']", "['server','🟣 Guild']", 'V131_EMOJI_PAGE_SIZE', 'data-v131-emoji-more', "['flags','🏁']"]) {
+  assert(discordPickerJs.includes(marker), `Discord emoji picker is missing complete-library contract: ${marker}.`);
+}
 
 const giphyJs = read('web/giphyPicker.js');
 for (const marker of [
@@ -140,7 +154,11 @@ assert(configSource.includes('GIPHY_API_KEY') && configSource.includes('giphyApi
 assert(serverSource.includes('apiKey: config.giphyApiKey || null') && serverSource.includes('giphy: Boolean(config.giphyApiKey)'), 'Bootstrap and health must report GIPHY configuration.');
 assert(serverSource.includes('limit: 50') && giphyJs.includes('Number(config.limit) || 50'), 'The GIPHY picker must request the beta-key maximum of 50 results per API call.');
 assert(serverSource.includes("serveFile(response, 'powered-by-giphy.png', 'image/png')") && fs.existsSync(path.join(root, 'web', 'powered-by-giphy.png')), 'The official Powered by GIPHY logo must be served locally.');
+assert(serverSource.includes('guilds.members.read') && serverSource.includes('/guilds/${config.guildId}/member') && serverSource.includes('hasConfiguredEditorRole') && serverSource.includes('editorRolesConfigured'), 'Web Builder OAuth and health must support configured editor roles.');
+assert(serverSource.includes("url.pathname === '/api/default-emojis'") && serverSource.includes('DEFAULT_EMOJI_GZIP_BODY') && serverSource.includes("'cache-control': 'private, max-age=86400'"), 'Default emoji data must be served lazily with gzip and private browser caching.');
 assert(read('.env.example').includes('GIPHY_API_KEY=') && read('.env.local.example').includes('GIPHY_API_KEY='), 'Environment examples must document GIPHY_API_KEY.');
+assert(read('.env.example').includes('EDITOR_ROLE_IDS=') && read('.env.local.example').includes('EDITOR_ROLE_IDS='), 'Railway and local environment examples must document EDITOR_ROLE_IDS.');
+assert(read('GUIDE_DA.md').includes('### Guild- og standard-emojis') && read('GUIDE_EN.md').includes('### Guild and default emojis'), 'Both operating guides must document the combined guild/default emoji picker.');
 assert(read('GUIDE_DA.md').includes('### GIPHY-billeder') && read('GUIDE_EN.md').includes('### GIPHY images'), 'Both operating guides must document the GIPHY picker.');
 
 const css163 = read('web/v163.css');

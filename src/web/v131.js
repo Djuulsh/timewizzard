@@ -1,5 +1,6 @@
 import { ChannelType } from 'discord.js';
 import { getDestinationChannelId, getDestinationType } from '../destinations.js';
+import { fetchGuildMembers } from '../discordMembers.js';
 
 const SNOWFLAKE = /^\d{16,22}$/;
 
@@ -82,11 +83,12 @@ export async function updateBotIdentity(client, guildId, input) {
 
 export async function buildDiscordPickerData({ client, guildId, store, session }) {
   const guild = await client.guilds.fetch(guildId);
-  const [channelsCollection, rolesCollection, emojisCollection, identity] = await Promise.all([
+  const [channelsCollection, rolesCollection, emojisCollection, identity, membersCollection] = await Promise.all([
     guild.channels.fetch(),
     guild.roles.fetch(),
     guild.emojis.fetch(),
-    getBotIdentity(client, guildId)
+    getBotIdentity(client, guildId),
+    fetchGuildMembers(guild)
   ]);
 
   const users = new Map();
@@ -99,7 +101,7 @@ export async function buildDiscordPickerData({ client, guildId, store, session }
     : null;
   addUser(session?.user?.id, session?.user?.username, sessionAvatarUrl, false);
   if (client.user) addUser(client.user.id, identity.serverDisplayName || client.user.username, identity.avatarUrl, true);
-  for (const member of guild.members.cache.values()) {
+  for (const member of membersCollection.values()) {
     addUser(member.id, member.displayName || member.user?.username || member.id, member.user?.displayAvatarURL?.({ extension: 'png', size: 64 }) || null, member.user?.bot);
   }
 

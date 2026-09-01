@@ -1,5 +1,6 @@
 import { loadEnvFile } from 'node:process';
 import path from 'node:path';
+import { parseEditorRoleIds } from './access.js';
 
 const envFile = String(process.env.TIMEWIZZARD_ENV_FILE || '.env').trim();
 try {
@@ -25,6 +26,7 @@ function normalizeBaseUrl(value) {
 const publicBaseUrl = normalizeBaseUrl(process.env.PUBLIC_BASE_URL);
 const clientSecret = String(process.env.DISCORD_CLIENT_SECRET ?? '').trim();
 const giphyApiKey = String(process.env.GIPHY_API_KEY ?? '').trim();
+const editorRoleIds = Object.freeze(parseEditorRoleIds(process.env.EDITOR_ROLE_IDS));
 if ((publicBaseUrl && !clientSecret) || (!publicBaseUrl && clientSecret)) {
   throw new Error('PUBLIC_BASE_URL and DISCORD_CLIENT_SECRET must either both be set or both be omitted.');
 }
@@ -38,6 +40,7 @@ export const config = Object.freeze({
   publicBaseUrl,
   clientSecret,
   giphyApiKey,
+  editorRoleIds,
   webEnabled: Boolean(publicBaseUrl && clientSecret),
   nodeEnv: String(process.env.NODE_ENV || 'development'),
   envFile

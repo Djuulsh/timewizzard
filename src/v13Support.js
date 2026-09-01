@@ -2,10 +2,6 @@ import { MessageFlags } from 'discord.js';
 import { buildGenericActionReply, resolveGenericAction } from './builder/actions.js';
 import { recreateManagedPost, refreshManagedPostState } from './postService.js';
 
-function canAdmin(interaction) {
-  return interaction.guildId && interaction.memberPermissions?.has('ManageGuild');
-}
-
 export function installV13Support(BotController) {
   const originalHandleButton = BotController.prototype.handleButton;
   BotController.prototype.handleButton = async function handleButtonV13(interaction) {

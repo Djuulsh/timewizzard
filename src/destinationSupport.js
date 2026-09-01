@@ -2,8 +2,7 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  MessageFlags,
-  PermissionFlagsBits
+  MessageFlags
 } from 'discord.js';
 import { makeShortId } from './builder/ids.js';
 import { readBuilderAttachment } from './builder/io.js';
@@ -31,10 +30,6 @@ function postReference(config, post) {
   if (getDestinationType(post) === 'forum') return `<#${post.threadId}>`;
   const link = messageLink(config, post);
   return link ? `[Åbn besked](${link})` : `Kanal <#${getDestinationChannelId(post)}>`;
-}
-
-function canAdmin(interaction) {
-  return interaction.guildId && interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild);
 }
 
 export function installDestinationSupport(BotController) {
@@ -233,8 +228,8 @@ export function installDestinationSupport(BotController) {
       return originalHandleButton.call(this, interaction);
     }
 
-    if (!canAdmin(interaction)) {
-      await interaction.reply({ content: 'Du mangler tilladelsen Administrer server.', flags: MessageFlags.Ephemeral });
+    if (!this.hasEditorAccess(interaction)) {
+      await interaction.reply({ content: 'Du mangler Administrer server eller en konfigureret Timewizzard editor-rolle.', flags: MessageFlags.Ephemeral });
       return;
     }
 

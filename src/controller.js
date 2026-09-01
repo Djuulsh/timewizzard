@@ -6,10 +6,10 @@ import {
   LabelBuilder,
   MessageFlags,
   ModalBuilder,
-  PermissionFlagsBits,
   TextInputBuilder,
   TextInputStyle
 } from 'discord.js';
+import { hasEditorAccess } from './access.js';
 import {
   MAX_PROFILE_FILE_BYTES,
   RESOLUTIONS,
@@ -116,11 +116,6 @@ function buildProfileModal(classKey, resolutionKey, currentValue) {
     );
 }
 
-function hasAdminPermission(interaction) {
-  return interaction.guildId &&
-    interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild);
-}
-
 function formatPostInputError() {
   return 'Brug et kladde-ID, forum-postens ID, en kanalhenvisning som `<#123...>` eller hele Discord-linket.';
 }
@@ -156,8 +151,9 @@ export function buildWebBuilderOverview() {
     '- Op til fem tags vises kun for forumkanaler.',
     '- Destinationer gemmes som afventende ændringer og anvendes først ved **Republish**.',
     '- Message split vælges og valideres under **Publish / Republish**.',
-    '- JSON import/export, lange String Select-værdier som private TXT-filer og direkte ZIP-downloadknapper.',
-    '- Højreklik på en administreret Discord-besked → **Apps → Edit in Web Builder** for at åbne opslaget direkte.'
+    '- JSON import/export, komplette `@`-medlemsopslag samt guild- og standard-emojis, lange String Select-værdier som private TXT-filer og direkte ZIP-downloadknapper.',
+    '- Højreklik på en administreret Discord-besked → **Apps → Edit in Web Builder** for at åbne opslaget direkte.',
+    '- Adgang gives til serverejer, Administrator/Manage Server og roller i `EDITOR_ROLE_IDS`.'
   ].join('\n');
 }
 
@@ -183,9 +179,10 @@ export function buildHelpContent() {
     '',
     '**Web Builder**',
     '`/webbuilder` — åbner Railway-hostet drag-and-drop builder med Discord OAuth.',
+    'Adgang gives til serverejer, Administrator/Manage Server og roller i `EDITOR_ROLE_IDS`.',
     'Save gemmer kun Builder-data. **Publish / Republish** viser review, Message split og den afventende destination, før Discord ændres.',
     'Destination understøtter forum-, tekst- og announcement-kanaler samt eksisterende forum-posts. Tags er kun tilgængelige for forumkanaler.',
-    'JSON kan importeres/eksporteres. Lange String Select-værdier leveres privat som UTF-8 TXT-filer.',
+    'JSON kan importeres/eksporteres. `@`-vælgeren henter servermedlemmer, og emoji-vælgeren samler guild- og standard-emojis. Lange String Select-værdier leveres privat som UTF-8 TXT-filer.',
     'Højreklik på en administreret besked og vælg **Apps → Edit in Web Builder** for at åbne opslaget direkte.',
     '',
     'Dansk og engelsk guide findes via knapperne i `/webbuilder`.'
@@ -199,11 +196,19 @@ export class BotController {
     this.config = config;
   }
 
+  hasEditorAccess(interaction) {
+    return hasEditorAccess(interaction, this.config?.editorRoleIds);
+  }
+
   async handle(interaction) {
     try {
       if (interaction.guildId && interaction.guildId !== this.config.guildId) return;
 
       if (interaction.isAutocomplete()) {
+        if (!this.hasEditorAccess(interaction)) {
+          await interaction.respond([]);
+          return;
+        }
         await this.handleAutocomplete(interaction);
         return;
       }
@@ -224,9 +229,9 @@ export class BotController {
       }
 
       if (interaction.isMessageContextMenuCommand()) {
-        if (!hasAdminPermission(interaction)) {
+        if (!this.hasEditorAccess(interaction)) {
           await interaction.reply({
-            content: 'You need **Manage Server** to edit Timewizzard posts.',
+            content: 'You need **Manage Server** or a configured Timewizzard editor role to edit posts.',
             flags: MessageFlags.Ephemeral
           });
           return;
@@ -236,9 +241,9 @@ export class BotController {
       }
 
       if (interaction.isChatInputCommand()) {
-        if (!hasAdminPermission(interaction)) {
+        if (!this.hasEditorAccess(interaction)) {
           await interaction.reply({
-            content: 'Du skal have tilladelsen **Administrer server** for at bruge denne kommando.',
+            content: 'Du skal have **Administrer server** eller en konfigureret Timewizzard editor-rolle for at bruge denne kommando.',
             flags: MessageFlags.Ephemeral
           });
           return;
@@ -646,7 +651,7 @@ export class BotController {
   }
 
   async handleButton(interaction) {
-    // Public interactions must be handled before the admin permission gate.
+    // Public interactions must be handled before the editor permission gate.
     if (interaction.customId.startsWith('profile:')) {
       const [, classKey, resolutionKey] = interaction.customId.split(':');
       await interaction.reply(buildProfileReply(classKey, resolutionKey, this.store.getProfile(classKey, resolutionKey)));
@@ -664,8 +669,8 @@ export class BotController {
       return;
     }
 
-    if (!hasAdminPermission(interaction)) {
-      await interaction.reply({ content: 'Du mangler tilladelsen Administrer server.', flags: MessageFlags.Ephemeral });
+    if (!this.hasEditorAccess(interaction)) {
+      await interaction.reply({ content: 'Du mangler Administrer server eller en konfigureret Timewizzard editor-rolle.', flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -935,8 +940,8 @@ export class BotController {
       return;
     }
 
-    if (!hasAdminPermission(interaction)) {
-      await interaction.reply({ content: 'Du mangler tilladelsen Administrer server.', flags: MessageFlags.Ephemeral });
+    if (!this.hasEditorAccess(interaction)) {
+      await interaction.reply({ content: 'Du mangler Administrer server eller en konfigureret Timewizzard editor-rolle.', flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -1006,8 +1011,8 @@ export class BotController {
   }
 
   async handleModal(interaction) {
-    if (!hasAdminPermission(interaction)) {
-      await interaction.reply({ content: 'Du mangler tilladelsen Administrer server.', flags: MessageFlags.Ephemeral });
+    if (!this.hasEditorAccess(interaction)) {
+      await interaction.reply({ content: 'Du mangler Administrer server eller en konfigureret Timewizzard editor-rolle.', flags: MessageFlags.Ephemeral });
       return;
     }
 
