@@ -9,6 +9,7 @@ Timewizzard creates, previews, publishes and maintains structured information po
 - Hierarchical `POST → optional Containers → content blocks` editor.
 - 36 starter templates, including announcements, guides, events, recruitment, media, YouTube, Quick Announcements and WeakAura layouts.
 - Text, Heading, Callout, Checklist, Steps, Facts, Button Row, Event, Countdown, Code, Progress, Gallery, Thumbnail and Smart YouTube blocks.
+- Facts / Key Values preserve intentional spaces and line breaks inside each value, including a trailing blank line before the next row.
 - Drag-and-drop on desktop and tap-to-move controls on touch devices.
 - Desktop, tablet and phone layouts with desktop/mobile preview widths.
 - Undo/Redo, revision history, local crash recovery and pre-publish review.

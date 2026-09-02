@@ -7,6 +7,7 @@
 - Added comma-separated `EDITOR_ROLE_IDS` authorization for Discord commands, editor interactions, context-menu editing and Web Builder OAuth, while retaining server owner, Administrator and Manage Server access.
 - Added complete Discord member fetching for Web Builder `@` mentions through the privileged Server Members Intent, with cache reuse and a safe limited-cache fallback.
 - Replaced the 103-item standard emoji subset with a lazy-loaded Emoji 17 library containing more than 3,900 base and skin-tone entries, combined with all configured-guild emojis and served with gzip, browser caching, category filters, keyword search and incremental rendering.
+- Facts / Key Values now preserve intentional spaces and line breaks in each value, including a trailing blank line before the next row, in both Web Preview and published Discord content.
 
 ## 1.7.0
 

@@ -137,7 +137,7 @@ function v1513EnhanceFactsInspector() {
     <div class="v1513-facts-rows"></div>
     <div class="v1513-facts-footer">
       <button type="button" class="btn ghost v1513-add-row">＋ Add row</button>
-      <small>${v1513FactRows(block).length} / 25 rows</small>
+      <small>Line breaks and spaces are preserved · ${v1513FactRows(block).length} / 25 rows</small>
     </div>`;
 
   const titleLabel = v153LabelFor(card, 'v150FactsTitle');
@@ -157,7 +157,7 @@ function v1513FactsPreview(block) {
   const titleHtml = title ? `<div class="v1513-facts-preview-title">${renderMarkdown(`### ${title}`)}</div>` : '';
   const rowsHtml = rows.map((item) => {
     const label = String(item?.label || '').trim();
-    const value = String(item?.value || '').trim();
+    const value = String(item?.value ?? '');
     return `<div class="v1513-facts-preview-row"><div class="v1513-facts-preview-label">${renderInline(label)}</div><div class="v1513-facts-preview-value">${renderMarkdown(value)}</div></div>`;
   }).join('');
   return `<div class="preview-block v1513-facts-preview">${titleHtml}<div class="v1513-facts-preview-grid">${rowsHtml}</div></div>`;

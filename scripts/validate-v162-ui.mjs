@@ -118,6 +118,8 @@ for (const marker of [
 
 const js153 = read('web/v153.js');
 assert(js153.includes('if (textarea.maxLength > 0) return textarea.maxLength;'), 'v153 textarea counters must respect the explicit 200000-character String Select limit.');
+const factsEditorJs = read('web/v1513.js');
+assert(factsEditorJs.includes("const value = String(item?.value ?? '');") && factsEditorJs.includes('Line breaks and spaces are preserved'), 'Facts preview and editor help must preserve value whitespace and line breaks.');
 const appJs = read('web/app.js');
 assert(appJs.includes('maxlength="${MAX_STRING_SELECT_CONTENT_LENGTH}"'), 'String Select textarea must expose its 200000-character limit to the shared counter.');
 assert(!appJs.includes('data-string-count'), 'String Select must not render a duplicate character counter.');

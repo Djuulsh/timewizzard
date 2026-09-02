@@ -1,4 +1,4 @@
-import { smartBlockToComponents } from '../src/builder/smartBlocks.js';
+import { smartBlockToComponents, validateSmartBlock } from '../src/builder/smartBlocks.js';
 
 const block = {
   type: 'facts',
@@ -24,4 +24,20 @@ if (content.includes('\u00A0') || content.includes('\u2003') || content.includes
   throw new Error('Facts must not use fixed-width spacing or inline-code label cells.');
 }
 
-console.log('Facts wrap-safe vertical label/value validation passed.');
+const preservedValue = '-# @Blackshatter , @Benzoic , @Enchgeden , @Virusimunden, <@106491116743852032>\n ';
+const preservedBlock = {
+  type: 'facts',
+  title: '',
+  items: [
+    { label: 'Editors', value: preservedValue },
+    { label: 'Status', value: 'Ready' }
+  ]
+};
+validateSmartBlock(preservedBlock);
+const preservedContent = smartBlockToComponents(preservedBlock)?.[0]?.content || '';
+const expectedPreservedContent = `**Editors**\n${preservedValue}\n**Status**\nReady`;
+if (preservedContent !== expectedPreservedContent) {
+  throw new Error('Facts must preserve intentional spaces and line breaks before the next key/value row.');
+}
+
+console.log('Facts wrap-safe and whitespace-preserving label/value validation passed.');

@@ -35,6 +35,10 @@ function asText(value) {
   return String(value ?? '').trim();
 }
 
+function asPreservedText(value) {
+  return String(value ?? '');
+}
+
 function headingContent(block) {
   const level = [1, 2, 3].includes(Number(block.level)) ? Number(block.level) : 2;
   const emoji = asText(block.emoji);
@@ -70,7 +74,7 @@ function factsContent(block) {
   const title = asText(block.title);
   const rows = (block.items ?? []).map((item) => {
     const label = asText(item?.label);
-    const value = asText(item?.value);
+    const value = asPreservedText(item?.value);
     return `**${label}**\n${value}`;
   });
   return [title ? `### ${title}` : null, ...rows].filter(Boolean).join('\n');
@@ -191,7 +195,8 @@ export function validateSmartBlock(block) {
     if (!Array.isArray(block.items) || block.items.length < 1 || block.items.length > 25) throw new Error('Facts skal have 1-25 rækker.');
     for (const item of block.items) {
       if (!asText(item?.label) || asText(item.label).length > 80) throw new Error('Fact label skal være 1-80 tegn.');
-      if (!asText(item?.value) || asText(item.value).length > 300) throw new Error('Fact value skal være 1-300 tegn.');
+      const value = asPreservedText(item?.value);
+      if (!value.trim() || value.length > 300) throw new Error('Fact value skal være 1-300 tegn.');
     }
     if (asText(block.title).length > 200) throw new Error('Facts title er over 200 tegn.');
   }

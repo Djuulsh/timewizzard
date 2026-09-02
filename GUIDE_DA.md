@@ -53,6 +53,8 @@ Plain indhold og farvede Containers kan blandes i samme opslag. Web Builderen un
 
 Preview-elementer kan vælges direkte for at åbne den tilhørende blok i Inspector. Markdown-værktøjer, emoji/mention-vælgere, timestamps, inline-validering og tegnoptællere hjælper med Discord-kompatibelt indhold.
 
+I **Facts / Key Values** bevares indtastede mellemrum og linjeskift i hvert Value-felt. En afsluttende linje med et mellemrum kan derfor bruges som et bevidst blankt linjeskift før den næste key/value-række.
+
 ### Guild- og standard-emojis
 
 **Discord Insert → Emojis** samler alle custom emojis fra den konfigurerede guild med det komplette lokalt hostede Emoji 17-standardbibliotek. Vælg **Guild** eller **Default**, søg på navn og relaterede ord, eller filtrér efter kategori. Biblioteket indeholder også hudfarvevariationer og indlæses først, når emoji-vælgeren bruges. Store resultater vises trinvist med **Show more** for at holde Builderen hurtig. Standard-emojis kræver ingen ekstra Discord-permission; guild-emojis hentes fra den server, botten er forbundet til.

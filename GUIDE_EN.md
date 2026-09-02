@@ -53,6 +53,8 @@ Plain content and colored Containers can coexist in one post. The Web Builder su
 
 Preview elements can be selected to open their associated block in the Inspector. Markdown tools, emoji/mention pickers, timestamps, inline validation and character counters help keep content compatible with Discord.
 
+**Facts / Key Values** preserve entered spaces and line breaks inside each Value field. A final line containing a space can therefore be used as an intentional blank line before the next key/value row.
+
 ### Guild and default emojis
 
 **Discord Insert → Emojis** combines every custom emoji from the configured guild with the complete locally hosted Emoji 17 default library. Select **Guild** or **Default**, search by name and related terms, or filter by category. The library also includes skin-tone variations and is loaded only when the emoji picker is used. Large result sets are rendered incrementally through **Show more** to keep the Builder responsive. Default emojis require no additional Discord permission; guild emojis are fetched from the server connected to the bot.
